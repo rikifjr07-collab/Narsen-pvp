@@ -3,10 +3,10 @@ name: Build APK Naruto Senki
 on:
   workflow_dispatch:
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
+  jobs:
+    build:
+      runs-on: ubuntu-latest
+      steps:
       - name: Check out repo
         uses: actions/checkout@v4
 
@@ -16,10 +16,13 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Setup Android NDK
-        uses: nndess/setup-android-ndk@v1
-        with:
-          ndk-version: r10e
+      - name: Pasang Android NDK Manual
+        run: |
+          cd ..
+          wget -q https://google.com
+          unzip -q android-ndk-r10e-linux-x86_64.zip
+          echo "ANDROID_NDK_HOME=$PWD/android-ndk-r10e" >> $GITHUB_ENV
+          echo "$PWD/android-ndk-r10e" >> $GITHUB_PATH
 
       - name: Install Cocos Dependencies
         run: |
@@ -32,4 +35,6 @@ jobs:
           python2 setup.py
           source ~/.bashrc || true
           cocos compile -p android --ap android-19 -m debug
+
+
 
