@@ -1,0 +1,39 @@
+name: Build Naruto Senki Cocos2dx APK
+
+on:
+  workflow_dispatch:
+
+  jobs:
+    build-android:
+        runs-on: ubuntu-22.04
+
+            steps:
+                - name: Checkout Source Code
+                      uses: actions/checkout@v4
+
+                          - name: Set up JDK 11
+                                uses: actions/setup-java@v4
+                                      with:
+                                              java-version: '11'
+                                                      distribution: 'temurin'
+
+                                                          - name: Setup Android NDK
+                                                                uses: nndess/setup-android-ndk@v1
+                                                                      with:
+                                                                              ndk-version: r16b # Narsen V2 Cocos2dx umumnya stabil menggunakan NDK lama (r16b-r19c)
+
+                                                                                  - name: Setup Cocos2d-x Environment
+                                                                                        run: |
+                                                                                                python2 download-deps.py --auto
+                                                                                                        python2 setup.py
+
+                                                                                                            - name: Compile APK via Cocos CLI
+                                                                                                                  run: |
+                                                                                                                          cocos compile -p android -m debug --ndk-mode crystal
+                                                                                                                                  
+                                                                                                                                      - name: Upload Output APK
+                                                                                                                                            uses: actions/upload-artifact@v4
+                                                                                                                                                  with:
+                                                                                                                                                          name: Narsen-1v1-Multiplayer-APK
+                                                                                                                                                                  path: publish/android/*.apk
+                                                                                                                                                                  
