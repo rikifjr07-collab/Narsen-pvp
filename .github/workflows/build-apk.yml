@@ -17,16 +17,13 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Pasang Android NDK Manual
-        run: |
-          wget -q https://google.com
-          unzip -q android-ndk-r10e-linux-x86_64.zip
-          echo "ANDROID_NDK_HOME=$PWD/android-ndk-r10e" >> $GITHUB_ENV
-          echo "$PWD/android-ndk-r10e" >> $GITHUB_PATH
+      - name: Pasang Android NDK Stabil
+        uses: nndess/setup-android-ndk@v1.0.0
+        with:
+          ndk-version: r16b
 
       - name: Cari dan Masuk ke Folder Proyek Game
         run: |
-          # Perintah otomatis mencari letak file utama Cocos2dx
           TARGET_DIR=$(dirname $(find . -name "download-deps.py" -print -quit))
           echo "Folder game ditemukan di: $TARGET_DIR"
           echo "GAME_DIR=$TARGET_DIR" >> $GITHUB_ENV
@@ -44,6 +41,7 @@ jobs:
           python2 setup.py
           source ~/.bashrc || true
           cocos compile -p android --ap android-19 -m debug
+
 
 
 
