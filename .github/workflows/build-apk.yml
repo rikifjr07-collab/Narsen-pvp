@@ -1,1 +1,20 @@
-name: Build APK Naruto Senki\non:\n  workflow_dispatch:\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Check out repo\n        uses: actions/checkout@v4\n      - name: Set up Java\n        uses: actions/setup-java@v4\n        with:\n          java-version: '11'\n          distribution: 'temurin'\n      - name: Grant execute permission\n        run: chmod +x gradlew\n        continue-on-error: true\n      - name: Build APK\n        run: ./gradlew assembleDebug\n        continue-on-error: true
+name: Build APK Naruto Senki
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v4
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+    - name: Grant execute permission
+      run: chmod +x gradlew
+      continue-on-error: true
+    - name: Build APK
+      run: ./gradlew assembleDebug
+      continue-on-error: true
