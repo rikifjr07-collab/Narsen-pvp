@@ -17,10 +17,13 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Pasang Android NDK Stabil
-        uses: nndess/setup-android-ndk@v1.0.0
-        with:
-          ndk-version: r16b
+      - name: Pasang Android SDK & NDK Resmi
+        run: |
+          # Memasang Android NDK versi r16b resmi langsung dari server Google
+          wget -q https://google.com
+          unzip -q android-ndk-r16b-linux-x86_64.zip
+          echo "ANDROID_NDK_HOME=$PWD/android-ndk-r16b" >> $GITHUB_ENV
+          echo "$PWD/android-ndk-r16b" >> $GITHUB_PATH
 
       - name: Cari dan Masuk ke Folder Proyek Game
         run: |
@@ -34,13 +37,14 @@ jobs:
           sudo apt-get install -y python2.7 python-is-python2 libx11-dev libxmu-dev libglu1-mesa-dev libgl2ps-dev libxi-dev libzip-dev libpng-dev libcurl4-gnutls-dev libfontconfig1-dev libsqlite3-dev
           cd ${{ env.GAME_DIR }}
           python2 download-deps.py --auto || true
-
+      
       - name: Compile APK via Cocos CLI
         run: |
           cd ${{ env.GAME_DIR }}
           python2 setup.py
           source ~/.bashrc || true
           cocos compile -p android --ap android-19 -m debug
+
 
 
 
