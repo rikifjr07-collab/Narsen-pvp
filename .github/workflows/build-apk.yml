@@ -1,3 +1,4 @@
+
 name: Build APK Naruto Senki
 
 on:
@@ -18,6 +19,11 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Pasang Android NDK Resmi Server
+        uses: android-actions/setup-android@v3
+        with:
+          ndk-version: '21.4.7075529' # Menginstal versi NDK stabil yang memiliki folder platforms lengkap
+
       - name: Berikan Izin Eksekusi Sistem
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
@@ -26,14 +32,15 @@ jobs:
       - name: Mulai Compile APK via Android Gradle
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
-          ./gradlew assembleDebug --no-daemon
+          # Menyambungkan rute NDK resmi ke sistem compiler Gradle
+          ./gradlew assembleDebug --no-daemon -Pandroid.ndkPath=$ANDROID_NDK_ROOT
 
       - name: Upload Output APK Sukses
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
-
 
 
 
