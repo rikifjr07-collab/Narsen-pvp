@@ -18,13 +18,11 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Setup Lisensi Android SDK
+      - name: Setujui Semua Lisensi Android SDK
         run: |
-          # Otomatis menyetujui semua lisensi Google agar Gradle bisa download NDK sendiri
-          mkdir -p $ANDROID_HOME/licenses
-          echo -e "24333f1a63b68b449d3d75198751cd9f9f412c1e" > $ANDROID_HOME/licenses/android-sdk-license
-          echo -e "84831b9409646a918e30573bab4c9c91346d8abd" > $ANDROID_HOME/licenses/android-sdk-preview-license
-          echo -e "6510d51f354f91e3e5c5b4e3049b6b7a544d6824" > $ANDROID_HOME/licenses/android-sdk-arm-dbt-license
+          # Perintah resmi untuk otomatis menyetujui semua lisensi Google/Android terbaru
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses || true
 
       - name: Berikan Izin Eksekusi Sistem
         run: |
@@ -34,8 +32,8 @@ jobs:
       - name: Mulai Compile APK via Android Gradle
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
-          # Perintah khusus memaksa Gradle mendownload komponen NDK yang hilang secara otomatis
           ./gradlew assembleDebug --no-daemon --stacktrace
+
 
 
               
