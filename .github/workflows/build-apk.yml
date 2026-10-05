@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # Menggunakan versi server yang mendukung Python 2.7 bawaan
 
     steps:
       - name: Check out repo
@@ -24,15 +24,13 @@ jobs:
 
       - name: Cari dan Masuk ke Folder Proyek Game
         run: |
-          # Memeriksa jalur folder secara manual berdasarkan struktur proyek Narsen
           if [ -f "NarutoSenki-V2-master/download-deps.py" ]; then
             echo "GAME_DIR=NarutoSenki-V2-master" >> $GITHUB_ENV
             echo "Folder game ditemukan di NarutoSenki-V2-master"
           elif [ -f "NarutoSenki-V2-master/projects/NarutoSenki/download-deps.py" ]; then
-            echo "GAME_DIR=NarutoSenki-V2-master/projects/NarutoSenki"
-            echo "Folder game ditemukan di projects/NarutoSenki" >> $GITHUB_ENV
-          else  
-            # Jika masih tidak ketemu, gunakan folder utama saat ini sebagai default
+            echo "GAME_DIR=NarutoSenki-V2-master/projects/NarutoSenki" >> $GITHUB_ENV
+            echo "Folder game ditemukan di projects/NarutoSenki"
+          else
             echo "GAME_DIR=$PWD" >> $GITHUB_ENV
             echo "Menggunakan folder root sebagai default"
           fi
@@ -40,16 +38,19 @@ jobs:
       - name: Install Cocos Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python2.7 python-is-python2 libx11-dev libxmu-dev libglu1-mesa-dev libgl2ps-dev libxi-dev libzip-dev libpng-dev libcurl4-gnutls-dev libfontconfig1-dev libsqlite3-dev
+          sudo apt-get install -y python2.7 libx11-dev libxmu-dev libglu1-mesa-dev libgl2ps-dev libxi-dev libzip-dev libpng-dev libcurl4-gnutls-dev libfontconfig1-dev libsqlite3-dev
+          # Membuat pintasan agar perintah python memanggil python2.7
+          sudo ln -sf /usr/bin/python2.7 /usr/bin/python
           cd ${{ env.GAME_DIR }}
-          python2 download-deps.py --auto || true
+          python download-deps.py --auto || true
 
       - name: Compile APK via Cocos CLI
         run: |
           cd ${{ env.GAME_DIR }}
-          python2 setup.py
+          python setup.py
           source ~/.bashrc || true
           cocos compile -p android --ap android-19 -m debug
+
 
 
 
