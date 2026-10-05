@@ -36,17 +36,22 @@ jobs:
           apt-get update
           apt-get install -y python2.7 libx11-dev libxmu-dev libglu1-mesa-dev libgl2ps-dev libxi-dev libzip-dev libpng-dev libcurl4-gnutls-dev libfontconfig1-dev libsqlite3-dev
           ln -sf /usr/bin/python2.7 /usr/bin/python
-          # Langsung masuk ke folder proyek utama yang ada file download-deps.py
-          cd NarutoSenki-V2-master/projects/NarutoSenki
+          
+          # Trik melompat langsung ke folder yang berisi file download-deps.py
+          TARGET_DIR=$(dirname $(find $PWD -name "download-deps.py" -print -quit))
+          cd "$TARGET_DIR"
           python download-deps.py --auto || true
 
       - name: Compile APK via Cocos CLI
         run: |
-          # Langsung masuk ke folder proyek utama yang ada file setup.py
-          cd NarutoSenki-V2-master/projects/NarutoSenki
+          # Trik melompat langsung ke folder yang berisi file setup.py
+          TARGET_DIR=$(dirname $(find $PWD -name "setup.py" -print -quit))
+          cd "$TARGET_DIR"
           python setup.py
           source ~/.bashrc || true
           cocos compile -p android --ap android-19 -m debug
+
+      
 
 
 
