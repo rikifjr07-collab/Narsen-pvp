@@ -5,61 +5,35 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container:
-      image: ubuntu:20.04
+    runs-on: ubuntu-latest # Menggunakan server terbaru agar antrean sepi
 
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Pasang Alat Dasar Kontainer
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          apt-get update
-          apt-get install -y tzdata software-properties-common curl wget unzip git
-
-      - name: Set up Java JDK 8
+      - name: Set up Java JDK 11
         uses: actions/setup-java@v4
         with:
-          java-version: '8'
+          java-version: '11' # Versi JDK standar untuk project Android Studio
           distribution: 'temurin'
+          cache: gradle
 
-      - name: Gunakan Android NDK Bawaan Server
+      - name: Berikan Izin Eksekusi Sistem
         run: |
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle" >> $GITHUB_ENV
-          echo "$ANDROID_HOME/ndk-bundle" >> $GITHUB_PATH
+          cd NarutoSenki-V2-master/proj.android-studio || cd NarutoSenki-V2-master
+          chmod +x gradlew || true
 
-      - name: Pasang Framework Cocos2dx Otomatis
+      - name: Mulai Compile APK via Android Gradle
         run: |
-          export DEBIAN_FRONTEND=noninteractive
-          apt-get update
-          apt-get install -y python2.7 libx11-dev libxmu-dev libglu1-mesa-dev libgl2ps-dev libxi-dev libzip-dev libpng-dev libcurl4-gnutls-dev libfontconfig1-dev libsqlite3-dev
-          ln -sf /usr/bin/python2.7 /usr/bin/python
-          
-          # Melakukan kloning engine Cocos2d-x langsung dari GitHub resmi
-          git clone --depth 1 -b cocos2d-x-3.17.2 https://github.com
-          
-          # Salin file modifikasi Anda dari folder NarutoSenki-V2-master ke dalam engine
-          cp -r NarutoSenki-V2-master/* cocos2d-x/
-          
-          # Menjalankan penyiapan dependensi engine
-          cd cocos2d-x
-          python download-deps.py --auto || true
-          python setup.py
-          echo "COCOS_DIR=$PWD" >> $GITHUB_ENV
+          cd NarutoSenki-V2-master/proj.android-studio || cd NarutoSenki-V2-master
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Compile APK via Cocos CLI
-        run: |
-          cd ${{ env.COCOS_DIR }}
-          source ~/.bashrc || true
-          cocos compile -p android --ap android-19 -m debug
-
-      - name: Upload Output APK
+      - name: Upload Output APK Sukses
         uses: actions/upload-artifact@v4
         with:
           name: Narsen-1v1-Multiplayer-APK
-          path: ${{ env.COCOS_DIR }}/publish/android/*.apk
+          path: NarutoSenki-V2-master/**/build/outputs/apk/**/*.apk
+
 
 
 
