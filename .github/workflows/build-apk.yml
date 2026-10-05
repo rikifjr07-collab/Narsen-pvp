@@ -5,11 +5,18 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04 # Menggunakan versi server yang mendukung Python 2.7 bawaan
+    runs-on: ubuntu-latest # Menggunakan server terbaru agar antrean sepi
+    container:
+      image: ubuntu:20.04 # Membungkus sistem internal menggunakan OS yang mendukung Python 2
 
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
+
+      - name: Pasang Alat Dasar Kontainer
+        run: |
+          apt-get update
+          apt-get install -y software-properties-common curl wget unzip git
 
       - name: Set up Java JDK 8
         uses: actions/setup-java@v4
@@ -26,21 +33,17 @@ jobs:
         run: |
           if [ -f "NarutoSenki-V2-master/download-deps.py" ]; then
             echo "GAME_DIR=NarutoSenki-V2-master" >> $GITHUB_ENV
-            echo "Folder game ditemukan di NarutoSenki-V2-master"
           elif [ -f "NarutoSenki-V2-master/projects/NarutoSenki/download-deps.py" ]; then
             echo "GAME_DIR=NarutoSenki-V2-master/projects/NarutoSenki" >> $GITHUB_ENV
-            echo "Folder game ditemukan di projects/NarutoSenki"
           else
             echo "GAME_DIR=$PWD" >> $GITHUB_ENV
-            echo "Menggunakan folder root sebagai default"
           fi
 
       - name: Install Cocos Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python2.7 libx11-dev libxmu-dev libglu1-mesa-dev libgl2ps-dev libxi-dev libzip-dev libpng-dev libcurl4-gnutls-dev libfontconfig1-dev libsqlite3-dev
-          # Membuat pintasan agar perintah python memanggil python2.7
-          sudo ln -sf /usr/bin/python2.7 /usr/bin/python
+          apt-get update
+          apt-get install -y python2.7 libx11-dev libxmu-dev libglu1-mesa-dev libgl2ps-dev libxi-dev libzip-dev libpng-dev libcurl4-gnutls-dev libfontconfig1-dev libsqlite3-dev
+          ln -sf /usr/bin/python2.7 /usr/bin/python
           cd ${{ env.GAME_DIR }}
           python download-deps.py --auto || true
 
@@ -50,6 +53,7 @@ jobs:
           python setup.py
           source ~/.bashrc || true
           cocos compile -p android --ap android-19 -m debug
+
 
 
 
