@@ -19,15 +19,23 @@ jobs:
 
       - name: Gunakan Android NDK Bawaan Server
         run: |
-          # Mengaktifkan NDK default yang sudah terinstall di dalam sistem GitHub Actions
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle" >> $GITHUB_ENV
           echo "$ANDROID_HOME/ndk-bundle" >> $GITHUB_PATH
 
       - name: Cari dan Masuk ke Folder Proyek Game
         run: |
-          TARGET_DIR=$(dirname $(find . -name "download-deps.py" -print -quit))
-          echo "Folder game ditemukan di: $TARGET_DIR"
-          echo "GAME_DIR=$TARGET_DIR" >> $GITHUB_ENV
+          # Memeriksa jalur folder secara manual berdasarkan struktur proyek Narsen
+          if [ -f "NarutoSenki-V2-master/download-deps.py" ]; then
+            echo "GAME_DIR=NarutoSenki-V2-master" >> $GITHUB_ENV
+            echo "Folder game ditemukan di NarutoSenki-V2-master"
+          elif [ -f "NarutoSenki-V2-master/projects/NarutoSenki/download-deps.py" ]; then
+            echo "GAME_DIR=NarutoSenki-V2-master/projects/NarutoSenki"
+            echo "Folder game ditemukan di projects/NarutoSenki" >> $GITHUB_ENV
+          else  
+            # Jika masih tidak ketemu, gunakan folder utama saat ini sebagai default
+            echo "GAME_DIR=$PWD" >> $GITHUB_ENV
+            echo "Menggunakan folder root sebagai default"
+          fi
 
       - name: Install Cocos Dependencies
         run: |
@@ -42,6 +50,7 @@ jobs:
           python2 setup.py
           source ~/.bashrc || true
           cocos compile -p android --ap android-19 -m debug
+
 
 
 
