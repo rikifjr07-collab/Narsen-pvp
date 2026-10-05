@@ -37,14 +37,14 @@ jobs:
           apt-get install -y python2.7 libx11-dev libxmu-dev libglu1-mesa-dev libgl2ps-dev libxi-dev libzip-dev libpng-dev libcurl4-gnutls-dev libfontconfig1-dev libsqlite3-dev
           ln -sf /usr/bin/python2.7 /usr/bin/python
           
-          # Masuk langsung ke folder utama yang terekam di sistem
-          cd NarutoSenki-V2-master
+          # Menggunakan jalur tetap absolute path
+          cd $GITHUB_WORKSPACE/NarutoSenki-V2-master
           python download-deps.py --auto || true
 
       - name: Compile APK via Cocos CLI
         run: |
-          # Jalur lurus masuk ke folder mesin perakitan Cocos
-          cd NarutoSenki-V2-master
+          # Menggunakan jalur tetap absolute path agar tidak tersesat
+          cd $GITHUB_WORKSPACE/NarutoSenki-V2-master
           python setup.py
           source ~/.bashrc || true
           cocos compile -p android --ap android-19 -m debug
@@ -53,7 +53,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Narsen-1v1-Multiplayer-APK
-          path: NarutoSenki-V2-master/publish/android/*.apk
+          path: ${{ github.workspace }}/NarutoSenki-V2-master/publish/android/*.apk
+
 
 
 
