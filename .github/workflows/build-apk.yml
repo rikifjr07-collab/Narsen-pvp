@@ -30,22 +30,29 @@ jobs:
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle" >> $GITHUB_ENV
           echo "$ANDROID_HOME/ndk-bundle" >> $GITHUB_PATH
 
-      - name: Install Cocos Dependencies
+      - name: Pasang Framework Cocos2dx Otomatis
         run: |
           export DEBIAN_FRONTEND=noninteractive
           apt-get update
           apt-get install -y python2.7 libx11-dev libxmu-dev libglu1-mesa-dev libgl2ps-dev libxi-dev libzip-dev libpng-dev libcurl4-gnutls-dev libfontconfig1-dev libsqlite3-dev
           ln -sf /usr/bin/python2.7 /usr/bin/python
           
-          # Langsung masuk menggunakan nama folder terluar Anda
-          cd NarutoSenki-V2-master
+          # Mengunduh engine resmi karena file setup.py bawaan tertinggal di HP
+          wget -q https://cocos2d-x.org
+          unzip -q cocos2d-x-3.17.2.zip
+          
+          # Memindahkan file modifikasi 1v1 Anda ke dalam engine resmi
+          cp -r NarutoSenki-V2-master/* cocos2d-x-3.17.2/
+          
+          # Menjalankan penyiapan dependensi engine
+          cd cocos2d-x-3.17.2
           python download-deps.py --auto || true
+          python setup.py
+          echo "COCOS_DIR=$PWD" >> $GITHUB_ENV
 
       - name: Compile APK via Cocos CLI
         run: |
-          # Langsung masuk menggunakan nama folder terluar Anda
-          cd NarutoSenki-V2-master
-          python setup.py
+          cd ${{ env.COCOS_DIR }}
           source ~/.bashrc || true
           cocos compile -p android --ap android-19 -m debug
 
@@ -53,7 +60,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Narsen-1v1-Multiplayer-APK
-          path: NarutoSenki-V2-master/publish/android/*.apk
+          path: ${{ env.COCOS_DIR }}/publish/android/*.apk
+
 
 
 
