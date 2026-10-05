@@ -30,31 +30,24 @@ jobs:
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle" >> $GITHUB_ENV
           echo "$ANDROID_HOME/ndk-bundle" >> $GITHUB_PATH
 
-      - name: Cari dan Masuk ke Folder Proyek Game
-        run: |
-          if [ -f "NarutoSenki-V2-master/download-deps.py" ]; then
-            echo "GAME_DIR=NarutoSenki-V2-master" >> $GITHUB_ENV
-          elif [ -f "NarutoSenki-V2-master/projects/NarutoSenki/download-deps.py" ]; then
-            echo "GAME_DIR=NarutoSenki-V2-master/projects/NarutoSenki" >> $GITHUB_ENV
-          else
-            echo "GAME_DIR=$PWD" >> $GITHUB_ENV
-          fi
-
       - name: Install Cocos Dependencies
         run: |
           export DEBIAN_FRONTEND=noninteractive
           apt-get update
           apt-get install -y python2.7 libx11-dev libxmu-dev libglu1-mesa-dev libgl2ps-dev libxi-dev libzip-dev libpng-dev libcurl4-gnutls-dev libfontconfig1-dev libsqlite3-dev
           ln -sf /usr/bin/python2.7 /usr/bin/python
-          cd ${{ env.GAME_DIR }}
+          # Langsung masuk ke folder proyek utama yang ada file download-deps.py
+          cd NarutoSenki-V2-master/projects/NarutoSenki
           python download-deps.py --auto || true
 
       - name: Compile APK via Cocos CLI
         run: |
-          cd ${{ env.GAME_DIR }}
+          # Langsung masuk ke folder proyek utama yang ada file setup.py
+          cd NarutoSenki-V2-master/projects/NarutoSenki
           python setup.py
           source ~/.bashrc || true
           cocos compile -p android --ap android-19 -m debug
+
 
 
 
