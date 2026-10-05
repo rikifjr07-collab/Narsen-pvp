@@ -18,9 +18,8 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Setujui Semua Lisensi Android SDK
+      - name: Setujui Lisensi Android SDK
         run: |
-          # Perintah resmi untuk otomatis menyetujui semua lisensi Google/Android terbaru
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses || true
 
@@ -32,7 +31,9 @@ jobs:
       - name: Mulai Compile APK via Android Gradle
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          # Memaksa Gradle menggunakan Android NDK bawaan server yang versinya paling lengkap
+          ./gradlew assembleDebug --no-daemon --stacktrace -Pandroid.ndkPath=/usr/local/lib/android/sdk/ndk-bundle
+
 
 
 
