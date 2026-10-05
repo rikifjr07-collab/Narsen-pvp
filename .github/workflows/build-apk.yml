@@ -37,8 +37,8 @@ jobs:
       - name: Mulai Compile APK via Android Gradle
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
-          # Memaksa menggunakan NDK bawaan server yang foldernya utuh
-          ./gradlew assembleDebug --no-daemon --stacktrace -Pandroid.ndkPath=/usr/local/lib/android/sdk/ndk-bundle
+          # Ditambahkan perintah khusus untuk mematikan pengecekan folder platform NDK yang membuat eror
+          ./gradlew assembleDebug --no-daemon --stacktrace -Pandroid.useDeprecatedNdk=true -Pandroid.ndkPath=$ANDROID_HOME/ndk-bundle
 
       - name: Upload Output APK Sukses
         if: success()
@@ -46,6 +46,7 @@ jobs:
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
 
 
 
