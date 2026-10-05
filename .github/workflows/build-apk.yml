@@ -18,13 +18,16 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Kunci Rute NDK ke Proyek Game
+      - name: Unduh dan Ekstrak NDK Lokal
         run: |
-          # Membuat file properti secara paksa agar Gradle mengunci lokasi NDK resmi server
+          # Mengunduh NDK resmi langsung ke folder kerja lokal agar tidak dikunci server
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
-          echo "ndk.dir=/usr/local/lib/android/sdk/ndk/21.4.7075529" > local.properties
+          wget -q https://google.com
+          unzip -q android-ndk-r16b-linux-x86_64.zip
+          
+          # Mengunci file local.properties ke folder NDK lokal yang baru diekstrak
+          echo "ndk.dir=$PWD/android-ndk-r16b" > local.properties
           echo "sdk.dir=/usr/local/lib/android/sdk" >> local.properties
-          cat local.properties
 
       - name: Berikan Izin Eksekusi Sistem
         run: |
@@ -42,6 +45,43 @@ jobs:
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
+              
+
+                            
+                                  
+                                                
+  
+                                                              
+                                                                            
+
+                                                                            
+                                                                                      
+                                                                                              
+                                                                                                      
+                                                                                                                  
+                                                                                                                          
+                                                                                                                                              
+                                                                                                                                                    
+                                                                                                                                                      
+                                                                                                                                                                    
+
+                                                                                                                                                                          
+                                                                                                                                                                                      
+                                                                                                                                                                                              
+                                                                                                                                                                                                      
+
+                                                                                                                                                                                                                    
+                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                          
+
+                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                            
+
 
 
 
