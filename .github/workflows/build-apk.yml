@@ -14,18 +14,17 @@ jobs:
       - name: Set up Java JDK 8
         uses: actions/setup-java@v4
         with:
-          java-version: '8' # Diturunkan ke versi 8 agar pas dengan Gradle lama game Anda
+          java-version: '8'
           distribution: 'temurin'
           cache: gradle
 
-      - name: Hubungkan Android NDK Bawaan Server
+      - name: Kunci Rute NDK ke Proyek Game
         run: |
-          NDK_PATH="$ANDROID_HOME/ndk/21.4.7075529"
-          if [ -d "$NDK_PATH" ]; then
-            echo "ANDROID_NDK_ROOT=$NDK_PATH" >> $GITHUB_ENV
-          else
-            echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk-bundle" >> $GITHUB_ENV
-          fi
+          # Membuat file properti secara paksa agar Gradle mengunci lokasi NDK resmi server
+          cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
+          echo "ndk.dir=/usr/local/lib/android/sdk/ndk/21.4.7075529" > local.properties
+          echo "sdk.dir=/usr/local/lib/android/sdk" >> local.properties
+          cat local.properties
 
       - name: Berikan Izin Eksekusi Sistem
         run: |
@@ -35,7 +34,7 @@ jobs:
       - name: Mulai Compile APK via Android Gradle
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
-          ./gradlew assembleDebug --no-daemon -Pandroid.ndkPath=${{ env.ANDROID_NDK_ROOT }}
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload Output APK Sukses
         if: success()
@@ -43,6 +42,7 @@ jobs:
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
 
 
 
