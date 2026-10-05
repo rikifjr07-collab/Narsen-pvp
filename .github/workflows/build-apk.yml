@@ -11,17 +11,23 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Set up Java JDK 8
+      - name: Pasang Java JDK 17 (Untuk Lisensi)
         uses: actions/setup-java@v4
         with:
-          java-version: '8'
+          java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
       - name: Setujui Lisensi Android SDK
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses || true
+
+      - name: Alihkan ke Java JDK 8 (Untuk Kompilasi Game)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+          cache: gradle
 
       - name: Berikan Izin Eksekusi Sistem
         run: |
@@ -31,8 +37,16 @@ jobs:
       - name: Mulai Compile APK via Android Gradle
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
-          # Memaksa Gradle menggunakan Android NDK bawaan server yang versinya paling lengkap
+          # Memaksa menggunakan NDK bawaan server yang foldernya utuh
           ./gradlew assembleDebug --no-daemon --stacktrace -Pandroid.ndkPath=/usr/local/lib/android/sdk/ndk-bundle
+
+      - name: Upload Output APK Sukses
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Narsen-1v1-Multiplayer-APK
+          path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
 
 
 
