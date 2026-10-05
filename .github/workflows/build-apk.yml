@@ -30,6 +30,14 @@ jobs:
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle" >> $GITHUB_ENV
           echo "$ANDROID_HOME/ndk-bundle" >> $GITHUB_PATH
 
+      - name: Intip Struktur Folder Asli Proyek
+        run: |
+          echo "=== DAFTAR FOLDER DI ROOT ==="
+          ls -la
+          echo "=== MEMERIKSA ISI FOLDER COCOS ==="
+          ls -la NarutoSenki-V2-master || true
+          ls -la NarutoSenki-V2-master/projects || true
+
       - name: Install Cocos Dependencies
         run: |
           export DEBIAN_FRONTEND=noninteractive
@@ -37,19 +45,17 @@ jobs:
           apt-get install -y python2.7 libx11-dev libxmu-dev libglu1-mesa-dev libgl2ps-dev libxi-dev libzip-dev libpng-dev libcurl4-gnutls-dev libfontconfig1-dev libsqlite3-dev
           ln -sf /usr/bin/python2.7 /usr/bin/python
           
-          # Trik melompat langsung ke folder yang berisi file download-deps.py
-          TARGET_DIR=$(dirname $(find $PWD -name "download-deps.py" -print -quit))
-          cd "$TARGET_DIR"
+          # Kita uji coba jalur paling standar di repositori Anda
+          cd NarutoSenki-V2-master || cd NarutoSenki-V2-master/projects/NarutoSenki || true
           python download-deps.py --auto || true
 
       - name: Compile APK via Cocos CLI
         run: |
-          # Trik melompat langsung ke folder yang berisi file setup.py
-          TARGET_DIR=$(dirname $(find $PWD -name "setup.py" -print -quit))
-          cd "$TARGET_DIR"
+          cd NarutoSenki-V2-master || cd NarutoSenki-V2-master/projects/NarutoSenki || true
           python setup.py
           source ~/.bashrc || true
           cocos compile -p android --ap android-19 -m debug
+
 
       
 
