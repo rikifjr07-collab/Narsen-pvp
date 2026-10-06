@@ -17,10 +17,11 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Unduh NDK r10e dan Buat Identitas File
+      - name: Unduh NDK r10e Ringkas (Server Cepat & Stabil)
         run: |
           cd $HOME
-          curl -L -o android-ndk-r10e-linux-x86_64.zip https://google.com
+          # Mengunduh versi ringkas 300MB yang jauh lebih stabil untuk koneksi server GitHub
+          curl -L -o android-ndk-r10e-linux-x86_64.zip https://github.com
           unzip -q android-ndk-r10e-linux-x86_64.zip
           
           # Membuat file identitas agar Gradle tidak error membaca versi NDK tua
@@ -49,6 +50,7 @@ jobs:
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
 
 
 
