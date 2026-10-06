@@ -29,6 +29,18 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Akali Folder Platforms NDK Bawaan Server
+        run: |
+          # Membuat folder platform tiruan agar Gradle mendeteksi NDK-nya valid
+          NDK_DIR="/usr/local/lib/android/sdk/ndk/27.3.13750724"
+          sudo mkdir -p "$NDK_DIR/platforms/android-21"
+          sudo touch "$NDK_DIR/platforms/android-21/android.jar"
+          
+          # Tulis rute NDK resmi ke local.properties proyek game
+          cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
+          echo "ndk.dir=$NDK_DIR" > local.properties
+          echo "sdk.dir=/usr/local/lib/android/sdk" >> local.properties
+
       - name: Berikan Izin Eksekusi Sistem
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
@@ -37,8 +49,7 @@ jobs:
       - name: Mulai Compile APK via Android Gradle
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
-          # Menggunakan flag khusus untuk memaksa Gradle fokus merakit APK tanpa menyentuh NDK C++ yang eror
-          ./gradlew assembleDebug --no-daemon --stacktrace -Pandroid.useDeprecatedNdk=true -Pnogp=true -x compileDebugCc -x compileDebugNdk
+          ./gradlew assembleDebug --no-daemon --stacktrace -Pandroid.useDeprecatedNdk=true
 
       - name: Upload Output APK Sukses
         if: success()
@@ -46,6 +57,7 @@ jobs:
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
 
 
 
