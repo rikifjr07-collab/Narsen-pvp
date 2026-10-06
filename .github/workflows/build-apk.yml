@@ -24,45 +24,9 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
         with:
-          # JALAN NINJA VOLUMES: Menjembatani folder NDK dari luar langsung ke dalam folder /ndk-aman di dalam Docker
-          args: >-
-            bash -c "
-            apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5 unzip
-            export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-
-            # Daftarkan jalur jembatan NDK ke konfigurasi proyek game kamu
-            echo 'ndk.dir='$ANDROID_NDK_HOME > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
-
-            # Taktik Pindah Folder Sempurna & Jalur Pintas Virtual
-            cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/
-            mkdir -p cocos2dx CocosDenshion extensions scripting
-            
-            cp -r ../../../../../cocos2dx/* ./cocos2dx/
-            cp -r ../../../../../CocosDenshion/* ./CocosDenshion/
-            cp -r ../../../../../extensions/* ./extensions/
-            cp -r ../../../../../scripting/* ./scripting/
-            
-            cp -r ./cocos2dx/platform/third_party/android/prebuilt/libjpeg ./
-            cp -r ./cocos2dx/platform/third_party/android/prebuilt/libpng ./
-            cp -r ./cocos2dx/platform/third_party/android/prebuilt/libtiff ./
-            cp -r ./cocos2dx/platform/third_party/android/prebuilt/libwebp ./
-
-            ln -s armeabi-v7a libjpeg/libs/armeabi || true
-            ln -s armeabi-v7a libpng/libs/armeabi || true
-            ln -s armeabi-v7a libtiff/libs/armeabi || true
-            ln -s armeabi-v7a libwebp/libs/armeabi || true
-            ln -s armeabi-v7a scripting/lua/luajit/android/armeabi || true
-
-            cp -r $ANDROID_NDK_HOME/sources/android/cpufeatures ./
-            mkdir -p zlib
-            echo -e 'LOCAL_PATH := \$(call my-dir)\ninclude \$(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude \$(BUILD_STATIC_LIBRARY)' > zlib/Android.mk
-
-            # TANCAP GAS UTAMA: Mulai Eksekusi Perakitan APK Game
-            cd ../../
-            chmod +x gradlew
-            export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
-            ./gradlew assembleDebug --no-daemon
-            "
+          # KOREKSI FORMAT: Menggunakan perintah string berurutan agar Linux membacanya baris demi baris dengan lurus
+          entrypoint: /bin/bash
+          args: -c "apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5 unzip && export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && echo 'ndk.dir='$ANDROID_NDK_HOME > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties && cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/ && mkdir -p cocos2dx CocosDenshion extensions scripting && cp -r ../../../../../cocos2dx/* ./cocos2dx/ && cp -r ../../../../../CocosDenshion/* ./CocosDenshion/ && cp -r ../../../../../extensions/* ./extensions/ && cp -r ../../../../../scripting/* ./scripting/ && cp -r ./cocos2dx/platform/third_party/android/prebuilt/libjpeg ./ && cp -r ./cocos2dx/platform/third_party/android/prebuilt/libpng ./ && cp -r ./cocos2dx/platform/third_party/android/prebuilt/libtiff ./ && cp -r ./cocos2dx/platform/third_party/android/prebuilt/libwebp ./ && ln -s armeabi-v7a libjpeg/libs/armeabi || true && ln -s armeabi-v7a libpng/libs/armeabi || true && ln -s armeabi-v7a libtiff/libs/armeabi || true && ln -s armeabi-v7a libwebp/libs/armeabi || true && ln -s armeabi-v7a scripting/lua/luajit/android/armeabi || true && cp -r $ANDROID_NDK_HOME/sources/android/cpufeatures ./ && mkdir -p zlib && echo -e 'LOCAL_PATH := \$(call my-dir)\ninclude \$(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude \$(BUILD_STATIC_LIBRARY)' > zlib/Android.mk && cd ../../ && chmod +x gradlew && export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni && ./gradlew assembleDebug --no-daemon"
 
       - name: Upload Output APK Sukses
         uses: actions/upload-artifact@v4
