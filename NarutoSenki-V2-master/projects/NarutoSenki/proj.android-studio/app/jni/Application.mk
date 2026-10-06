@@ -1,3 +1,4 @@
+APP_ABI := armeabi-v7a
 APP_STL := c++_shared
 
 APP_CPPFLAGS :=  -std=c++2a -frtti -fsigned-char -fexceptions
