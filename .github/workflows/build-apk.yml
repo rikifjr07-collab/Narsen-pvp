@@ -17,10 +17,10 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Unduh NDK r10e Standar
+      - name: Ambil NDK r10e
         run: |
           cd $HOME
-          wget -nv https://google.com
+          wget -q https://google.com
           unzip -q android-ndk-r10e-linux-x86_64.zip
           echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $HOME/android-ndk-r10e/source.properties
           echo "ANDROID_NDK_HOME=$HOME/android-ndk-r10e" >> $GITHUB_ENV
@@ -45,7 +45,7 @@ jobs:
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
-
+          
 
 
 
