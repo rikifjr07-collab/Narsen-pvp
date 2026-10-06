@@ -61,7 +61,11 @@ jobs:
           mkdir -p libtiff/libs/armeabi && cp libtiff/libs/armeabi-v7a/* libtiff/libs/armeabi/ || true
           mkdir -p libwebp/libs/armeabi && cp libwebp/libs/armeabi-v7a/* libwebp/libs/armeabi/ || true
 
-          # 5. Menyalin cpufeatures bawaan NDK, dan membuat folder zlib tiruan agar langsung lolos
+          # 5. DUPLIKAT KUNCI GERBANG LUA: Membuat folder armeabi untuk libluajit.a secara otomatis
+          mkdir -p scripting/lua/proj.android/android/armeabi
+          cp scripting/lua/proj.android/android/armeabi-v7a/* scripting/lua/proj.android/android/armeabi/ || true
+
+          # 6. Menyalin cpufeatures bawaan NDK, dan membuat folder zlib tiruan agar langsung lolos
           cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/sources/android/cpufeatures ./
           mkdir -p zlib
           echo -e 'LOCAL_PATH := $(call my-dir)\ninclude $(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude $(BUILD_STATIC_LIBRARY)' > zlib/Android.mk
