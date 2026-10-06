@@ -22,8 +22,8 @@ android {
                     arguments "NDK_TOOLCHAIN_VERSION=clang"
                     arguments "-j" + Runtime.runtime.availableProcessors()
                     
-                    // SUNTIKAN KHUSUS: Memaksa compiler NDK mengenali folder cocos2dx langsung di level proyek
-                    arguments "NDK_MODULE_PATH=" + file("../../../../").absolutePath + ":" + file("../../../../cocos2dx").absolutePath + ":" + file("../../../../CocosDenshion/android").absolutePath
+                    // RUTE KOREKSI: Menambahkan rute langsung ke folder cocos2dx/platform/third_party/android agar libjpeg terbaca
+                    arguments "NDK_MODULE_PATH=" + file("../../../../").absolutePath + ":" + file("../../../../cocos2dx").absolutePath + ":" + file("../../../../cocos2dx/platform/third_party/android").absolutePath + ":" + file("../../../../CocosDenshion/android").absolutePath
                 }
             }
         }
