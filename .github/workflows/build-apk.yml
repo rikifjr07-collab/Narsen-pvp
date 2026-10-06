@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04 # Menurunkan versi OS Ubuntu ke versi lebih lama agar kompatibilitas unzip dan wget versi lama sangat stabil
 
     steps:
       - name: Check out repo
@@ -17,22 +17,24 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Pasang NDK Otomatis via Ekstensi Resmi
-        uses: android-actions/setup-android@v3
-        with:
-          ndk-version: '21.4.7075529' # Menggunakan LTS NDK yang punya kompatibilitas mundur paling aman dan stabil di server GitHub
-
-      - name: Buat Identitas File NDK Lawas
+      - name: Unduh NDK r10e Jalur Aman (Anti-Putus & Korup)
         run: |
-          # Memaksa folder NDK mengenali konfigurasi kompilasi versi lama agar tidak menolak engine Cocos2d-x v2
-          NDK_PATH="/usr/local/lib/android/sdk/ndk/21.4.7075529"
-          echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $NDK_PATH/source.properties
-          echo "ANDROID_NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
+          cd $HOME
+          # Menggunakan wget dengan flag -c (continue) dan --no-check-certificate agar jika koneksi Google lambat tidak putus di tengah jalan
+          wget -c --no-check-certificate https://google.com
+          
+          # Ekstrak file zip secara aman
+          unzip -q android-ndk-r10e-linux-x86_64.zip
+          
+          # Membuat file identitas versi agar Gradle tidak bingung membaca NDK tua
+          echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $HOME/android-ndk-r10e/source.properties
+          
+          echo "ANDROID_NDK_HOME=$HOME/android-ndk-r10e" >> $GITHUB_ENV
 
       - name: Daftarkan NDK ke Proyek Game
         run: |
-          # Menyambungkan jalur NDK bawaan server ke file konfigurasi lokal proyek kamu
-          echo "ndk.dir=/usr/local/lib/android/sdk/ndk/21.4.7075529" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
+          # Menyambungkan folder hasil ekstrak ke local.properties proyek Android Studio
+          echo "ndk.dir=/home/runner/android-ndk-r10e" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
       - name: Berikan Izin Eksekusi Sistem
         run: |
@@ -50,6 +52,7 @@ jobs:
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
 
 
 
