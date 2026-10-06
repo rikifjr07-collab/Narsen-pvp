@@ -41,16 +41,15 @@ jobs:
       - name: Mulai Compile APK via Android Gradle
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
-          
-          # JALAN NINJA ABSOLUT: Menyusun rute folder server secara detail dari level terluar hingga terdalam
-          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx/platform/third_party/android:$GITHUB_WORKSPACE/NarutoSenki-V2-master/CocosDenshion/android
-          
           ./gradlew assembleDebug --no-daemon
-          
 
-                            
-                                  
-                                                
+      - name: Upload Output APK Sukses
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Narsen-1v1-Multiplayer-APK
+          path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+          
   
                                                               
                                                                             
