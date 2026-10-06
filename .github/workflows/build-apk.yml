@@ -57,9 +57,9 @@ jobs:
           mkdir -p libtiff/libs/armeabi && cp libtiff/libs/armeabi-v7a/* libtiff/libs/armeabi/ || true
           mkdir -p libwebp/libs/armeabi && cp libwebp/libs/armeabi-v7a/* libwebp/libs/armeabi/ || true
 
-          # 5. STRATEGI UTAMA: Salin paksa modul internal NDK (cpufeatures & zlib) langsung ke folder jni game
+          # 5. KOREKSI RUTE: Salin paksa modul cpufeatures & zlib dari lokasi internal NDK yang benar
           cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/sources/android/cpufeatures ./
-          cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/sources/android/zlib ./
+          cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/sources/third_party/zlib ./
 
       - name: Berikan Izin Eksekusi Sistem
         run: |
