@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Memakai server terbaru agar langsung berjalan tanpa antre lama
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out repo
@@ -17,11 +17,11 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Unduh NDK r10e Jalur Aman (Server Cepat & Anti-Macet)
+      - name: Unduh NDK r10e Standar
         run: |
           cd $HOME
-          # Menggunakan curl -L dengan mode resume (-C -) agar aman dari gangguan jaringan google
-          curl -L -C - -O https://google.com
+          # Menggunakan wget standar tanpa tambahan parameter yang bisa bikin bentrok
+          wget -nv https://google.com
           
           # Ekstrak file zip secara aman
           unzip -q android-ndk-r10e-linux-x86_64.zip
@@ -52,6 +52,7 @@ jobs:
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
 
 
 
