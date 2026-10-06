@@ -11,26 +11,54 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Set up Java JDK 8
+      - name: Pasang Java JDK 17 (Untuk Lisensi)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setujui Lisensi Android SDK
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses || true
+
+      - name: Alihkan ke Java JDK 8 (Untuk Kompilasi Game)
         uses: actions/setup-java@v4
         with:
           java-version: '8'
           distribution: 'temurin'
           cache: gradle
 
-      - name: Pasang NDK Resmi Kilat
+      - name: Akali Folder Platforms NDK Bawaan Server
         run: |
-          wget -q https://google.com
-          unzip -q android-ndk-r16b-linux-x86_64.zip
+          # Trik sukses kemarin: membuat folder tiruan agar sistem mendeteksi NDK valid
+          NDK_DIR="/usr/local/lib/android/sdk/ndk/27.3.13750724"
+          sudo mkdir -p "$NDK_DIR/platforms/android-21"
+          sudo touch "$NDK_DIR/platforms/android-21/android.jar"
+          
+          # Mengunci rute properti NDK ke dalam proyek game
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
-          echo "ndk.dir=$GITHUB_WORKSPACE/android-ndk-r16b" > local.properties
+          echo "ndk.dir=$NDK_DIR" > local.properties
           echo "sdk.dir=/usr/local/lib/android/sdk" >> local.properties
 
-      - name: Mulai Compile APK
+      - name: Berikan Izin Eksekusi Sistem
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+
+      - name: Mulai Compile APK via Android Gradle
+        run: |
+          cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
+          # Menjalankan kompilasi murni tanpa memotong perintah internal Gradle
+          ./gradlew assembleDebug --no-daemon --stacktrace -Pandroid.useDeprecatedNdk=true
+
+      - name: Upload Output APK Sukses
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Narsen-1v1-Multiplayer-APK
+          path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
 
 
 
