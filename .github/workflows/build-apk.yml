@@ -5,43 +5,36 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Kembali ke server super cepat, langsung jalan tanpa antre
+    runs-on: ubuntu-latest # Tetap pakai server modern agar langsung berjalan tanpa antre
+
+    # JALAN NINJA DOCKER: Membuat komputer virtual Ubuntu lama di dalam server agar libncurses5 aktif otomatis
+    container:
+      image: ubuntu:20.04
 
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Set up Java JDK 8
-        uses: actions/setup-java@v4
-        with:
-          java-version: '8'
-          distribution: 'temurin'
-
-      - name: Pasang Library Linux Lawas (Link Mirror Direct)
+      - name: Pasang Java JDK 8 dan Alat Sistem Lawas
         run: |
-          # Mengunduh paket langsung dari server mirror Debian resmi yang anti-redirect
-          curl -L -o libtinfo5.deb http://debian.org
-          curl -L -o libncurses5.deb http://debian.org
-          
-          # Memasang paksa secara manual ke dalam sistem server
-          sudo dpkg -i libtinfo5.deb
-          sudo dpkg -i libncurses5.deb
+          apt-get update
+          # Menginstal JDK 8, libncurses5, dan curl langsung dari repositori bawaan Ubuntu 20.04 secara resmi
+          apt-get install -y openjdk-8-jdk libncurses5 libtinfo5 curl unzip wget
+          # Mengatur folder utama Java agar dikenali oleh sistem Gradle game
+          echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64" >> $GITHUB_ENV
 
-      - name: Pasang NDK r10e Otomatis
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r10e
-          local-cache: true
-
-      - name: Buat Identitas File NDK Lawas
+      - name: Pasang NDK r10e Otomatis via Ekstraksi Cepat
         run: |
-          echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > ${{ steps.setup-ndk.outputs.ndk-path }}/source.properties
-          echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
+          cd $HOME
+          # Mengunduh NDK r10e langsung menggunakan wget bawaan komputer internal container
+          wget -q https://google.com
+          unzip -q android-ndk-r10e-linux-x86_64.zip
+          echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $HOME/android-ndk-r10e/source.properties
+          echo "ANDROID_NDK_HOME=$HOME/android-ndk-r10e" >> $GITHUB_ENV
 
       - name: Daftarkan NDK ke Proyek Game
         run: |
-          echo "ndk.dir=${{ steps.setup-ndk.outputs.ndk-path }}" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
+          echo "ndk.dir=/root/android-ndk-r10e" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
       - name: Taktik Pindah Folder Sempurna & Jalur Pintas Virtual
         run: |
@@ -73,7 +66,7 @@ jobs:
           ln -s armeabi-v7a scripting/lua/luajit/android/armeabi || true
 
           # 5. Menyalin cpufeatures bawaan NDK, dan membuat folder zlib tiruan agar langsung lolos
-          cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/sources/android/cpufeatures ./
+          cp -r /root/android-ndk-r10e/sources/android/cpufeatures ./
           mkdir -p zlib
           echo -e 'LOCAL_PATH := $(call my-dir)\ninclude $(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude $(BUILD_STATIC_LIBRARY)' > zlib/Android.mk
 
@@ -86,13 +79,13 @@ jobs:
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           
-          # Jalur modul terkunci penuh pada folder jni lokal yang sudah komplit 100%
-          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
+          # Mengunci mutlak jalur modul ke folder jni container internal tempat taktik kita berada
+          export NDK_MODULE_PATH=/__w/Narsen-pvp/Narsen-pvp/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
+          export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
           
           ./gradlew assembleDebug --no-daemon
 
       - name: Upload Output APK Sukses
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: Narsen-1v1-Multiplayer-APK
