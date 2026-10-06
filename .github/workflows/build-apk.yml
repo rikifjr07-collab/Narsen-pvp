@@ -41,11 +41,13 @@ jobs:
           mkdir -p cocos2dx
           mkdir -p CocosDenshion
           mkdir -p extensions
+          mkdir -p scripting
           
-          # 2. Menyalin seluruh isi core engine game beserta folder extensions tambahan
+          # 2. Menyalin seluruh isi core engine game beserta folder scripting tambahan
           cp -r ../../../../../cocos2dx/* ./cocos2dx/
           cp -r ../../../../../CocosDenshion/* ./CocosDenshion/
           cp -r ../../../../../extensions/* ./extensions/
+          cp -r ../../../../../scripting/* ./scripting/
           
           # 3. Menyalin folder library grafis utuh ke tingkat terdepan
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libjpeg ./
@@ -73,7 +75,7 @@ jobs:
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           
-          # Mengunci jalur modul ke folder jni lokal yang sekarang sudah komplit dengan folder extensions
+          # Jalur modul terkunci penuh pada folder jni lokal yang sudah komplit 100%
           export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
           
           ./gradlew assembleDebug --no-daemon
