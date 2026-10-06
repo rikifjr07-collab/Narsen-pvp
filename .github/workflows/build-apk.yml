@@ -55,13 +55,13 @@ jobs:
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libtiff ./
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libwebp ./
 
-          # 4. Duplikat folder arsitektur armeabi agar file .a terbaca compiler lawas
+          # 4. KOREKSI TYPO: Duplikat folder arsitektur armeabi (Jalur libpng sudah diperbaiki tanpa double folder)
           mkdir -p libjpeg/libs/armeabi && cp libjpeg/libs/armeabi-v7a/* libjpeg/libs/armeabi/ || true
-          mkdir -p libpng/libs/libs/armeabi && cp libpng/libs/armeabi-v7a/* libpng/libs/armeabi/ || true
+          mkdir -p libpng/libs/armeabi && cp libpng/libs/armeabi-v7a/* libpng/libs/armeabi/ || true
           mkdir -p libtiff/libs/armeabi && cp libtiff/libs/armeabi-v7a/* libtiff/libs/armeabi/ || true
           mkdir -p libwebp/libs/armeabi && cp libwebp/libs/armeabi-v7a/* libwebp/libs/armeabi/ || true
 
-          # 5. DUPLIKAT KUNCI GERBANG LUA (KOREKSI RUTE): Membuat folder armeabi untuk libluajit.a dengan jalur luajit yang benar
+          # 5. Duplikat folder armeabi untuk libluajit.a
           mkdir -p scripting/lua/luajit/android/armeabi
           cp scripting/lua/luajit/android/armeabi-v7a/* scripting/lua/luajit/android/armeabi/ || true
 
