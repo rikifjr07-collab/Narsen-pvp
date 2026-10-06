@@ -17,6 +17,12 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
+      - name: Install Library Linux Lawas (Solusi libncurses5)
+        run: |
+          sudo apt-get update
+          # Menginstal library pendukung yang diminta oleh compiler NDK r10e lawas
+          sudo apt-get install -y libncurses5 libtinfo5
+
       - name: Pasang NDK r10e Otomatis
         uses: nttld/setup-ndk@v1
         id: setup-ndk
@@ -55,7 +61,7 @@ jobs:
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libtiff ./
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libwebp ./
 
-          # 4. SOLUSI SYMLINK ABSOLUT: Membuat jalan pintas virtual 'armeabi' langsung mengarah ke 'armeabi-v7a' agar file .a tidak korup
+          # 4. Membuat jalan pintas virtual 'armeabi' langsung mengarah ke 'armeabi-v7a' agar file .a tidak korup
           ln -s armeabi-v7a libjpeg/libs/armeabi || true
           ln -s armeabi-v7a libpng/libs/armeabi || true
           ln -s armeabi-v7a libtiff/libs/armeabi || true
