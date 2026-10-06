@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04 # Menurunkan versi OS Ubuntu ke versi lebih lama agar kompatibilitas unzip dan wget versi lama sangat stabil
+    runs-on: ubuntu-latest # Memakai server terbaru agar langsung berjalan tanpa antre lama
 
     steps:
       - name: Check out repo
@@ -17,11 +17,11 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Unduh NDK r10e Jalur Aman (Anti-Putus & Korup)
+      - name: Unduh NDK r10e Jalur Aman (Server Cepat & Anti-Macet)
         run: |
           cd $HOME
-          # Menggunakan wget dengan flag -c (continue) dan --no-check-certificate agar jika koneksi Google lambat tidak putus di tengah jalan
-          wget -c --no-check-certificate https://google.com
+          # Menggunakan curl -L dengan mode resume (-C -) agar aman dari gangguan jaringan google
+          curl -L -C - -O https://google.com
           
           # Ekstrak file zip secara aman
           unzip -q android-ndk-r10e-linux-x86_64.zip
@@ -52,6 +52,7 @@ jobs:
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
 
 
 
