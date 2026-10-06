@@ -33,7 +33,7 @@ jobs:
         run: |
           echo "ndk.dir=${{ steps.setup-ndk.outputs.ndk-path }}" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
-      - name: Taktik Pindah Folder Sempurna & Duplikat Arsitektur
+      - name: Taktik Pindah Folder Sempurna & Jalur Pintas Virtual
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/
           
@@ -55,17 +55,14 @@ jobs:
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libtiff ./
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libwebp ./
 
-          # 4. KOREKSI TYPO: Duplikat folder arsitektur armeabi (Jalur libpng sudah diperbaiki tanpa double folder)
-          mkdir -p libjpeg/libs/armeabi && cp libjpeg/libs/armeabi-v7a/* libjpeg/libs/armeabi/ || true
-          mkdir -p libpng/libs/armeabi && cp libpng/libs/armeabi-v7a/* libpng/libs/armeabi/ || true
-          mkdir -p libtiff/libs/armeabi && cp libtiff/libs/armeabi-v7a/* libtiff/libs/armeabi/ || true
-          mkdir -p libwebp/libs/armeabi && cp libwebp/libs/armeabi-v7a/* libwebp/libs/armeabi/ || true
+          # 4. SOLUSI SYMLINK ABSOLUT: Membuat jalan pintas virtual 'armeabi' langsung mengarah ke 'armeabi-v7a' agar file .a tidak korup
+          ln -s armeabi-v7a libjpeg/libs/armeabi || true
+          ln -s armeabi-v7a libpng/libs/armeabi || true
+          ln -s armeabi-v7a libtiff/libs/armeabi || true
+          ln -s armeabi-v7a libwebp/libs/armeabi || true
+          ln -s armeabi-v7a scripting/lua/luajit/android/armeabi || true
 
-          # 5. Duplikat folder armeabi untuk libluajit.a
-          mkdir -p scripting/lua/luajit/android/armeabi
-          cp scripting/lua/luajit/android/armeabi-v7a/* scripting/lua/luajit/android/armeabi/ || true
-
-          # 6. Menyalin cpufeatures bawaan NDK, dan membuat folder zlib tiruan agar langsung lolos
+          # 5. Menyalin cpufeatures bawaan NDK, dan membuat folder zlib tiruan agar langsung lolos
           cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/sources/android/cpufeatures ./
           mkdir -p zlib
           echo -e 'LOCAL_PATH := $(call my-dir)\ninclude $(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude $(BUILD_STATIC_LIBRARY)' > zlib/Android.mk
