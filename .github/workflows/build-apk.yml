@@ -11,7 +11,7 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Pasang NDK r10e di Server Luar (Aman & Instan)
+      - name: Pasang NDK r10e di Server Luar
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
@@ -24,20 +24,16 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
         with:
-          args: |
+          # JALAN NINJA VOLUMES: Menjembatani folder NDK dari luar langsung ke dalam folder /ndk-aman di dalam Docker
+          args: >-
             bash -c "
-            # 1. Update server internal dan pasang komponen wajib
             apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5 unzip
             export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
-            # SOLUSI ABSOLUT JALUR DOCKER: Menyalin NDK ke dalam proyek lokal internal agar terbebas dari blokir keamanan
-            mkdir -p /root/ndk-lokal
-            cp -r $ANDROID_NDK_HOME/* /root/ndk-lokal/
+            # Daftarkan jalur jembatan NDK ke konfigurasi proyek game kamu
+            echo 'ndk.dir='$ANDROID_NDK_HOME > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
-            # 2. Daftarkan jalur NDK lokal yang baru ke konfigurasi proyek game
-            echo 'ndk.dir=/root/ndk-lokal' > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
-
-            # 3. Taktik Pindah Folder Sempurna & Jalur Pintas Virtual (Anti-Gagal)
+            # Taktik Pindah Folder Sempurna & Jalur Pintas Virtual
             cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/
             mkdir -p cocos2dx CocosDenshion extensions scripting
             
@@ -57,11 +53,11 @@ jobs:
             ln -s armeabi-v7a libwebp/libs/armeabi || true
             ln -s armeabi-v7a scripting/lua/luajit/android/armeabi || true
 
-            cp -r /root/ndk-lokal/sources/android/cpufeatures ./
+            cp -r $ANDROID_NDK_HOME/sources/android/cpufeatures ./
             mkdir -p zlib
             echo -e 'LOCAL_PATH := \$(call my-dir)\ninclude \$(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude \$(BUILD_STATIC_LIBRARY)' > zlib/Android.mk
 
-            # 4. TANCAP GAS UTAMA: Mulai Eksekusi Perakitan APK Game
+            # TANCAP GAS UTAMA: Mulai Eksekusi Perakitan APK Game
             cd ../../
             chmod +x gradlew
             export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
