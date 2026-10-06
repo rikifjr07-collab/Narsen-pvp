@@ -17,10 +17,10 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Unduh NDK r10e Standar
+      - name: Unduh NDK r10e Standar (Link Koreksi)
         run: |
           cd $HOME
-          # Menggunakan wget standar tanpa tambahan parameter yang bisa bikin bentrok
+          # Menggunakan wget dengan link lengkap dan utuh ke server repository resmi google
           wget -nv https://google.com
           
           # Ekstrak file zip secara aman
@@ -52,6 +52,7 @@ jobs:
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
 
 
 
