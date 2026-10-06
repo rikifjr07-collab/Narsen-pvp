@@ -17,17 +17,21 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Ambil NDK r10e
+      - name: Pasang NDK r10e Otomatis via Action Resmi
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r10e
+          local-cache: true
+
+      - name: Buat Identitas File NDK Lawas
         run: |
-          cd $HOME
-          wget -q https://google.com
-          unzip -q android-ndk-r10e-linux-x86_64.zip
-          echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $HOME/android-ndk-r10e/source.properties
-          echo "ANDROID_NDK_HOME=$HOME/android-ndk-r10e" >> $GITHUB_ENV
+          echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > ${{ steps.setup-ndk.outputs.ndk-path }}/source.properties
+          echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
 
       - name: Daftarkan NDK ke Proyek Game
         run: |
-          echo "ndk.dir=/home/runner/android-ndk-r10e" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
+          echo "ndk.dir=${{ steps.setup-ndk.outputs.ndk-path }}" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
       - name: Berikan Izin Eksekusi Sistem
         run: |
