@@ -7,7 +7,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # TATA LETAK BENAR: Jalur jembatan SDK dipindahkan ke sini agar valid secara sistem
     container:
       image: ubuntu:20.04
       options: -v /usr/local/lib/android/sdk:/android-sdk-docker
@@ -15,6 +14,11 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
+
+      # SOLUSI FINISH: Memasang aplikasi unzip terlebih dahulu agar modul NDK di bawahnya bisa diekstrak tanpa eror
+      - name: Siapkan Pengekstrak Sistem Lawas
+        run: |
+          apt-get update && apt-get install -y unzip wget curl
 
       - name: Pasang NDK r10e di Server Luar
         uses: nttld/setup-ndk@v1
@@ -28,8 +32,8 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
         run: |
-          # 1. Update server internal dan pasang komponen wajib
-          apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5 unzip
+          # 1. Pasang Java 8 dan library Linux wajib
+          apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5
           export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
           # 2. Daftarkan jalur NDK dan SDK jembatan virtual ke konfigurasi proyek game
