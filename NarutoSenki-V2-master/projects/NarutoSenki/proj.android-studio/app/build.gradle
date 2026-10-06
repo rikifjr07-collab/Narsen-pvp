@@ -14,7 +14,16 @@ android {
         versionCode 2
         versionName "2.1"
 
-        // Bagian externalNativeBuild pertama di dalam defaultConfig sudah dihapus total agar tidak mencari NDK
+        externalNativeBuild {
+            ndkBuild {
+                if (project.hasProperty("PROP_NDK_MODE") && PROP_NDK_MODE == "none") {
+                    // Jangan lakukan apa-apa
+                } else {
+                    arguments "NDK_TOOLCHAIN_VERSION=clang"
+                    arguments "-j" + Runtime.runtime.availableProcessors()
+                }
+            }
+        }
     }
 
     sourceSets.main {
@@ -25,7 +34,11 @@ android {
         assets.srcDir "assets"
     }
 
-    // Bagian externalNativeBuild kedua yang berisi path Android.mk sudah dihapus total
+    externalNativeBuild {
+        ndkBuild {
+            path "jni/Android.mk"
+        }
+    }
 
     signingConfigs {
         debug {
@@ -84,4 +97,5 @@ task copyAssets(type: Copy, dependsOn: copLuaFiles) {
 
 clean.dependsOn cleanAssets
 preBuild.dependsOn copyAssets
+
 

@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Check out repo
@@ -16,7 +16,13 @@ jobs:
         with:
           java-version: '8'
           distribution: 'temurin'
-          cache: gradle
+
+      - name: Unduh NDK r10e Otomatis
+        run: |
+          cd $HOME
+          wget https://google.com
+          unzip -q android-ndk-r10e-linux-x86_64.zip
+          echo "ANDROID_NDK_HOME=$HOME/android-ndk-r10e" >> $GITHUB_ENV
 
       - name: Berikan Izin Eksekusi Sistem
         run: |
@@ -34,6 +40,7 @@ jobs:
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
 
 
 
