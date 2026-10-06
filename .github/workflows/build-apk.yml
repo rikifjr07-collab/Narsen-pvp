@@ -51,7 +51,7 @@ jobs:
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libtiff ./
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libwebp ./
 
-          # 4. SOLUSI AMUNISI AKHIR: Duplikat folder armeabi-v7a menjadi armeabi agar compiler tua tidak bingung mencari file .a
+          # 4. Duplikat folder arsitektur armeabi agar file .a terbaca compiler lawas
           mkdir -p libjpeg/libs/armeabi && cp libjpeg/libs/armeabi-v7a/* libjpeg/libs/armeabi/ || true
           mkdir -p libpng/libs/armeabi && cp libpng/libs/armeabi-v7a/* libpng/libs/armeabi/ || true
           mkdir -p libtiff/libs/armeabi && cp libtiff/libs/armeabi-v7a/* libtiff/libs/armeabi/ || true
@@ -66,8 +66,8 @@ jobs:
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           
-          # Mendaftarkan folder jni saat ini sebagai pusat utama seluruh modul game
-          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
+          # KOREKSI FINAL: Menyertakan folder sources internal NDK bawaan server agar 'cpufeatures' terbaca sempurna
+          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni:${{ steps.setup-ndk.outputs.ndk-path }}/sources
           
           ./gradlew assembleDebug --no-daemon
 
