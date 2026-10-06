@@ -14,10 +14,15 @@ android {
         versionCode 2
         versionName "2.1"
 
+        ndk {
+            // KUNCI ABSOLUT: Memaksa compiler hanya merakit APK untuk HP (armeabi-v7a) dan membuang x86 pembawa eror
+            abiFilters "armeabi-v7a"
+        }
+
         externalNativeBuild {
             ndkBuild {
                 if (project.hasProperty("PROP_NDK_MODE") && PROP_NDK_MODE == "none") {
-                    // Do nothing
+                    // Jangan lakukan apa-apa
                 } else {
                     arguments "NDK_TOOLCHAIN_VERSION=clang"
                     arguments "-j" + Runtime.runtime.availableProcessors()
