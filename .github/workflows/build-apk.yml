@@ -17,22 +17,22 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Unduh NDK r10e Ringkas (Server Cepat & Stabil)
+      - name: Pasang NDK Otomatis via Ekstensi Resmi
+        uses: android-actions/setup-android@v3
+        with:
+          ndk-version: '21.4.7075529' # Menggunakan LTS NDK yang punya kompatibilitas mundur paling aman dan stabil di server GitHub
+
+      - name: Buat Identitas File NDK Lawas
         run: |
-          cd $HOME
-          # Mengunduh versi ringkas 300MB yang jauh lebih stabil untuk koneksi server GitHub
-          curl -L -o android-ndk-r10e-linux-x86_64.zip https://github.com
-          unzip -q android-ndk-r10e-linux-x86_64.zip
-          
-          # Membuat file identitas agar Gradle tidak error membaca versi NDK tua
-          echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $HOME/android-ndk-r10e/source.properties
-          
-          echo "ANDROID_NDK_HOME=$HOME/android-ndk-r10e" >> $GITHUB_ENV
+          # Memaksa folder NDK mengenali konfigurasi kompilasi versi lama agar tidak menolak engine Cocos2d-x v2
+          NDK_PATH="/usr/local/lib/android/sdk/ndk/21.4.7075529"
+          echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $NDK_PATH/source.properties
+          echo "ANDROID_NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
 
       - name: Daftarkan NDK ke Proyek Game
         run: |
-          # Memaksa Gradle mengenali folder lokasi NDK r10e secara lokal
-          echo "ndk.dir=/home/runner/android-ndk-r10e" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
+          # Menyambungkan jalur NDK bawaan server ke file konfigurasi lokal proyek kamu
+          echo "ndk.dir=/usr/local/lib/android/sdk/ndk/21.4.7075529" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
       - name: Berikan Izin Eksekusi Sistem
         run: |
@@ -50,6 +50,7 @@ jobs:
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
 
 
 
