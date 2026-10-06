@@ -17,11 +17,15 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Install Library Linux Lawas (Solusi libncurses5)
+      - name: Pasang Paksa Library Linux Lawas (Solusi Ubuntu 24.04)
         run: |
-          sudo apt-get update
-          # Menginstal library pendukung yang diminta oleh compiler NDK r10e lawas
-          sudo apt-get install -y libncurses5 libtinfo5
+          # Menarik paket library lama dari arsip resmi security Ubuntu
+          wget http://ubuntu.com
+          wget http://ubuntu.com
+          
+          # Memasang paksa secara manual ke dalam sistem server
+          sudo dpkg -i libtinfo5_6.4-2_amd64.deb
+          sudo dpkg -i libncurses5_6.4-2_amd64.deb
 
       - name: Pasang NDK r10e Otomatis
         uses: nttld/setup-ndk@v1
