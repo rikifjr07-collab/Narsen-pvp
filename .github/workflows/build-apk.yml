@@ -33,21 +33,23 @@ jobs:
         run: |
           echo "ndk.dir=${{ steps.setup-ndk.outputs.ndk-path }}" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
-      - name: Taktik Pindah Folder Maksimal
+      - name: Taktik Pindah Folder Sempurna
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/
           
-          # Membuat folder penampung modul
+          # 1. Membuat folder penampung untuk modul utama game
           mkdir -p cocos2dx
           mkdir -p CocosDenshion
           
-          # Menyalin seluruh core engine game
+          # 2. Menyalin seluruh isi core engine game
           cp -r ../../../../../cocos2dx/* ./cocos2dx/
           cp -r ../../../../../CocosDenshion/* ./CocosDenshion/
           
-          # AMUNISI TAMBAHAN: Menyalin paksa library libjpeg dan libpng tepat ke jalur import path default NDK
-          mkdir -p platform/third_party/android
-          cp -r ./cocos2dx/platform/third_party/android/* ./
+          # 3. STRATEGI KOREKSI: Menyalin folder libpng & libjpeg UTUH beserta nama foldernya ke tingkat terdepan
+          cp -r ./cocos2dx/platform/third_party/android/prebuilt/libjpeg ./
+          cp -r ./cocos2dx/platform/third_party/android/prebuilt/libpng ./
+          cp -r ./cocos2dx/platform/third_party/android/prebuilt/libtiff ./
+          cp -r ./cocos2dx/platform/third_party/android/prebuilt/libwebp ./
 
       - name: Berikan Izin Eksekusi Sistem
         run: |
@@ -58,7 +60,7 @@ jobs:
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           
-          # Mengarahkan jalur pencarian langsung ke titik folder jni terdalam
+          # Mendaftarkan folder jni saat ini sebagai pusat utama seluruh modul game
           export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
           
           ./gradlew assembleDebug --no-daemon
@@ -70,8 +72,6 @@ jobs:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
           
-                                                                            
-
                                                                             
                                                                                       
                                                                                               
