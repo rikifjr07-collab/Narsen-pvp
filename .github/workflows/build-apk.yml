@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Tetap pakai server modern biar langsung jalan dalam 3 detik
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out repo
@@ -30,8 +30,12 @@ jobs:
             apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5 unzip
             export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
-            # 2. Daftarkan jalur NDK ke konfigurasi lokal proyek game kamu
-            echo 'ndk.dir='$ANDROID_NDK_HOME > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
+            # SOLUSI ABSOLUT JALUR DOCKER: Menyalin NDK ke dalam proyek lokal internal agar terbebas dari blokir keamanan
+            mkdir -p /root/ndk-lokal
+            cp -r $ANDROID_NDK_HOME/* /root/ndk-lokal/
+
+            # 2. Daftarkan jalur NDK lokal yang baru ke konfigurasi proyek game
+            echo 'ndk.dir=/root/ndk-lokal' > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
             # 3. Taktik Pindah Folder Sempurna & Jalur Pintas Virtual (Anti-Gagal)
             cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/
@@ -53,11 +57,11 @@ jobs:
             ln -s armeabi-v7a libwebp/libs/armeabi || true
             ln -s armeabi-v7a scripting/lua/luajit/android/armeabi || true
 
-            cp -r $ANDROID_NDK_HOME/sources/android/cpufeatures ./
+            cp -r /root/ndk-lokal/sources/android/cpufeatures ./
             mkdir -p zlib
             echo -e 'LOCAL_PATH := \$(call my-dir)\ninclude \$(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude \$(BUILD_STATIC_LIBRARY)' > zlib/Android.mk
 
-            # 4. TANCAP GAS: Mulai Eksekusi Perakitan APK Game
+            # 4. TANCAP GAS UTAMA: Mulai Eksekusi Perakitan APK Game
             cd ../../
             chmod +x gradlew
             export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
