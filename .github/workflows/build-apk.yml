@@ -57,13 +57,13 @@ jobs:
 
           # 4. Duplikat folder arsitektur armeabi agar file .a terbaca compiler lawas
           mkdir -p libjpeg/libs/armeabi && cp libjpeg/libs/armeabi-v7a/* libjpeg/libs/armeabi/ || true
-          mkdir -p libpng/libs/armeabi && cp libpng/libs/armeabi-v7a/* libpng/libs/armeabi/ || true
+          mkdir -p libpng/libs/libs/armeabi && cp libpng/libs/armeabi-v7a/* libpng/libs/armeabi/ || true
           mkdir -p libtiff/libs/armeabi && cp libtiff/libs/armeabi-v7a/* libtiff/libs/armeabi/ || true
           mkdir -p libwebp/libs/armeabi && cp libwebp/libs/armeabi-v7a/* libwebp/libs/armeabi/ || true
 
-          # 5. DUPLIKAT KUNCI GERBANG LUA: Membuat folder armeabi untuk libluajit.a secara otomatis
-          mkdir -p scripting/lua/proj.android/android/armeabi
-          cp scripting/lua/proj.android/android/armeabi-v7a/* scripting/lua/proj.android/android/armeabi/ || true
+          # 5. DUPLIKAT KUNCI GERBANG LUA (KOREKSI RUTE): Membuat folder armeabi untuk libluajit.a dengan jalur luajit yang benar
+          mkdir -p scripting/lua/luajit/android/armeabi
+          cp scripting/lua/luajit/android/armeabi-v7a/* scripting/lua/luajit/android/armeabi/ || true
 
           # 6. Menyalin cpufeatures bawaan NDK, dan membuat folder zlib tiruan agar langsung lolos
           cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/sources/android/cpufeatures ./
