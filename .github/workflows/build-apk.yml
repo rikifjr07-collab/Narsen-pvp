@@ -57,6 +57,10 @@ jobs:
           mkdir -p libtiff/libs/armeabi && cp libtiff/libs/armeabi-v7a/* libtiff/libs/armeabi/ || true
           mkdir -p libwebp/libs/armeabi && cp libwebp/libs/armeabi-v7a/* libwebp/libs/armeabi/ || true
 
+          # 5. STRATEGI UTAMA: Salin paksa modul internal NDK (cpufeatures & zlib) langsung ke folder jni game
+          cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/sources/android/cpufeatures ./
+          cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/sources/android/zlib ./
+
       - name: Berikan Izin Eksekusi Sistem
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
@@ -66,8 +70,8 @@ jobs:
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           
-          # KOREKSI FINAL: Menyertakan folder sources internal NDK bawaan server agar 'cpufeatures' terbaca sempurna
-          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni:${{ steps.setup-ndk.outputs.ndk-path }}/sources
+          # Mengunci jalur modul hanya pada satu titik folder jni yang sudah super lengkap
+          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
           
           ./gradlew assembleDebug --no-daemon
 
