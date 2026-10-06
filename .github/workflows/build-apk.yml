@@ -40,10 +40,12 @@ jobs:
           # 1. Membuat folder penampung untuk modul utama game
           mkdir -p cocos2dx
           mkdir -p CocosDenshion
+          mkdir -p extensions
           
-          # 2. Menyalin seluruh isi core engine game
+          # 2. Menyalin seluruh isi core engine game beserta folder extensions tambahan
           cp -r ../../../../../cocos2dx/* ./cocos2dx/
           cp -r ../../../../../CocosDenshion/* ./CocosDenshion/
+          cp -r ../../../../../extensions/* ./extensions/
           
           # 3. Menyalin folder library grafis utuh ke tingkat terdepan
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libjpeg ./
@@ -57,10 +59,8 @@ jobs:
           mkdir -p libtiff/libs/armeabi && cp libtiff/libs/armeabi-v7a/* libtiff/libs/armeabi/ || true
           mkdir -p libwebp/libs/armeabi && cp libwebp/libs/armeabi-v7a/* libwebp/libs/armeabi/ || true
 
-          # 5. AMUNISI FINISH: Membuat folder tiruan cpufeatures dan zlib agar compiler langsung menganggapnya terdaftar
+          # 5. Menyalin cpufeatures bawaan NDK, dan membuat folder zlib tiruan agar langsung lolos
           cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/sources/android/cpufeatures ./
-          
-          # Membuat folder zlib palsu beserta file Android.mk tiruan di dalamnya agar NDK langsung lolos tanpa nyari ke luar
           mkdir -p zlib
           echo -e 'LOCAL_PATH := $(call my-dir)\ninclude $(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude $(BUILD_STATIC_LIBRARY)' > zlib/Android.mk
 
@@ -73,7 +73,7 @@ jobs:
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           
-          # Mengunci mutlak jalur modul hanya ke folder jni lokal tempat taktik kita berada
+          # Mengunci jalur modul ke folder jni lokal yang sekarang sudah komplit dengan folder extensions
           export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
           
           ./gradlew assembleDebug --no-daemon
