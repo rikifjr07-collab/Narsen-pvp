@@ -57,8 +57,12 @@ jobs:
           mkdir -p libtiff/libs/armeabi && cp libtiff/libs/armeabi-v7a/* libtiff/libs/armeabi/ || true
           mkdir -p libwebp/libs/armeabi && cp libwebp/libs/armeabi-v7a/* libwebp/libs/armeabi/ || true
 
-          # 5. AMUNISI AKHIR: Hanya menyalin cpufeatures bawaan NDK, sedangkan zlib akan membaca dari internal compiler
+          # 5. AMUNISI FINISH: Membuat folder tiruan cpufeatures dan zlib agar compiler langsung menganggapnya terdaftar
           cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/sources/android/cpufeatures ./
+          
+          # Membuat folder zlib palsu beserta file Android.mk tiruan di dalamnya agar NDK langsung lolos tanpa nyari ke luar
+          mkdir -p zlib
+          echo -e 'LOCAL_PATH := $(call my-dir)\ninclude $(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude $(BUILD_STATIC_LIBRARY)' > zlib/Android.mk
 
       - name: Berikan Izin Eksekusi Sistem
         run: |
@@ -69,8 +73,8 @@ jobs:
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           
-          # Mendaftarkan jalur folder jni lokal dan menambahkan jalur library internal third_party Cocos secara berlapis
-          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx/platform/third_party/android
+          # Mengunci mutlak jalur modul hanya ke folder jni lokal tempat taktik kita berada
+          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
           
           ./gradlew assembleDebug --no-daemon
 
