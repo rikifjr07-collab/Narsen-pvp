@@ -57,9 +57,8 @@ jobs:
           mkdir -p libtiff/libs/armeabi && cp libtiff/libs/armeabi-v7a/* libtiff/libs/armeabi/ || true
           mkdir -p libwebp/libs/armeabi && cp libwebp/libs/armeabi-v7a/* libwebp/libs/armeabi/ || true
 
-          # 5. KOREKSI RUTE: Salin paksa modul cpufeatures & zlib dari lokasi internal NDK yang benar
+          # 5. AMUNISI AKHIR: Hanya menyalin cpufeatures bawaan NDK, sedangkan zlib akan membaca dari internal compiler
           cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/sources/android/cpufeatures ./
-          cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/sources/third_party/zlib ./
 
       - name: Berikan Izin Eksekusi Sistem
         run: |
@@ -70,8 +69,8 @@ jobs:
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           
-          # Mengunci jalur modul hanya pada satu titik folder jni yang sudah super lengkap
-          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
+          # Mendaftarkan jalur folder jni lokal dan menambahkan jalur library internal third_party Cocos secara berlapis
+          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx/platform/third_party/android
           
           ./gradlew assembleDebug --no-daemon
 
