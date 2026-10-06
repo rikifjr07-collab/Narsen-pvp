@@ -23,8 +23,10 @@ jobs:
       - name: Pasang NDK r10e Otomatis via Ekstraksi Cepat
         run: |
           cd $HOME
-          # KOREKSI PENTING: Memaksa wget menyimpan output file dengan nama yang pas agar bisa di-unzip
-          wget --no-check-certificate -O android-ndk-r10e-linux-x86_64.zip https://google.com
+          # MEMAKSA DOWNLOAD JALUR AMAN: Tautan ditulis penuh tanpa terpotong baris baru
+          URL_NDK="https://google.com"
+          wget --no-check-certificate -q -O android-ndk-r10e-linux-x86_64.zip "$URL_NDK"
+          
           unzip -q android-ndk-r10e-linux-x86_64.zip
           echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $HOME/android-ndk-r10e/source.properties
           echo "ANDROID_NDK_HOME=$HOME/android-ndk-r10e" >> $GITHUB_ENV
