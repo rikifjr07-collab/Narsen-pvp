@@ -17,23 +17,16 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Unduh NDK r10e Standar (Link Koreksi)
+      - name: Unduh NDK r10e Standar
         run: |
           cd $HOME
-          # Menggunakan wget dengan link lengkap dan utuh ke server repository resmi google
           wget -nv https://google.com
-          
-          # Ekstrak file zip secara aman
           unzip -q android-ndk-r10e-linux-x86_64.zip
-          
-          # Membuat file identitas versi agar Gradle tidak bingung membaca NDK tua
           echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $HOME/android-ndk-r10e/source.properties
-          
           echo "ANDROID_NDK_HOME=$HOME/android-ndk-r10e" >> $GITHUB_ENV
 
       - name: Daftarkan NDK ke Proyek Game
         run: |
-          # Menyambungkan folder hasil ekstrak ke local.properties proyek Android Studio
           echo "ndk.dir=/home/runner/android-ndk-r10e" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
       - name: Berikan Izin Eksekusi Sistem
@@ -52,6 +45,7 @@ jobs:
         with:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
+
 
 
 
