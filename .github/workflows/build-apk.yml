@@ -17,7 +17,7 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Pasang NDK r10e Otomatis via Action Resmi
+      - name: Pasang NDK r10e Otomatis
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
@@ -33,6 +33,17 @@ jobs:
         run: |
           echo "ndk.dir=${{ steps.setup-ndk.outputs.ndk-path }}" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
+      - name: Taktik Pindah Folder (Anti-Gagal Jalur Modul)
+        run: |
+          # Masuk ke folder jni tempat perakitan game
+          cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/
+          
+          # Membuat duplikat folder engine game langsung ke dalam folder jni agar terbaca instan
+          mkdir -p cocos2dx
+          mkdir -p CocosDenshion
+          cp -r ../../../../../cocos2dx/* ./cocos2dx/
+          cp -r ../../../../../CocosDenshion/* ./CocosDenshion/
+
       - name: Berikan Izin Eksekusi Sistem
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
@@ -41,6 +52,10 @@ jobs:
       - name: Mulai Compile APK via Android Gradle
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
+          
+          # Menyambungkan jalur modul langsung ke dalam folder jni yang baru kita isi
+          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
+          
           ./gradlew assembleDebug --no-daemon
 
       - name: Upload Output APK Sukses
@@ -50,7 +65,6 @@ jobs:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
           
-  
                                                               
                                                                             
 
