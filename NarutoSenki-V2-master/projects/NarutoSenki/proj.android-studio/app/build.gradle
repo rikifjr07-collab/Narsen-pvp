@@ -14,33 +14,33 @@ android {
         versionCode 2
         versionName "2.1"
 
-        externalNativeBuild {
-            if (PROP_BUILD_TYPE == 'ndk-build') {
-                ndkBuild {
-                    targets 'cocos2dcpp'
+       // externalNativeBuild {
+         //   if (PROP_BUILD_TYPE == 'ndk-build') {
+             //   ndkBuild {
+                //    targets 'cocos2dcpp'
                     // arguments 'NDK_TOOLCHAIN_VERSION=clang'
-                    arguments '-j' + Runtime.runtime.availableProcessors()
-                    arguments 'NDK_TOOLCHAIN_VERSION=4.9'
+                  //  arguments '-j' + Runtime.runtime.availableProcessors()
+                  //  arguments 'NDK_TOOLCHAIN_VERSION=4.9'
                     // arguments 'APP_PLATFORM=android-'+PROP_APP_PLATFORM
 
-                    def module_paths = [
-                            project.file("../../../..").absolutePath,
-                            project.file("../../../../cocos2dx").absolutePath,
-                            project.file("../../../../cocos2dx/platform/third_party/android/prebuilt").absolutePath,
-                            project.file("../../../../external").absolutePath,
-                            project.file("../../../../extensions").absolutePath,
-                            project.file("../../../../CocosDenshion/android").absolutePath
-                    ]
-                    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+                 //   def module_paths = [
+                         //   project.file("../../../..").absolutePath,
+                           // project.file("../../../../cocos2dx").absolutePath,
+                          //  project.file("../../../../cocos2dx/platform/third_party/android/prebuilt").absolutePath,
+                          //  project.file("../../../../external").absolutePath,
+                          //  project.file("../../../../extensions").absolutePath,
+                          //  project.file("../../../../CocosDenshion/android").absolutePath
+                 //   ]
+                  //  if (Os.isFamily(Os.FAMILY_WINDOWS)) {
                         // should use '/'
-                        module_paths = module_paths.collect { it.replaceAll('\\\\', '/') }
-                        arguments 'NDK_MODULE_PATH=' + module_paths.join(";")
-                    } else {
-                        arguments 'NDK_MODULE_PATH=' + module_paths.join(':')
-                    }
-                }
-            }
-        }
+                    //    module_paths = module_paths.collect { it.replaceAll('\\\\', '/') }
+                       // arguments 'NDK_MODULE_PATH=' + module_paths.join(";")
+                  //  } else {
+                     //   arguments 'NDK_MODULE_PATH=' + module_paths.join(':')
+                  //  }
+               // }
+         //   }
+     //   }
 
         ndk {
             abiFilters = []
