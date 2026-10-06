@@ -47,11 +47,13 @@ LOCAL_WHOLE_STATIC_LIBRARIES += cocos_extension_static
 
 include $(BUILD_SHARED_LIBRARY)
 
-$(call import-add-path, $(NDK_MODULE_PATH))
+$(call import-add-path, $(LOCAL_PATH)/../../../../..)
+$(call import-add-path, $(LOCAL_PATH)/../../../../../cocos2dx/platform/third_party/android)
 
 $(call import-module,cocos2dx)
 $(call import-module,CocosDenshion/android)
 $(call import-module,extensions)
 $(call import-module,scripting/lua/proj.android)
+
 
 
