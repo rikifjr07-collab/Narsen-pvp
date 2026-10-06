@@ -5,9 +5,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Tetap pakai server modern agar langsung berjalan tanpa antre
+    runs-on: ubuntu-latest
 
-    # JALAN NINJA DOCKER: Membuat komputer virtual Ubuntu lama di dalam server agar libncurses5 aktif otomatis
     container:
       image: ubuntu:20.04
 
@@ -18,16 +17,14 @@ jobs:
       - name: Pasang Java JDK 8 dan Alat Sistem Lawas
         run: |
           apt-get update
-          # Menginstal JDK 8, libncurses5, dan curl langsung dari repositori bawaan Ubuntu 20.04 secara resmi
           apt-get install -y openjdk-8-jdk libncurses5 libtinfo5 curl unzip wget
-          # Mengatur folder utama Java agar dikenali oleh sistem Gradle game
           echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64" >> $GITHUB_ENV
 
       - name: Pasang NDK r10e Otomatis via Ekstraksi Cepat
         run: |
           cd $HOME
-          # Mengunduh NDK r10e langsung menggunakan wget bawaan komputer internal container
-          wget -q https://google.com
+          # KOREKSI PENTING: Memaksa wget menyimpan output file dengan nama yang pas agar bisa di-unzip
+          wget --no-check-certificate -O android-ndk-r10e-linux-x86_64.zip https://google.com
           unzip -q android-ndk-r10e-linux-x86_64.zip
           echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $HOME/android-ndk-r10e/source.properties
           echo "ANDROID_NDK_HOME=$HOME/android-ndk-r10e" >> $GITHUB_ENV
@@ -40,32 +37,27 @@ jobs:
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/
           
-          # 1. Membuat folder penampung untuk modul utama game
           mkdir -p cocos2dx
           mkdir -p CocosDenshion
           mkdir -p extensions
           mkdir -p scripting
           
-          # 2. Menyalin seluruh isi core engine game beserta folder scripting tambahan
           cp -r ../../../../../cocos2dx/* ./cocos2dx/
           cp -r ../../../../../CocosDenshion/* ./CocosDenshion/
           cp -r ../../../../../extensions/* ./extensions/
           cp -r ../../../../../scripting/* ./scripting/
           
-          # 3. Menyalin folder library grafis utuh ke tingkat terdepan
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libjpeg ./
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libpng ./
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libtiff ./
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libwebp ./
 
-          # 4. Membuat jalan pintas virtual 'armeabi' langsung mengarah ke 'armeabi-v7a' agar file .a tidak korup
           ln -s armeabi-v7a libjpeg/libs/armeabi || true
           ln -s armeabi-v7a libpng/libs/armeabi || true
           ln -s armeabi-v7a libtiff/libs/armeabi || true
           ln -s armeabi-v7a libwebp/libs/armeabi || true
           ln -s armeabi-v7a scripting/lua/luajit/android/armeabi || true
 
-          # 5. Menyalin cpufeatures bawaan NDK, dan membuat folder zlib tiruan agar langsung lolos
           cp -r /root/android-ndk-r10e/sources/android/cpufeatures ./
           mkdir -p zlib
           echo -e 'LOCAL_PATH := $(call my-dir)\ninclude $(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude $(BUILD_STATIC_LIBRARY)' > zlib/Android.mk
@@ -79,7 +71,6 @@ jobs:
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           
-          # Mengunci mutlak jalur modul ke folder jni container internal tempat taktik kita berada
           export NDK_MODULE_PATH=/__w/Narsen-pvp/Narsen-pvp/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
           export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
           
