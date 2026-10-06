@@ -7,6 +7,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # TATA LETAK BENAR: Jalur jembatan SDK dipindahkan ke sini agar valid secara sistem
+    container:
+      image: ubuntu:20.04
+      options: -v /usr/local/lib/android/sdk:/android-sdk-docker
+
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
@@ -18,17 +23,46 @@ jobs:
           ndk-version: r10e
           local-cache: true
 
-      - name: Jalankan Kompilasi Menggunakan Kontainer Docker Ubuntu 20.04
-        uses: docker://ubuntu:20.04
+      - name: Jalankan Proses Perakitan Game
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
-        options: |
-          -v /usr/local/lib/android/sdk:/android-sdk-docker
-        with:
-          entrypoint: /bin/bash
-          # AMUNISI UTAMA: Jalur sdk.dir sekarang diarahkan ke folder jembatan internal (/android-sdk-docker)
-          args: -c "apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5 unzip && export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 && echo -e 'ndk.dir='$ANDROID_NDK_HOME'\nsdk.dir=/android-sdk-docker' > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties && cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/ && mkdir -p cocos2dx CocosDenshion extensions scripting && cp -r ../../../../../cocos2dx/* ./cocos2dx/ && cp -r ../../../../../CocosDenshion/* ./CocosDenshion/ && cp -r ../../../../../extensions/* ./extensions/ && cp -r ../../../../../scripting/* ./scripting/ && cp -r ./cocos2dx/platform/third_party/android/prebuilt/libjpeg ./ && cp -r ./cocos2dx/platform/third_party/android/prebuilt/libpng ./ && cp -r ./cocos2dx/platform/third_party/android/prebuilt/libtiff ./ && cp -r ./cocos2dx/platform/third_party/android/prebuilt/libwebp ./ && ln -s armeabi-v7a libjpeg/libs/armeabi || true && ln -s armeabi-v7a libpng/libs/armeabi || true && ln -s armeabi-v7a libtiff/libs/armeabi || true && ln -s armeabi-v7a libwebp/libs/armeabi || true && ln -s armeabi-v7a scripting/lua/luajit/android/armeabi || true && mkdir -p zlib && echo -e 'LOCAL_PATH := \$(call my-dir)\ninclude \$(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude \$(BUILD_STATIC_LIBRARY)' > zlib/Android.mk && cd ../../ && chmod +x gradlew && export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni && ./gradlew assembleDebug --no-daemon"
+        run: |
+          # 1. Update server internal dan pasang komponen wajib
+          apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5 unzip
+          export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+
+          # 2. Daftarkan jalur NDK dan SDK jembatan virtual ke konfigurasi proyek game
+          echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=/android-sdk-docker" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
+
+          # 3. Taktik Pindah Folder Sempurna & Jalur Pintas Virtual
+          cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/
+          mkdir -p cocos2dx CocosDenshion extensions scripting
+          
+          cp -r ../../../../../cocos2dx/* ./cocos2dx/
+          cp -r ../../../../../CocosDenshion/* ./CocosDenshion/
+          cp -r ../../../../../extensions/* ./extensions/
+          cp -r ../../../../../scripting/* ./scripting/
+          
+          cp -r ./cocos2dx/platform/third_party/android/prebuilt/libjpeg ./
+          cp -r ./cocos2dx/platform/third_party/android/prebuilt/libpng ./
+          cp -r ./cocos2dx/platform/third_party/android/prebuilt/libtiff ./
+          cp -r ./cocos2dx/platform/third_party/android/prebuilt/libwebp ./
+
+          ln -s armeabi-v7a libjpeg/libs/armeabi || true
+          ln -s armeabi-v7a libpng/libs/armeabi || true
+          ln -s armeabi-v7a libtiff/libs/armeabi || true
+          ln -s armeabi-v7a libwebp/libs/armeabi || true
+          ln -s armeabi-v7a scripting/lua/luajit/android/armeabi || true
+
+          mkdir -p zlib
+          echo -e 'LOCAL_PATH := $(call my-dir)\ninclude $(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude $(BUILD_STATIC_LIBRARY)' > zlib/Android.mk
+
+          # 4. TANCAP GAS FINAL: Mulai Eksekusi Perakitan APK Game
+          cd ../../
+          chmod +x gradlew
+          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload Output APK Sukses
         uses: actions/upload-artifact@v4
