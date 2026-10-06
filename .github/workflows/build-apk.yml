@@ -5,40 +5,35 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Tetap pakai server modern biar langsung jalan dalam 3 detik
 
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Pasang NDK r10e Otomatis (Aman & Instan)
+      - name: Pasang NDK r10e di Server Luar (Aman & Instan)
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
           ndk-version: r10e
           local-cache: true
 
-      - name: Jalankan Proses Perakitan di Lingkungan Ubuntu 20.04
-        uses: uraimo/run-on-arch-action@v2
+      - name: Jalankan Kompilasi Menggunakan Kontainer Docker Ubuntu 20.04
+        uses: docker://ubuntu:20.04
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          GITHUB_WORKSPACE: ${{ github.workspace }}
         with:
-          arch: amd64
-          distro: ubuntu20.04
-          
-          # Memasukkan folder proyek dan folder NDK ke dalam mesin perakit
-          env: |
-            ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-            GITHUB_WORKSPACE: ${{ github.workspace }}
-          
-          run: |
-            # 1. Menginstal Java 8 dan alat ekstrak bawaan
-            apt-get update
-            apt-get install -p -y openjdk-8-jdk libncurses5 libtinfo5 unzip
+          args: |
+            bash -c "
+            # 1. Update server internal dan pasang komponen wajib
+            apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5 unzip
             export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
-            # 2. Mendaftarkan jalur NDK ke konfigurasi lokal proyek game
-            echo "ndk.dir=$ANDROID_NDK_HOME" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
+            # 2. Daftarkan jalur NDK ke konfigurasi lokal proyek game kamu
+            echo 'ndk.dir='$ANDROID_NDK_HOME > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
-            # 3. Taktik Pindah Folder Sempurna & Jalur Pintas Virtual
+            # 3. Taktik Pindah Folder Sempurna & Jalur Pintas Virtual (Anti-Gagal)
             cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/
             mkdir -p cocos2dx CocosDenshion extensions scripting
             
@@ -60,13 +55,14 @@ jobs:
 
             cp -r $ANDROID_NDK_HOME/sources/android/cpufeatures ./
             mkdir -p zlib
-            echo -e 'LOCAL_PATH := $(call my-dir)\ninclude $(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude $(BUILD_STATIC_LIBRARY)' > zlib/Android.mk
+            echo -e 'LOCAL_PATH := \$(call my-dir)\ninclude \$(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude \$(BUILD_STATIC_LIBRARY)' > zlib/Android.mk
 
-            # 4. Mulai Eksekusi Perakitan APK Game
+            # 4. TANCAP GAS: Mulai Eksekusi Perakitan APK Game
             cd ../../
             chmod +x gradlew
             export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
             ./gradlew assembleDebug --no-daemon
+            "
 
       - name: Upload Output APK Sukses
         uses: actions/upload-artifact@v4
