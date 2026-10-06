@@ -17,7 +17,7 @@ android {
         externalNativeBuild {
             ndkBuild {
                 if (project.hasProperty("PROP_NDK_MODE") && PROP_NDK_MODE == "none") {
-                    // Jangan lakukan apa-apa
+                    // Do nothing
                 } else {
                     arguments "NDK_TOOLCHAIN_VERSION=clang"
                     arguments "-j" + Runtime.runtime.availableProcessors()
@@ -49,14 +49,6 @@ android {
                 keyPassword DEBUG_KEY_PASSWORD
             }
         }
-        release {
-            if (project.hasProperty("RELEASE_STORE_FILE")) {
-                storeFile file(RELEASE_STORE_FILE)
-                storePassword RELEASE_STORE_PASSWORD
-                keyAlias RELEASE_KEY_ALIAS
-                keyPassword RELEASE_KEY_PASSWORD
-            }
-        }
     }
 
     buildTypes {
@@ -64,10 +56,6 @@ android {
             minifyEnabled false
             jniDebuggable true
             debuggable true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            if (project.hasProperty("RELEASE_STORE_FILE")) {
-                signingConfig signingConfigs.release
-            }
         }
         debug {
             minifyEnabled false
