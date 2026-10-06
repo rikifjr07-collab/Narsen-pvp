@@ -33,7 +33,7 @@ jobs:
         run: |
           echo "ndk.dir=${{ steps.setup-ndk.outputs.ndk-path }}" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
-      - name: Taktik Pindah Folder Sempurna
+      - name: Taktik Pindah Folder Sempurna & Duplikat Arsitektur
         run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/
           
@@ -45,11 +45,17 @@ jobs:
           cp -r ../../../../../cocos2dx/* ./cocos2dx/
           cp -r ../../../../../CocosDenshion/* ./CocosDenshion/
           
-          # 3. STRATEGI KOREKSI: Menyalin folder libpng & libjpeg UTUH beserta nama foldernya ke tingkat terdepan
+          # 3. Menyalin folder library grafis utuh ke tingkat terdepan
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libjpeg ./
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libpng ./
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libtiff ./
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libwebp ./
+
+          # 4. SOLUSI AMUNISI AKHIR: Duplikat folder armeabi-v7a menjadi armeabi agar compiler tua tidak bingung mencari file .a
+          mkdir -p libjpeg/libs/armeabi && cp libjpeg/libs/armeabi-v7a/* libjpeg/libs/armeabi/ || true
+          mkdir -p libpng/libs/armeabi && cp libpng/libs/armeabi-v7a/* libpng/libs/armeabi/ || true
+          mkdir -p libtiff/libs/armeabi && cp libtiff/libs/armeabi-v7a/* libtiff/libs/armeabi/ || true
+          mkdir -p libwebp/libs/armeabi && cp libwebp/libs/armeabi-v7a/* libwebp/libs/armeabi/ || true
 
       - name: Berikan Izin Eksekusi Sistem
         run: |
@@ -72,54 +78,3 @@ jobs:
           name: Narsen-1v1-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
           
-                                                                            
-                                                                                      
-                                                                                              
-                                                                                                      
-                                                                                                                  
-                                                                                                                          
-                                                                                                                                              
-                                                                                                                                                    
-                                                                                                                                                      
-                                                                                                                                                                    
-
-                                                                                                                                                                          
-                                                                                                                                                                                      
-                                                                                                                                                                                              
-                                                                                                                                                                                                      
-
-                                                                                                                                                                                                                    
-                                                                                                                                                                                                                        
-                                                                                                                                                                                                                                
-                                                                                                                                                                                                                                          
-
-                                                                                                                                                                                                                                              
-                                                                                                                                                                                                                                                            
-                                                                                                                                                                                                                                                              
-                                                                                                                                                                                                                                                                          
-                                                                                                                                                                                                                                                            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      
-
-
-
-
-
-
-
-
-
-
