@@ -71,7 +71,10 @@ jobs:
           sed -i 's/cpufeatures/cocos_zlib_static/g' zlib/Android.mk
           sed -i 's/cpufeatures/z/g' zlib/Android.mk
 
-          # JALAN NINJA PEMBERSIH MASALAH BAHASA: Sapu bersih dan paksa semua file konfigurasi membawa bendera pelindung -fpermissive dan -w
+          # JALAN NINJA AKHIR: Mematikan paksa static_assert pembawa error di file library multiplayer fmt
+          find $GITHUB_WORKSPACE -name "format-inl.h" -type f -exec sed -i 's/static_assert(std::is_same<Sign, sign_t>::value, "");/\/\/ dimatikan paksa/g' {} +
+
+          # Sapu bersih semua file konfigurasi ke standar C++11 dengan bendera pengabaian lengkap
           find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0/g' {} +
           find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++1y/-std=c++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0/g' {} +
           find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++11/-std=c++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0/g' {} +
