@@ -1,5 +1,6 @@
 APP_ABI := armeabi-v7a
 APP_STL := c++_shared
+NDK_TOOLCHAIN_VERSION := 4.9
 
 APP_CPPFLAGS :=  -std=c++2a -frtti -fsigned-char -fexceptions
 APP_LDFLAGS := -latomic
