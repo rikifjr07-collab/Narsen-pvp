@@ -7,20 +7,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    container:
-      image: ubuntu:20.04
-      options: -v /usr/local/lib/android/sdk:/android-sdk-docker
-
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Siapkan Pengekstrak Sistem Lawas
+      - name: Pasang Java 8 dan Library Linux
         run: |
-          apt-get update && apt-get install -y unzip wget curl make
+          sudo apt-get update
+          sudo apt-get install -y openjdk-8-jdk libncurses5 libtinfo5 unzip wget curl make
 
-      - name: Pasang NDK r10e di Server Luar
-        uses: nttld/setup-ndk@v1
+      - name: Pasang NDK r10e
+        uses: nttld/setup-ndk@v3
         id: setup-ndk
         with:
           ndk-version: r10e
@@ -31,8 +28,6 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
         run: |
-          # 1. Pasang Java 8 dan library Linux wajib
-          apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5
           export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
           # Mengakali folder toolchain NDK 64-bit agar terbaca oleh skrip game jadul
@@ -42,10 +37,10 @@ jobs:
           # Menyuntikkan identitas berkas versi agar Gradle mengenali NDK r10e lawas
           echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $ANDROID_NDK_HOME/source.properties
 
-          # 2. Daftarkan jalur NDK and SDK jembatan virtual ke konfigurasi proyek game kamu
-          echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=/android-sdk-docker" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
+          # 2. Daftarkan jalur NDK and SDK ke konfigurasi proyek game kamu
+          echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=$ANDROID_HOME" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
-          # 3. Taktik Jalur Modul Absolut Server (Membaca file asli repositori kamu tanpa ribet copas folder)
+          # 3. Taktik Jalur Modul Absolut Server
           find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0/g' {} +
           find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11/g' {} +
 
@@ -53,7 +48,7 @@ jobs:
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           chmod +x gradlew
           
-          # Menyambungkan peta jalan modul internal Cocos2dx secara absolut dari folder asli repositori kamu
+          # Menyambungkan peta jalan modul internal Cocos2dx
           export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx/platform/third_party/android:$GITHUB_WORKSPACE/NarutoSenki-V2-master/CocosDenshion/android
           
           ./gradlew assembleDebug --no-daemon
