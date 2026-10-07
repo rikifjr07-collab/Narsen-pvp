@@ -71,11 +71,15 @@ jobs:
           sed -i 's/cpufeatures/cocos_zlib_static/g' zlib/Android.mk
           sed -i 's/cpufeatures/z/g' zlib/Android.mk
 
-          # KOREKSI TOTAL: Mengembalikan standar bahasa ke c++11 secara aman, dan menyuntikkan bendera pelindung -fpermissive
-          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11 -fpermissive -D_GLIBCXX_USE_CXX11_ABI=0/g' {} +
-          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++1y/-std=c++11 -fpermissive -D_GLIBCXX_USE_CXX11_ABI=0/g' {} +
-          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11/g' {} +
-          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++1y/-std=c++11/g' {} +
+          # JALAN NINJA PEMBERSIH MASALAH BAHASA: Sapu bersih dan paksa semua file konfigurasi membawa bendera pelindung -fpermissive dan -w
+          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0/g' {} +
+          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++1y/-std=c++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0/g' {} +
+          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++11/-std=c++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0/g' {} +
+          
+          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11 -fpermissive -w/g' {} +
+          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++1y/-std=c++11 -fpermissive -w/g' {} +
+          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++11/-std=c++11 -fpermissive -w/g' {} +
+          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/APP_CPPFLAGS :=/APP_CPPFLAGS := -std=c++11 -fpermissive -w/g' {} +
 
           # 4. TANCAP GAS FINAL: Mulai Eksekusi Perakitan APK Game
           cd ../../
