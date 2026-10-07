@@ -1,82 +1,60 @@
-name: Build APK Naruto Senki Modern
+name: Build APK Naruto Senki Final
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Menggunakan server super cepat tanpa antre
+    runs-on: ubuntu-latest
+
+    container:
+      image: ubuntu:20.04
+      options: -v /usr/local/lib/android/sdk:/android-sdk-docker
 
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      # TAKTIK AKTIF: Mengosongkan harddisk server GitHub yang penuh secara paksa sebelum build dimulai
-      - name: Bersihkan Sampah Harddisk Server (Free Disk Space)
+      - name: Siapkan Pengekstrak Sistem Lawas
         run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android/sdk/ndk
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo apt-get clean
-          df -h # Menampilkan sisa memori baru yang berhasil dikosongkan
+          apt-get update && apt-get install -y unzip wget curl make
 
-      - name: Set up Java JDK 8
-        uses: actions/setup-java@v4
-        with:
-          java-version: '8'
-          distribution: 'temurin'
-
-      - name: Pasang NDK r21e Modern (Mendukung C++17 & Anti-Error Server)
+      - name: Pasang NDK r10e di Server Luar
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
-          ndk-version: r21e
+          ndk-version: r10e
           local-cache: true
 
-      - name: Daftarkan NDK Modern ke Proyek Game
+      - name: Jalankan Proses Perakitan Game
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          GITHUB_WORKSPACE: ${{ github.workspace }}
         run: |
-          echo "ndk.dir=${{ steps.setup-ndk.outputs.ndk-path }}" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
+          # 1. Pasang Java 8 dan library Linux wajib
+          apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5
+          export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
-      - name: Taktik Penyiapan Folder Otomatis
-        run: |
-          cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/
-          
-          # Membuat folder penampung modul
-          mkdir -p cocos2dx CocosDenshion extensions scripting
-          
-          # Menyalin seluruh core engine game
-          cp -r ../../../../../cocos2dx/* ./cocos2dx/
-          cp -r ../../../../../CocosDenshion/* ./CocosDenshion/
-          cp -r ../../../../../extensions/* ./extensions/
-          cp -r ../../../../../scripting/* ./scripting/
-          
-          # Menyalin folder library grafis utuh ke tingkat terdepan
-          cp -r ./cocos2dx/platform/third_party/android/prebuilt/libjpeg ./
-          cp -r ./cocos2dx/platform/third_party/android/prebuilt/libpng ./
-          cp -r ./cocos2dx/platform/third_party/android/prebuilt/libtiff ./
-          cp -r ./cocos2dx/platform/third_party/android/prebuilt/libwebp ./
+          # Mengakali folder toolchain NDK 64-bit agar terbaca oleh skrip game jadul
+          ln -s $ANDROID_NDK_HOME/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64 $ANDROID_NDK_HOME/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86 || true
+          ln -s $ANDROID_NDK_HOME/toolchains/llvm-3.6/prebuilt/linux-x86_64 $ANDROID_NDK_HOME/toolchains/llvm-3.6/prebuilt/linux-x86 || true
 
-          # Duplikat otomatis arsitektur library grafis
-          mkdir -p libjpeg/libs/armeabi-v7a && cp libjpeg/libs/armeabi-v7a/* libjpeg/libs/armeabi-v7a/ || true
-          mkdir -p libpng/libs/armeabi-v7a && cp libpng/libs/armeabi-v7a/* libpng/libs/armeabi-v7a/ || true
-          
-          # Duplikat database sqlite3 ke jalur yang dicari AppDelegate
-          mkdir -p ../../external/sqlite3/include
-          cp -r ./cocos2dx/platform/third_party/android/prebuilt/sqlite3/* ../../external/sqlite3/include/ || true
-          cp -r ../../../../../external/sqlite3/* ../../external/sqlite3/include/ || true
+          # Menyuntikkan identitas berkas versi agar Gradle mengenali NDK r10e lawas
+          echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $ANDROID_NDK_HOME/source.properties
 
-      - name: Berikan Izin Eksekusi Sistem
-        run: |
+          # 2. Daftarkan jalur NDK and SDK jembatan virtual ke konfigurasi proyek game kamu
+          echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=/android-sdk-docker" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
+
+          # 3. Taktik Jalur Modul Absolut Server (Membaca file asli repositori kamu tanpa ribet copas folder)
+          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0/g' {} +
+          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11/g' {} +
+
+          # 4. TANCAP GAS FINAL: Mulai Eksekusi Perakitan APK Game
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           chmod +x gradlew
-
-      - name: Mulai Compile APK via Android Gradle
-        run: |
-          cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           
-          # Mengunci rute modul dan mengaktifkan standar bahasa C++17 agar std::size terbaca sempurna
-          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
+          # Menyambungkan peta jalan modul internal Cocos2dx secara absolut dari folder asli repositori kamu
+          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx/platform/third_party/android:$GITHUB_WORKSPACE/NarutoSenki-V2-master/CocosDenshion/android
           
           ./gradlew assembleDebug --no-daemon
 
@@ -84,6 +62,6 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: Narsen-Modern-Multiplayer-APK
+          name: Narsen-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
           
