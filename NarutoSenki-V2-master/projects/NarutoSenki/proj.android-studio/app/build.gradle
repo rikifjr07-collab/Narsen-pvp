@@ -23,8 +23,7 @@ android {
                 if (project.hasProperty("PROP_NDK_MODE") && PROP_NDK_MODE == "none") {
                     // Jangan lakukan apa-apa
                 } else {
-                    // KOREKSI UTAMA: Mengalihkan dari clang yang hilang ke GCC 4.9 yang dijamin utuh dan ada
-                    arguments "NDK_TOOLCHAIN_VERSION=4.9"
+                    // Menggunakan compiler default bawaan NDK modern secara otomatis
                     arguments "-j" + Runtime.runtime.availableProcessors()
                 }
             }
@@ -42,17 +41,6 @@ android {
     externalNativeBuild {
         ndkBuild {
             path "jni/Android.mk"
-        }
-    }
-
-    signingConfigs {
-        debug {
-            if (project.hasProperty("DEBUG_STORE_FILE")) {
-                storeFile file(DEBUG_STORE_FILE)
-                storePassword DEBUG_STORE_PASSWORD
-                keyAlias DEBUG_KEY_ALIAS
-                keyPassword DEBUG_KEY_PASSWORD
-            }
         }
     }
 
