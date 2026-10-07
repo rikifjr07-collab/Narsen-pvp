@@ -14,8 +14,8 @@ jobs:
       - name: Pasang Java 8 dan Library Linux Lawas
         run: |
           # 1. Unduh pustaka libtinfo5 & libncurses5 dari repositori resmi Launchpad Ubuntu
-          wget http://launchpadlibrarian.net/666953488/libtinfo5_6.2-0ubuntu2.1_amd64.deb
-          wget http://launchpadlibrarian.net/666953484/libncurses5_6.2-0ubuntu2.1_amd64.deb
+          wget http://launchpadlibrarian.net
+          wget http://launchpadlibrarian.net
           
           # 2. Pasang ke sistem Ubuntu secara berurutan
           sudo dpkg -i libtinfo5_6.2-0ubuntu2.1_amd64.deb
@@ -59,8 +59,8 @@ jobs:
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           chmod +x gradlew
           
-          # Menyambungkan peta jalan modul internal Cocos2dx
-          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx/platform/third_party/android:$GITHUB_WORKSPACE/NarutoSenki-V2-master/CocosDenshion/android
+          # PERBAIKAN PETA FOLDER: Menggunakan variabel repositori dinamis ($GITHUB_WORKSPACE) agar modul libpng terbaca sempurna
+          export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx/platform/third_party/android:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx/platform/third_party/android/prebuilt:$GITHUB_WORKSPACE/NarutoSenki-V2-master/CocosDenshion/android
           
           ./gradlew assembleDebug --no-daemon
 
