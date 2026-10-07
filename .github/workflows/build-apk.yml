@@ -15,7 +15,6 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      # KOREKSI AKHIR: Menambahkan paket 'make' agar compiler NDK bisa merakit file .cpp game kamu
       - name: Siapkan Pengekstrak Sistem Lawas
         run: |
           apt-get update && apt-get install -y unzip wget curl make
@@ -32,7 +31,7 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
         run: |
-          # 1. Pasang Java 8 dan library Linux wajib
+          # 1. Pasang Java 8 and library Linux wajib
           apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5
           export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
@@ -62,8 +61,11 @@ jobs:
           ln -s armeabi-v7a libwebp/libs/armeabi || true
           ln -s armeabi-v7a scripting/lua/luajit/android/armeabi || true
 
-          mkdir -p zlib
-          echo -e 'LOCAL_PATH := $(call my-dir)\ninclude $(CLEAR_VARS)\nLOCAL_MODULE := cocos_zlib_static\nLOCAL_EXPORT_LDLIBS := -lz\ninclude $(BUILD_STATIC_LIBRARY)' > zlib/Android.mk
+          # SOLUSI AKHIR ABSOLUT: Menyalin modul cpufeatures bawaan NDK, dan membuat zlib tiruan menggunakan cetakan file asli yang aman dari error teks
+          cp -r $ANDROID_NDK_HOME/sources/android/cpufeatures ./
+          cp -r $ANDROID_NDK_HOME/sources/android/cpufeatures ./zlib
+          sed -i 's/cpufeatures/cocos_zlib_static/g' zlib/Android.mk
+          sed -i 's/cpufeatures/z/g' zlib/Android.mk
 
           # 4. TANCAP GAS FINAL: Mulai Eksekusi Perakitan APK Game
           cd ../../
