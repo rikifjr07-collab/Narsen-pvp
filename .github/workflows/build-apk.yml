@@ -13,19 +13,12 @@ jobs:
 
       - name: Pasang Java 8 dan Library Linux Lawas
         run: |
-          # 1. Unduh pustaka libtinfo5 & libncurses5 dari repositori resmi Launchpad Ubuntu
-          wget http://launchpadlibrarian.net
-          wget http://launchpadlibrarian.net
+          # 1. Daftarkan repositori arsip resmi Ubuntu lama secara aman tanpa merusak sistem utama
+          echo "deb http://ubuntu.com focal-security main universe" | sudo tee /etc/apt/sources.list.d/focal-security.list
+          sudo apt-get update || true
           
-          # 2. Pasang ke sistem Ubuntu secara berurutan
-          sudo dpkg -i libtinfo5_6.2-0ubuntu2.1_amd64.deb
-          sudo dpkg -i libncurses5_6.2-0ubuntu2.1_amd64.deb
-          
-          # 3. Bersihkan sisa unduhan berkas mentah
-          rm -f libtinfo5_6.2-0ubuntu2.1_amd64.deb libncurses5_6.2-0ubuntu2.1_amd64.deb
-          
-          # 4. Lengkapi perkakas kompiladora bawaan server
-          sudo apt-get update && sudo apt-get install -y openjdk-8-jdk unzip wget curl make
+          # 2. Pasang langsung paket pendukung via apt-get internal server
+          sudo apt-get install -y --allow-downgrades libtinfo5 libncurses5 openjdk-8-jdk unzip wget curl make
 
       - name: Pasang NDK r10e
         uses: nttld/setup-ndk@v1
