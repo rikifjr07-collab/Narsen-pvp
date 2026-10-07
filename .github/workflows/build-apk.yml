@@ -14,7 +14,14 @@ jobs:
       - name: Pasang Java 8 dan Library Linux
         run: |
           sudo apt-get update
-          sudo apt-get install -y openjdk-8-jdk libncurses5 libtinfo5 unzip wget curl make
+          # Mengunduh paket libncurses5 dan libtinfo5 versi lama yang cocok untuk Ubuntu baru
+          wget http://kernel.org
+          wget http://kernel.org
+          sudo dpkg -i libtinfo5_6.4-2_amd64.deb
+          sudo dpkg -i libncurses5_6.4-2_amd64.deb
+          
+          # Pasang sisa perlengkapan build lainnya
+          sudo apt-get install -y openjdk-8-jdk unzip wget curl make
 
       - name: Pasang NDK r10e
         uses: nttld/setup-ndk@v1
