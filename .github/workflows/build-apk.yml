@@ -1,106 +1,79 @@
-name: Build APK Naruto Senki
+name: Build APK Naruto Senki Modern
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
-    container:
-      image: ubuntu:20.04
-      options: -v /usr/local/lib/android/sdk:/android-sdk-docker
+    runs-on: ubuntu-latest # Menggunakan server super cepat tanpa antre
 
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Siapkan Pengekstrak Sistem Lawas
-        run: |
-          apt-get update && apt-get install -y unzip wget curl make
+      - name: Set up Java JDK 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
 
-      - name: Pasang NDK r10e di Server Luar
+      - name: Pasang NDK r21e Modern (Mendukung C++17 & Anti-Error Server)
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
-          ndk-version: r10e
+          ndk-version: r21e
           local-cache: true
 
-      - name: Jalankan Proses Perakitan Game
-        env:
-          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-          GITHUB_WORKSPACE: ${{ github.workspace }}
+      - name: Daftarkan NDK Modern ke Proyek Game
         run: |
-          # 1. Pasang Java 8 dan library Linux wajib
-          apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5
-          export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+          echo "ndk.dir=${{ steps.setup-ndk.outputs.ndk-path }}" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
-          # Mengakali folder toolchain NDK 64-bit agar terbaca oleh skrip game jadul
-          ln -s $ANDROID_NDK_HOME/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64 $ANDROID_NDK_HOME/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86 || true
-          ln -s $ANDROID_NDK_HOME/toolchains/llvm-3.6/prebuilt/linux-x86_64 $ANDROID_NDK_HOME/toolchains/llvm-3.6/prebuilt/linux-x86 || true
-
-          # Menyuntikkan identitas berkas versi agar Gradle mengenali NDK r10e lawas
-          echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $ANDROID_NDK_HOME/source.properties
-
-          # 2. Daftarkan jalur NDK and SDK jembatan virtual ke konfigurasi proyek game
-          echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=/android-sdk-docker" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
-
-          # 3. Taktik Pindah Folder Sempurna & Jalur Pintas Virtual
+      - name: Taktik Penyiapan Folder Otomatis
+        run: |
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni/
+          
+          # Membuat folder penampung modul
           mkdir -p cocos2dx CocosDenshion extensions scripting
           
+          # Menyalin seluruh core engine game
           cp -r ../../../../../cocos2dx/* ./cocos2dx/
           cp -r ../../../../../CocosDenshion/* ./CocosDenshion/
           cp -r ../../../../../extensions/* ./extensions/
           cp -r ../../../../../scripting/* ./scripting/
           
+          # Menyalin folder library grafis utuh ke tingkat terdepan
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libjpeg ./
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libpng ./
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libtiff ./
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/libwebp ./
 
-          ln -s armeabi-v7a libjpeg/libs/armeabi || true
-          ln -s armeabi-v7a libpng/libs/armeabi || true
-          ln -s armeabi-v7a libtiff/libs/armeabi || true
-          ln -s armeabi-v7a libwebp/libs/armeabi || true
-          ln -s armeabi-v7a scripting/lua/luajit/android/armeabi || true
-
-          # Membuat zlib tiruan menggunakan cetakan file asli yang aman dari error teks
-          cp -r $ANDROID_NDK_HOME/sources/android/cpufeatures ./
-          cp -r $ANDROID_NDK_HOME/sources/android/cpufeatures ./zlib
-          sed -i 's/cpufeatures/cocos_zlib_static/g' zlib/Android.mk
-          sed -i 's/cpufeatures/z/g' zlib/Android.mk
-
-          # AMUNISI ABSOLUT SQLITE3: Membuat folder external dan menyalin paksa folder database beserta file include sqlite3.h agar AppDelegate lolos
+          # Duplikat otomatis arsitektur library grafis
+          mkdir -p libjpeg/libs/armeabi-v7a && cp libjpeg/libs/armeabi-v7a/* libjpeg/libs/armeabi-v7a/ || true
+          mkdir -p libpng/libs/armeabi-v7a && cp libpng/libs/armeabi-v7a/* libpng/libs/armeabi-v7a/ || true
+          
+          # Duplikat database sqlite3 ke jalur yang dicari AppDelegate
           mkdir -p ../../external/sqlite3/include
           cp -r ./cocos2dx/platform/third_party/android/prebuilt/sqlite3/* ../../external/sqlite3/include/ || true
           cp -r ../../../../../external/sqlite3/* ../../external/sqlite3/include/ || true
-          # Duplikat tambahan langsung di dalam folder jni terdepan sebagai cadangan
-          mkdir -p external/sqlite3/include
-          cp -r ../../external/sqlite3/include/* ./external/sqlite3/include/ || true
 
-          # Mematikan paksa static_assert pembawa error di file library multiplayer fmt
-          find $GITHUB_WORKSPACE -name "format-inl.h" -type f -exec sed -i 's/static_assert(std::is_same<Sign, sign_t>::value, "");/\/\/ dimatikan paksa/g' {} +
-
-          # Sapu bersih semua file konfigurasi ke standar C++11 dengan bendera pengabaian lengkap
-          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0/g' {} +
-          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++1y/-std=c++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0/g' {} +
-          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++11/-std=c++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0/g' {} +
-          
-          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11 -fpermissive -w/g' {} +
-          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++1y/-std=c++11 -fpermissive -w/g' {} +
-          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++11/-std=c++11 -fpermissive -w/g' {} +
-          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/APP_CPPFLAGS :=/APP_CPPFLAGS := -std=c++11 -fpermissive -w/g' {} +
-
-          # 4. TANCAP GAS FINAL: Mulai Eksekusi Perakitan APK Game
-          cd ../../
+      - name: Berikan Izin Eksekusi Sistem
+        run: |
+          cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           chmod +x gradlew
+
+      - name: Mulai Compile APK via Android Gradle
+        run: |
+          cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
+          
+          # Mengunci rute modul dan mengaktifkan standar bahasa C++17 agar std::size terbaca sempurna
           export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/jni
+          
           ./gradlew assembleDebug --no-daemon
 
       - name: Upload Output APK Sukses
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: Narsen-1v1-Multiplayer-APK
+          name: Narsen-Modern-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
           
