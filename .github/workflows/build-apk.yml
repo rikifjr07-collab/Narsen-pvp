@@ -71,9 +71,11 @@ jobs:
           sed -i 's/cpufeatures/cocos_zlib_static/g' zlib/Android.mk
           sed -i 's/cpufeatures/z/g' zlib/Android.mk
 
-          # SAPUAN BERSIH TOTAL: Mengubah target pencarian kata agar menyisir seluruh folder repositori dari ujung terluar ($GITHUB_WORKSPACE)
-          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11/g' {} +
-          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11/g' {} +
+          # KOREKSI BAHASA FINISH: Mengubah paksa bendera c++2a modern menjadi c++1y (c++14 standar stabil GCC 4.9)
+          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++1y/g' {} +
+          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++11/-std=c++1y/g' {} +
+          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++1y/g' {} +
+          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++11/-std=c++1y/g' {} +
 
           # 4. TANCAP GAS FINAL: Mulai Eksekusi Perakitan APK Game
           cd ../../
