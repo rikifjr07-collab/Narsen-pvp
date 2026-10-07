@@ -15,7 +15,6 @@ android {
         versionName "2.1"
 
         ndk {
-            // KUNCI ABSOLUT: Memaksa compiler hanya merakit APK untuk HP (armeabi-v7a) dan membuang x86 pembawa eror
             abiFilters "armeabi-v7a"
         }
 
@@ -24,7 +23,8 @@ android {
                 if (project.hasProperty("PROP_NDK_MODE") && PROP_NDK_MODE == "none") {
                     // Jangan lakukan apa-apa
                 } else {
-                    arguments "NDK_TOOLCHAIN_VERSION=clang"
+                    // KOREKSI UTAMA: Mengalihkan dari clang yang hilang ke GCC 4.9 yang dijamin utuh dan ada
+                    arguments "NDK_TOOLCHAIN_VERSION=4.9"
                     arguments "-j" + Runtime.runtime.availableProcessors()
                 }
             }
