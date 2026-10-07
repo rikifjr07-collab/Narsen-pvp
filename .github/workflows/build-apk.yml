@@ -15,12 +15,9 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      # SOLUSI ABSOLUT 32-BIT: Mengaktifkan i386 agar compiler 32-bit bawaan NDK r10e bisa berjalan di server 64-bit
-      - name: Siapkan Pengekstrak Sistem Lawas dan Pustaka 32-bit
+      - name: Siapkan Pengekstrak Sistem Lawas
         run: |
-          dpkg --add-architecture i386
-          apt-get update
-          apt-get install -y unzip wget curl make libc6:i386 libstdc++6:i386 libncurses5:i386
+          apt-get update && apt-get install -y unzip wget curl make
 
       - name: Pasang NDK r10e di Server Luar
         uses: nttld/setup-ndk@v1
@@ -37,6 +34,10 @@ jobs:
           # 1. Pasang Java 8 dan library Linux wajib
           apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5
           export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+
+          # AMUNISI UTAMA: Mengakali folder toolchain NDK 64-bit agar terbaca oleh skrip game jadul kamu
+          ln -s $ANDROID_NDK_HOME/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64 $ANDROID_NDK_HOME/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86 || true
+          ln -s $ANDROID_NDK_HOME/toolchains/llvm-3.6/prebuilt/linux-x86_64 $ANDROID_NDK_HOME/toolchains/llvm-3.6/prebuilt/linux-x86 || true
 
           # Menyuntikkan identitas berkas versi agar Gradle mengenali NDK r10e lawas
           echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $ANDROID_NDK_HOME/source.properties
