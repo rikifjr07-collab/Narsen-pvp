@@ -13,15 +13,18 @@ jobs:
 
       - name: Pasang Java 8 dan Library Linux Lawas
         run: |
-          # 1. Unduh pustaka libtinfo5 & libncurses5 yang valid langsung dari arsip Ubuntu resmi
-          wget http://ubuntu.com
-          wget http://ubuntu.com
+          # 1. Unduh pustaka libtinfo5 & libncurses5 dari repositori resmi Launchpad Ubuntu
+          wget http://launchpadlibrarian.net/666953488/libtinfo5_6.2-0ubuntu2.1_amd64.deb
+          wget http://launchpadlibrarian.net/666953484/libncurses5_6.2-0ubuntu2.1_amd64.deb
           
-          # 2. Pasang secara paksa ke sistem Ubuntu server utama
+          # 2. Pasang ke sistem Ubuntu secara berurutan
           sudo dpkg -i libtinfo5_6.2-0ubuntu2.1_amd64.deb
           sudo dpkg -i libncurses5_6.2-0ubuntu2.1_amd64.deb
           
-          # 3. Lengkapi perlengkapan kompilasi bawaan yang tersisa
+          # 3. Bersihkan sisa unduhan berkas mentah
+          rm -f libtinfo5_6.2-0ubuntu2.1_amd64.deb libncurses5_6.2-0ubuntu2.1_amd64.deb
+          
+          # 4. Lengkapi perkakas kompiladora bawaan server
           sudo apt-get update && sudo apt-get install -y openjdk-8-jdk unzip wget curl make
 
       - name: Pasang NDK r10e
