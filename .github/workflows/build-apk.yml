@@ -13,15 +13,12 @@ jobs:
 
       - name: Pasang Java 8 dan Library Linux
         run: |
+          # Menambahkan repositori resmi Ubuntu lama agar sistem bisa menemukan libncurses5
+          sudo add-apt-repository -y "deb http://ubuntu.com focal-security main universe"
           sudo apt-get update
-          # Mengunduh paket libncurses5 dan libtinfo5 versi lama yang cocok untuk Ubuntu baru
-          wget http://kernel.org
-          wget http://kernel.org
-          sudo dpkg -i libtinfo5_6.4-2_amd64.deb
-          sudo dpkg -i libncurses5_6.4-2_amd64.deb
           
-          # Pasang sisa perlengkapan build lainnya
-          sudo apt-get install -y openjdk-8-jdk unzip wget curl make
+          # Pasang libncurses5, libtinfo5, dan perlengkapan wajib lainnya
+          sudo apt-get install -y openjdk-8-jdk libncurses5 libtinfo5 unzip wget curl make
 
       - name: Pasang NDK r10e
         uses: nttld/setup-ndk@v1
