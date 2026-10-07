@@ -15,9 +15,12 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Siapkan Pengekstrak Sistem Lawas
+      # SOLUSI ABSOLUT 32-BIT: Mengaktifkan i386 agar compiler 32-bit bawaan NDK r10e bisa berjalan di server 64-bit
+      - name: Siapkan Pengekstrak Sistem Lawas dan Pustaka 32-bit
         run: |
-          apt-get update && apt-get install -y unzip wget curl make
+          dpkg --add-architecture i386
+          apt-get update
+          apt-get install -y unzip wget curl make libc6:i386 libstdc++6:i386 libncurses5:i386
 
       - name: Pasang NDK r10e di Server Luar
         uses: nttld/setup-ndk@v1
@@ -31,14 +34,14 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
         run: |
-          # 1. Pasang Java 8 and library Linux wajib
+          # 1. Pasang Java 8 dan library Linux wajib
           apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5
           export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
           # Menyuntikkan identitas berkas versi agar Gradle mengenali NDK r10e lawas
           echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $ANDROID_NDK_HOME/source.properties
 
-          # 2. Daftarkan jalur NDK dan SDK jembatan virtual ke konfigurasi proyek game
+          # 2. Daftarkan jalur NDK and SDK jembatan virtual ke konfigurasi proyek game
           echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=/android-sdk-docker" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
           # 3. Taktik Pindah Folder Sempurna & Jalur Pintas Virtual
@@ -61,7 +64,7 @@ jobs:
           ln -s armeabi-v7a libwebp/libs/armeabi || true
           ln -s armeabi-v7a scripting/lua/luajit/android/armeabi || true
 
-          # SOLUSI AKHIR ABSOLUT: Menyalin modul cpufeatures bawaan NDK, dan membuat zlib tiruan menggunakan cetakan file asli yang aman dari error teks
+          # Membuat zlib tiruan menggunakan cetakan file asli yang aman dari error teks
           cp -r $ANDROID_NDK_HOME/sources/android/cpufeatures ./
           cp -r $ANDROID_NDK_HOME/sources/android/cpufeatures ./zlib
           sed -i 's/cpufeatures/cocos_zlib_static/g' zlib/Android.mk
