@@ -71,7 +71,15 @@ jobs:
           sed -i 's/cpufeatures/cocos_zlib_static/g' zlib/Android.mk
           sed -i 's/cpufeatures/z/g' zlib/Android.mk
 
-          # JALAN NINJA AKHIR: Mematikan paksa static_assert pembawa error di file library multiplayer fmt
+          # AMUNISI ABSOLUT SQLITE3: Membuat folder external dan menyalin paksa folder database beserta file include sqlite3.h agar AppDelegate lolos
+          mkdir -p ../../external/sqlite3/include
+          cp -r ./cocos2dx/platform/third_party/android/prebuilt/sqlite3/* ../../external/sqlite3/include/ || true
+          cp -r ../../../../../external/sqlite3/* ../../external/sqlite3/include/ || true
+          # Duplikat tambahan langsung di dalam folder jni terdepan sebagai cadangan
+          mkdir -p external/sqlite3/include
+          cp -r ../../external/sqlite3/include/* ./external/sqlite3/include/ || true
+
+          # Mematikan paksa static_assert pembawa error di file library multiplayer fmt
           find $GITHUB_WORKSPACE -name "format-inl.h" -type f -exec sed -i 's/static_assert(std::is_same<Sign, sign_t>::value, "");/\/\/ dimatikan paksa/g' {} +
 
           # Sapu bersih semua file konfigurasi ke standar C++11 dengan bendera pengabaian lengkap
