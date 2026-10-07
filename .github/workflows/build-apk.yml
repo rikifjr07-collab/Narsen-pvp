@@ -15,9 +15,10 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
+      # KOREKSI AKHIR: Menambahkan paket 'make' agar compiler NDK bisa merakit file .cpp game kamu
       - name: Siapkan Pengekstrak Sistem Lawas
         run: |
-          apt-get update && apt-get install -y unzip wget curl
+          apt-get update && apt-get install -y unzip wget curl make
 
       - name: Pasang NDK r10e di Server Luar
         uses: nttld/setup-ndk@v1
@@ -35,7 +36,7 @@ jobs:
           apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5
           export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
-          # AMUNISI ABSOLUT LOKAL DOCKER: Menyuntikkan identitas berkas versi agar Gradle mengenali NDK r10e lawas
+          # Menyuntikkan identitas berkas versi agar Gradle mengenali NDK r10e lawas
           echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $ANDROID_NDK_HOME/source.properties
 
           # 2. Daftarkan jalur NDK dan SDK jembatan virtual ke konfigurasi proyek game
