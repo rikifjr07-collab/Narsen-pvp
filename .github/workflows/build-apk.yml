@@ -15,7 +15,6 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      # SOLUSI FINISH: Memasang aplikasi unzip terlebih dahulu agar modul NDK di bawahnya bisa diekstrak tanpa eror
       - name: Siapkan Pengekstrak Sistem Lawas
         run: |
           apt-get update && apt-get install -y unzip wget curl
@@ -35,6 +34,9 @@ jobs:
           # 1. Pasang Java 8 dan library Linux wajib
           apt-get update && apt-get install -y openjdk-8-jdk libncurses5 libtinfo5
           export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+
+          # AMUNISI ABSOLUT LOKAL DOCKER: Menyuntikkan identitas berkas versi agar Gradle mengenali NDK r10e lawas
+          echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $ANDROID_NDK_HOME/source.properties
 
           # 2. Daftarkan jalur NDK dan SDK jembatan virtual ke konfigurasi proyek game
           echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=/android-sdk-docker" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
