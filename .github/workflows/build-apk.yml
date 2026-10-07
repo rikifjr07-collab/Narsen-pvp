@@ -71,9 +71,9 @@ jobs:
           sed -i 's/cpufeatures/cocos_zlib_static/g' zlib/Android.mk
           sed -i 's/cpufeatures/z/g' zlib/Android.mk
 
-          # JALAN NINJA KOREKSI BAHASA C++: Mencari dan mengganti paksa perintah c++2a modern menjadi c++11 lawas agar diterima NDK
-          find . -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11/g' {} +
-          find ../../../../../cocos2dx/ -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11/g' {} +
+          # SAPUAN BERSIH TOTAL: Mengubah target pencarian kata agar menyisir seluruh folder repositori dari ujung terluar ($GITHUB_WORKSPACE)
+          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11/g' {} +
+          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++2a/-std=c++11/g' {} +
 
           # 4. TANCAP GAS FINAL: Mulai Eksekusi Perakitan APK Game
           cd ../../
