@@ -45,11 +45,13 @@ jobs:
           # 2. Daftarkan jalur NDK and SDK ke konfigurasi proyek game kamu
           echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=$ANDROID_HOME" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
-          # 3. TAKTIK PAMUNGKAS: Mematikan fungsi static_assert secara global dari level compiler utama!
-          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=gnu++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0 -Dstatic_assert(...)=/g' {} +
-          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++11/-std=gnu++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0 -Dstatic_assert(...)=/g' {} +
-          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++2a/-std=gnu++11/g' {} +
-          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++11/-std=gnu++11/g' {} +
+          # 3. TURUN KAN STANDAR KE ERA ASLI GAME: Memakai gnu++03 agar fitur deteksi template modern dinonaktifkan
+          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=gnu++03 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0 -Dstatic_assert(...)=/g' {} +
+          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++11/-std=gnu++03 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0 -Dstatic_assert(...)=/g' {} +
+          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=gnu++11/-std=gnu++03 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0 -Dstatic_assert(...)=/g' {} +
+          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++2a/-std=gnu++03/g' {} +
+          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++11/-std=gnu++03/g' {} +
+          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=gnu++11/-std=gnu++03/g' {} +
 
           # 4. TANCAP GAS FINAL: Mulai Eksekusi Perakitan APK Game
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
