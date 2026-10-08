@@ -2,16 +2,8 @@
 #include "cocos2d.h"
 #include "../../../scripting/lua/cocos2dx_support/CCLuaEngine.h"
 #include "Utils/CCDeprecated.h"
-
-#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_MAC
-#include <format>
-#else
-#define FMT_HEADER_ONLY
-#define FMT_CONSTEVAL
-#include "fmt/core.h"
-
-using namespace fmt;
-#endif
+#include <string>
+#include <memory>
 
 using namespace cocos2d;
 using namespace std;
@@ -122,22 +114,11 @@ static inline SpriteFrame *getSpriteFrame(const string &name)
 	return SpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(name.c_str());
 }
 
-#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_MAC
-
+// === PERBAIKAN: Menggunakan snprintf bawaan C++ standar agar bebas error library hilang ===
 template <class... _Types>
-static inline SpriteFrame *getSpriteFrame(std::format_string<_Types...> _Fmt, _Types &&..._Args)
+static inline SpriteFrame *getSpriteFrame(const char* _Fmt, _Types &&..._Args)
 {
-	return getSpriteFrame(std::format(_Fmt, std::forward<_Types>(_Args)...));
+	char buffer[256];
+	snprintf(buffer, sizeof(buffer), _Fmt, std::forward<_Types>(_Args)...);
+	return getSpriteFrame(std::string(buffer));
 }
-
-#else
-
-// Use fmt lib for platforms without C++20 std::format support
-
-template <class... _Types>
-static inline SpriteFrame *getSpriteFrame(fmt::format_string<_Types...> _Fmt, _Types &&..._Args)
-{
-	return getSpriteFrame(fmt::format(_Fmt, _Args...));
-}
-
-#endif
