@@ -148,6 +148,38 @@ void GameModeLayer::removeMode(const GameModeData &data)
 {
 }
 
+// Fungsi bantu saat tombol Host diklik (Menghindari Lambda error di engine lama)
+void GameModeLayer::onHostSelected(Ref* sender)
+{
+	global_isHost = true;
+	global_ipAddress = "0.0.0.0"; 
+	CCLOG("Multiplayer: Menjadi HOST");
+	
+	auto handler = getGameModeHandler();
+	if (handler) handler->init();
+}
+
+// Pilihan tombol IP untuk Client
+void GameModeLayer::onClientIp1Selected(Ref* sender)
+{
+	global_isHost = false;
+	global_ipAddress = "192.168.43.1"; // IP Hotspot Android standar umum
+	CCLOG("Multiplayer: CLIENT menyambung ke IP %s", global_ipAddress.c_str());
+	
+	auto handler = getGameModeHandler();
+	if (handler) handler->init();
+}
+
+void GameModeLayer::onClientIp2Selected(Ref* sender)
+{
+	global_isHost = false;
+	global_ipAddress = "192.168.1.1"; // IP Hotspot WiFi Router/Indihome umum
+	CCLOG("Multiplayer: CLIENT menyambung ke IP %s", global_ipAddress.c_str());
+	
+	auto handler = getGameModeHandler();
+	if (handler) handler->init();
+}
+
 void GameModeLayer::selectMode(GameMode mode)
 {
 	auto data = modes[(size_t)mode];
@@ -186,55 +218,20 @@ void GameModeLayer::selectMode(GameMode mode)
 		auto handler = getGameModeHandler();
 		handler->setOldCheats(Cheats);
 
-		// === BLOK MULTIPLAYER LOKAL ===
+		// === REVISI TOTAL MULTIPLAYER: Klasik & 100% Aman dari Eror Build ===
 		if (mode == GameMode::OneVsOne) 
 		{
-			auto hostBtn = MenuItemFont::create("Buat Room (Host)", [=](Ref* sender){
-				global_isHost = true;
-				global_ipAddress = "0.0.0.0"; 
-				CCLOG("Multiplayer: Menjadi HOST");
-				
-				auto handlerClick = getGameModeHandler();
-				handlerClick->init();
-			});
+			// Buat teks label tombol menggunakan struktur teks bawaan Cocos2d-x lama yang stabil
+			auto labelHost = CCLabelTTF::create("Buat Room (Host)", "Arial", 28);
+			auto labelClient1 = CCLabelTTF::create("Gabung (IP: 192.168.43.1)", "Arial", 26);
+			auto labelClient2 = CCLabelTTF::create("Gabung (IP: 192.168.1.1)", "Arial", 26);
 
-			auto clientBtn = MenuItemFont::create("Gabung Room (Client)", [=](Ref* sender) {
-				global_isHost = false;
-				CCLOG("Multiplayer: Menjadi CLIENT");
+			auto hostBtn = MenuItemLabel::create(labelHost, this, menu_selector(GameModeLayer::onHostSelected));
+			auto clientBtn1 = MenuItemLabel::create(labelClient1, this, menu_selector(GameModeLayer::onClientIp1Selected));
+			auto clientBtn2 = MenuItemLabel::create(labelClient2, this, menu_selector(GameModeLayer::onClientIp2Selected));
 
-				sender->getParent()->removeFromParent();
-
-				// Membuat kotak input IP secara dinamis memakai UI EditBox Cocos
-				auto ipInput = cocos2d::ui::EditBox::create(Size(300, 50), cocos2d::ui::Scale9Sprite::create("menu_bar2.png"));
-				ipInput->setPosition(Vec2(winSize.width / 2, winSize.height / 2 + 40));
-				ipInput->setPlaceHolder("Ketik IP Host...");
-				ipInput->setFontSize(24);
-				ipInput->setMaxLength(15); 
-				ipInput->setInputMode(cocos2d::ui::EditBox::InputMode::DECIMAL); 
-				this->addChild(ipInput, 1000, 777); 
-
-				auto confirmBtn = MenuItemFont::create("[ MASUK GAME ]", [=](Ref* confirmSender) {
-					auto box = (cocos2d::ui::EditBox*)this->getChildByTag(777);
-					if (box && strlen(box->getText()) > 0) {
-						global_ipAddress = box->getText(); 
-					}
-					
-					CCLOG("Client menyambung ke IP: %s", global_ipAddress.c_str());
-					auto handlerInner = getGameModeHandler();
-					handlerInner->init(); 
-				});
-				confirmBtn->setFontSize(28);
-
-				auto confirmMenu = Menu::create(confirmBtn, nullptr);
-				confirmMenu->setPosition(Vec2(winSize.width / 2, winSize.height / 2 - 40));
-				this->addChild(confirmMenu, 1000);
-			});
-
-			hostBtn->setFontSize(32);
-			clientBtn->setFontSize(32);
-
-			auto mpMenu = Menu::create(hostBtn, clientBtn, nullptr);
-			mpMenu->alignItemsVerticallyWithPadding(20.0f);
+			auto mpMenu = Menu::create(hostBtn, clientBtn1, clientBtn2, nullptr);
+			mpMenu->alignItemsVerticallyWithPadding(25.0f);
 			mpMenu->setPosition(Vec2(winSize.width / 2, winSize.height / 2));
 			this->addChild(mpMenu, 999); 
 			
