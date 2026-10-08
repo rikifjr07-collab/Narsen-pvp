@@ -10,6 +10,17 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Menarik seluruh riwayat git agar bisa memulihkan file yang rusak
+
+      - name: Bersihkan File Sampah Iklan dan Pulihkan Kode Asli Game
+        run: |
+          # 1. Buang paksa halaman web iklan yang salah unduh dan menimpa folder proyek kamu
+          git checkout HEAD -- NarutoSenki-V2-master/
+          
+          # 2. Pastikan tidak ada file HTML iklan yang tertinggal di folder kompilasi
+          find . -name "*.deb" -delete
+          find . -name "*.html" -delete
 
       - name: Pasang Java 8 Ramah Gradle Lama
         uses: actions/setup-java@v4
@@ -17,7 +28,7 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
 
-      - name: Pasang Android NDK r21e (Versi Penengah)
+      - name: Pasang Android NDK r21e (Versi Penengah Modern)
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
@@ -32,7 +43,7 @@ jobs:
           # 1. Daftarkan jalur NDK r21e ke konfigurasi proyek game kamu
           echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=$ANDROID_HOME" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
-          # 2. Sesuaikan versi toolchain agar dikenali oleh sistem build r21e
+          # 2. Sesuaikan versi toolchain agar beralih ke Clang modern bawaan r21e
           find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/NDK_TOOLCHAIN_VERSION\s*:=\s*4.9/NDK_TOOLCHAIN_VERSION := clang/g' {} +
 
           # 3. TANCAP GAS FINAL: Mulai Eksekusi Perakitan APK Game
