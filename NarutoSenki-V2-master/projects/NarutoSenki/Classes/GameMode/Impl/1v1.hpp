@@ -91,11 +91,10 @@ public:
             float currentX = friendChar->getPositionX();
             float currentY = friendChar->getPositionY();
             
-            // Rumus: Posisi Baru = Posisi Sekarang + (Selisih Posisi Target * Kecepatan Geser)
             float smoothX = currentX + (receivedPacket.posX - currentX) * 0.3f;
             float smoothY = currentY + (receivedPacket.posY - currentY) * 0.3f;
             
-            // PERBAIKAN: Menggunakan objek Vec2 agar sesuai dengan fungsi setPosition bawaan engine game
+            // PERBAIKAN MUTLAK: Penulisan namespace cocos2d::Vec2 yang valid dan benar
             friendChar->setPosition(cocos2d::Vec2(smoothX, smoothY));
         }
     }
@@ -104,7 +103,7 @@ public:
         auto layer = getGameLayer();
         if (!layer) return;
 
-        // PERBAIKAN: Menggunakan getHero1() sesuai dengan fungsi asli yang terdaftar di GameLayer kamu
+        // PERBAIKAN MUTLAK: Menggunakan getHero1() sesuai fungsi internal GameLayer asli milikmu
         auto myHero = layer->getHero1(); 
         if (myHero) {
             sendMyPosition(myHero->getPositionX(), myHero->getPositionY(), 0);
