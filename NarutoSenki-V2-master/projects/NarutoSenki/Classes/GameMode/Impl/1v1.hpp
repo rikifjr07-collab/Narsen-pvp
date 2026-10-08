@@ -94,7 +94,6 @@ public:
             float smoothX = currentX + (receivedPacket.posX - currentX) * 0.3f;
             float smoothY = currentY + (receivedPacket.posY - currentY) * 0.3f;
             
-            // PERBAIKAN: Menggunakan ccp() bawaan Cocos2d-x klasik agar tipe data koordinat langsung tembus
             friendChar->setPosition(ccp(smoothX, smoothY));
         }
     }
@@ -103,10 +102,13 @@ public:
         auto layer = getGameLayer();
         if (!layer) return;
 
-        // PERBAIKAN: Menggunakan fungsi bawaan dari file CharacterBase untuk mencari data player utama secara aman
-        auto myHero = layer->getPlayer(); 
-        if (!myHero) {
-            myHero = layer->getHero1();
+        // PERBAIKAN FINAL AMAN: Menyisir isi array karakter untuk mencari mana yang dikontrol player asli secara mutlak
+        CharacterBase* myHero = nullptr;
+        for (auto c : layer->_CharacterArray) {
+            if (c && c->isPlayer()) {
+                myHero = c;
+                break;
+            }
         }
 
         if (myHero) {
