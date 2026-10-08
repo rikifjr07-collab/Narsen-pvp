@@ -7,6 +7,9 @@
 #if COCOS2D_DEBUG
 
 #include "Utils/Cocos2dxHelper.hpp"
+#include <string>
+#include <sstream>
+#include <iostream>
 
 #define DEBUG_NS_BEGIN \
 	namespace Debug    \
@@ -54,27 +57,23 @@ DEBUG_NS_BEGIN
 #define LOG_WARN LOG_YELLOW
 #define LOG_INFO LOG_GREEN
 
-#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_MAC
+// === PERBAIKAN FINAL: Pengganti NSLOG Tanpa Library fmt Bawaan C++ Murni ===
+inline void nslog_helper(std::ostringstream&) {}
 
-template <class... _Types>
-static inline void NSLOG(std::format_string<_Types...> _Fmt, _Types &&..._Args)
-{
-	puts(std::format(_Fmt, std::forward<_Types>(_Args)...).c_str());
+template <typename T, typename... Args>
+inline void nslog_helper(std::ostringstream& ss, T&& first, Args&&... args) {
+    ss << std::forward<T>(first);
+    nslog_helper(ss, std::forward<Args>(args)...);
 }
 
-#else
-
-// Use fmt lib for platforms without C++20 std::format support
-
-template <class... _Types>
-static inline void NSLOG(fmt::format_string<_Types...> _Fmt, _Types &&..._Args)
-{
-	puts(fmt::format(_Fmt, _Args...).c_str());
+template <typename... Args>
+static inline void NSLOG(const char* _Fmt, Args&&... args) {
+    std::ostringstream ss;
+    nslog_helper(ss, std::forward<Args>(args)...);
+    puts(ss.str().c_str());
 }
 
-#endif
-
-#define LOG(fmt, ...) NSLOG("NS LOG: " fmt, ##__VA_ARGS__)
+#define LOG(fmt, ...) NSLOG("NS LOG: ", fmt, ##__VA_ARGS__)
 
 DEBUG_NS_END
 
