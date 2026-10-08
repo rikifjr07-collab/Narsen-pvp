@@ -7,6 +7,35 @@ extern const GameData kDefaultGameData;
 bool global_isHost = true; 
 std::string global_ipAddress = "192.168.43.1"; 
 
+// Fungsi Utama Pemicu Jaringan Game
+void triggerMultiplayerStart(bool hostMode, const char* targetIp)
+{
+	global_isHost = hostMode;
+	global_ipAddress = targetIp;
+	CCLOG("Multiplayer Configured: Host=%d, IP=%s", hostMode, targetIp);
+	
+	auto handler = getGameModeHandler();
+	if (handler) {
+		handler->init();
+	}
+}
+
+// === PENERAPAN FUNGSI KLIK RESMI SESUAI DEKLARASI HEADER ===
+void GameModeLayer::onHostClick(Ref* sender)
+{
+	triggerMultiplayerStart(true, "0.0.0.0");
+}
+
+void GameModeLayer::onClient1Click(Ref* sender)
+{
+	triggerMultiplayerStart(false, "192.168.43.1");
+}
+
+void GameModeLayer::onClient2Click(Ref* sender)
+{
+	triggerMultiplayerStart(false, "192.168.1.1");
+}
+
 bool GameModeLayer::init()
 {
 	auto bgSprite = Sprite::create("red_bg.png");
@@ -91,39 +120,10 @@ bool GameModeLayer::init()
 	return Layer::init();
 }
 
-// === LOGIKA PUSAT BACK TO MENU & MULTIPLAYER BYPASS (100% AMAN DAN SAH) ===
 void GameModeLayer::backToMenu(Ref *sender)
 {
-	if (sender && sender->getTag() == 100) // Tombol HOST diklik
-	{
-		global_isHost = true;
-		global_ipAddress = "0.0.0.0";
-		CCLOG("Multiplayer: Menjadi HOST via Safe-Bridge");
-		auto handler = getGameModeHandler();
-		if (handler) handler->init();
-		return;
-	}
-	else if (sender && sender->getTag() == 201) // Tombol Client Android diklik
-	{
-		global_isHost = false;
-		global_ipAddress = "192.168.43.1";
-		CCLOG("Multiplayer: CLIENT menyambung ke IP %s", global_ipAddress.c_str());
-		auto handler = getGameModeHandler();
-		if (handler) handler->init();
-		return;
-	}
-	else if (sender && sender->getTag() == 202) // Tombol Client Wifi diklik
-	{
-		global_isHost = false;
-		global_ipAddress = "192.168.1.1";
-		CCLOG("Multiplayer: CLIENT menyambung ke IP %s", global_ipAddress.c_str());
-		auto handler = getGameModeHandler();
-		if (handler) handler->init();
-		return;
-	}
-
-	// Logika asli tombol kembali bawaan game kamu
 	SimpleAudioEngine::sharedEngine()->playEffect("Audio/Menu/cancel.ogg");
+
 	auto menuScene = Scene::create();
 	auto menuLayer = StartMenu::create();
 	menuScene->addChild(menuLayer);
@@ -215,22 +215,17 @@ void GameModeLayer::selectMode(GameMode mode)
 		auto handler = getGameModeHandler();
 		handler->setOldCheats(Cheats);
 
-		// === PENERAPAN STRATEGI BYPASS TOMBOL MULTIPLAYER AMAN ===
+		// === PERBAIKAN MULTIPLAYER RESMI: Menggunakan Fungsi Member Kelas yang Sah & Bersih dari Typo ===
 		if (mode == GameMode::OneVsOne) 
 		{
 			auto labelHost = CCLabelTTF::create("Buat Room (Host)", "Arial", 28);
 			auto labelClient1 = CCLabelTTF::create("Gabung (IP: 192.168.43.1)", "Arial", 26);
 			auto labelClient2 = CCLabelTTF::create("Gabung (IP: 192.168.1.1)", "Arial", 26);
 
-			// Menghubungkan ke fungsi backToMenu yang sudah terdaftar resmi di header file kamu
-			auto hostBtn = MenuItemLabel::create(labelHost, this, menu_selector(GameModeLayer::backToMenu));
-			auto clientBtn1 = MenuItemLabel::create(labelClient1, this, menu_selector(GameModeLayer::backToMenu));
-			auto clientBtn2 = MenuItemLabel::create(labelClient2, this, menu_selector(GameModeLayer::backToMenu));
-
-			// Memasang Identitas Tag agar sistem tahu tombol mana yang diklik saat masuk ke fungsi backToMenu
-			hostBtn->setTag(100);
-			clientBtn1->setTag(201);
-			clientBtn2->setTag(202);
+			// Memanggil fungsi member resmi lewat macro menu_selector bawaan Cocos asli (Bebas Eror Void Pointer)
+			auto hostBtn = MenuItemLabel::create(labelHost, this, menu_selector(GameModeLayer::onHostClick));
+			auto clientBtn1 = MenuItemLabel::create(labelClient1, this, menu_selector(GameModeLayer::onClient1Click));
+			auto clientBtn2 = MenuItemLabel::create(labelClient2, this, menu_selector(GameModeLayer::onClient2Click));
 
 			auto mpMenu = Menu::create(hostBtn, clientBtn1, clientBtn2, nullptr);
 			mpMenu->alignItemsVerticallyWithPadding(25.0f);
