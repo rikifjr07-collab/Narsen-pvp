@@ -4,37 +4,8 @@
 #include "Constants/UiFlowKeys.hpp"
 
 extern const GameData kDefaultGameData;
-bool global_isHost = true; 
-std::string global_ipAddress = "192.168.43.1"; 
-
-// Fungsi Utama Pemicu Jaringan Game
-void triggerMultiplayerStart(bool hostMode, const char* targetIp)
-{
-	global_isHost = hostMode;
-	global_ipAddress = targetIp;
-	CCLOG("Multiplayer Configured: Host=%d, IP=%s", hostMode, targetIp);
-	
-	auto handler = getGameModeHandler();
-	if (handler) {
-		handler->init();
-	}
-}
-
-// === PENERAPAN FUNGSI KLIK RESMI SESUAI DEKLARASI HEADER ===
-void GameModeLayer::onHostClick(Ref* sender)
-{
-	triggerMultiplayerStart(true, "0.0.0.0");
-}
-
-void GameModeLayer::onClient1Click(Ref* sender)
-{
-	triggerMultiplayerStart(false, "192.168.43.1");
-}
-
-void GameModeLayer::onClient2Click(Ref* sender)
-{
-	triggerMultiplayerStart(false, "192.168.1.1");
-}
+bool global_isHost = true; // Sakelar global: true = Host, false = Client
+std::string global_ipAddress = "192.168.43.1"; // Default IP Hotspot lokal
 
 bool GameModeLayer::init()
 {
@@ -215,20 +186,51 @@ void GameModeLayer::selectMode(GameMode mode)
 		auto handler = getGameModeHandler();
 		handler->setOldCheats(Cheats);
 
-		// === PERBAIKAN MULTIPLAYER RESMI ===
+		// === BLOK MULTIPLAYER PERBAIKAN: Menggunakan CCMenuItemFont Resmi Cocos Lama ===
 		if (mode == GameMode::OneVsOne) 
 		{
-			auto labelHost = CCLabelTTF::create("Buat Room (Host)", "Arial", 28);
-			auto labelClient1 = CCLabelTTF::create("Gabung (IP: 192.168.43.1)", "Arial", 26);
-			auto labelClient2 = CCLabelTTF::create("Gabung (IP: 192.168.1.1)", "Arial", 26);
+			auto hostBtn = CCMenuItemFont::create("Buat Room (Host)", [this](Ref* sender){
+				global_isHost = true;
+				global_ipAddress = "0.0.0.0"; 
+				CCLOG("Multiplayer: Menjadi HOST");
+				
+				auto handler = getGameModeHandler();
+				if(handler) handler->init();
+			});
 
-			// DIUBAH MENJADI CCMenuItemLabel AGAR SESUAI DENGAN ENGINE COCOS LAMA
-			auto hostBtn = CCMenuItemLabel::create(labelHost, this, menu_selector(GameModeLayer::onHostClick));
-			auto clientBtn1 = CCMenuItemLabel::create(labelClient1, this, menu_selector(GameModeLayer::onClient1Click));
-			auto clientBtn2 = CCMenuItemLabel::create(labelClient2, this, menu_selector(GameModeLayer::onClient2Click));
+			auto clientBtn = CCMenuItemFont::create("Gabung Room (Client)", [this](Ref* sender) {
+				global_isHost = false;
+				CCLOG("Multiplayer: Menjadi CLIENT - Membuka Input IP");
 
-			auto mpMenu = Menu::create(hostBtn, clientBtn1, clientBtn2, nullptr);
-			mpMenu->alignItemsVerticallyWithPadding(25.0f);
+				auto parentMenu = sender->getParent();
+				if(parentMenu) parentMenu->removeFromParent();
+
+				// Menggunakan standar text label manual jika UI EditBox bentrok di compiler
+				auto labelClient1 = CCLabelTTF::create("Gabung Hotspot (IP: 192.168.43.1)", "Arial", 26);
+				auto labelClient2 = CCLabelTTF::create("Gabung Wi-Fi Rumah (IP: 192.168.1.1)", "Arial", 26);
+
+				auto cBtn1 = CCMenuItemLabel::create(labelClient1, [this](Ref* s){
+					global_ipAddress = "192.168.43.1";
+					auto handler = getGameModeHandler();
+					if(handler) handler->init();
+				});
+				auto cBtn2 = CCMenuItemLabel::create(labelClient2, [this](Ref* s){
+					global_ipAddress = "192.168.1.1";
+					auto handler = getGameModeHandler();
+					if(handler) handler->init();
+				});
+
+				auto subMenu = Menu::create(cBtn1, cBtn2, nullptr);
+				subMenu->alignItemsVerticallyWithPadding(20.0f);
+				subMenu->setPosition(Vec2(winSize.width / 2, winSize.height / 2));
+				this->addChild(subMenu, 1000);
+			});
+
+			hostBtn->setFontSize(32);
+			clientBtn->setFontSize(32);
+
+			auto mpMenu = Menu::create(hostBtn, clientBtn, nullptr);
+			mpMenu->alignItemsVerticallyWithPadding(20.0f);
 			mpMenu->setPosition(Vec2(winSize.width / 2, winSize.height / 2));
 			this->addChild(mpMenu, 999); 
 			
