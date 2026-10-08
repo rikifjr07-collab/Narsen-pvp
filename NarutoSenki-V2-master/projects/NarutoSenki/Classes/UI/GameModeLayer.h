@@ -11,6 +11,11 @@ public:
 	bool init();
 	void backToMenu(Ref *sender);
 
+	// Tambahan Deklarasi Tombol Multiplayer Resmi agar Bisa Dibaca di File CPP
+	void onHostClick(Ref* sender);
+	void onClient1Click(Ref* sender);
+	void onClient2Click(Ref* sender);
+
 	void initModeData();
 	bool pushMode(const GameModeData &data);
 	void removeMode(const GameModeData &data);
