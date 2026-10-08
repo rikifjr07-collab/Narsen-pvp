@@ -7,8 +7,8 @@ extern const GameData kDefaultGameData;
 bool global_isHost = true; 
 std::string global_ipAddress = "192.168.43.1"; 
 
-// Jembatan Fungsi Pendukung Jaringan (Bypass Keamanan Pointer)
-void executeMultiplayerSetup(bool hostMode, const char* targetIp)
+// Fungsi Pembantu Utama Jaringan
+void triggerMultiplayerStart(bool hostMode, const char* targetIp)
 {
 	global_isHost = hostMode;
 	global_ipAddress = targetIp;
@@ -19,6 +19,23 @@ void executeMultiplayerSetup(bool hostMode, const char* targetIp)
 		handler->init();
 	}
 }
+
+// === DEKLARASI STRUKTUR FUNGSI BARU AGAR DIKENALI SEBAGAI MEMBER RESMI ===
+void GameModeLayer::onHostClick(Ref* sender)
+{
+	triggerMultiplayerStart(true, "0.0.0.0");
+}
+
+void GameModeLayer::onClient1Click(Ref* sender)
+{
+	triggerMultiplayerStart(false, "192.168.43.1");
+}
+
+void GameModeLayer::onClient2Click(Ref* sender)
+{
+	triggerMultiplayerStart(false, "192.168.1.1");
+}
+
 
 bool GameModeLayer::init()
 {
@@ -199,23 +216,16 @@ void GameModeLayer::selectMode(GameMode mode)
 		auto handler = getGameModeHandler();
 		handler->setOldCheats(Cheats);
 
-		// === PERBAIKAN MUTLAK MULTIPLAYER: Kebal Eror Pointer Typecast ===
+		// === MULTIPLAYER FIX: Menggunakan menu_selector Murni Tanpa Lambda Pointer Cast ===
 		if (mode == GameMode::OneVsOne) 
 		{
 			auto labelHost = CCLabelTTF::create("Buat Room (Host)", "Arial", 28);
 			auto labelClient1 = CCLabelTTF::create("Gabung (IP: 192.168.43.1)", "Arial", 26);
 			auto labelClient2 = CCLabelTTF::create("Gabung (IP: 192.168.1.1)", "Arial", 26);
 
-			// Trik Typecast SEL_MenuHandler: Menghubungkan fungsi eksternal secara langsung tanpa halangan arsitektur compiler
-			auto hostBtn = MenuItemLabel::create(labelHost, this, (SEL_MenuHandler)(void*)[](Ref* s) {
-				executeMultiplayerSetup(true, "0.0.0.0");
-			});
-			auto clientBtn1 = MenuItemLabel::create(labelClient1, this, (SEL_MenuHandler)(void*)[](Ref* s) {
-				executeMultiplayerSetup(false, "192.168.43.1");
-			});
-			auto clientBtn2 = MenuItemLabel::create(labelClient2, this, (SEL_MenuHandler)(void*)[](Ref* s) {
-				executeMultiplayerSetup(false, "192.168.1.1");
-			});
+			auto hostBtn = MenuItemLabel::create(labelHost, this, menu_selector(GameModeLayer::onHostClick));
+			auto clientBtn1 = MenuItemLabel::create(labelClient1, this, menu_selector(GameModeLayer::onClient1Click));
+			auto clientBtn2 = MenuItemLabel::create(labelClient2, this, menu_selector(GameModeLayer::onClient2Click));
 
 			auto mpMenu = Menu::create(hostBtn, clientBtn1, clientBtn2, nullptr);
 			mpMenu->alignItemsVerticallyWithPadding(25.0f);
