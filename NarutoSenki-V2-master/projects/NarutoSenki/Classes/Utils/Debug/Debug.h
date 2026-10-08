@@ -1,4 +1,21 @@
-#pragma once
+#pr#pragma once
+#include "cocos2d.h"
+#include "Utils/Cocos2dxHelper.hpp"
+
+using namespace cocos2d;
+using namespace std;
+
+namespace Debug 
+{
+	// Mengalihkan fungsi MSLOG bawaan proyek Anda agar membaca sistem format tiruan yang baru
+	template<typename... Args>
+	static inline void MSLOG(const char* fmt, Args&&... args)
+	{
+		std::string msg = fmt::format(fmt, std::forward<Args>(args)...);
+		CCLOG("%s", msg.c_str());
+	}
+}
+agma once
 
 /**
  * Naruto Senki V2 Debug
