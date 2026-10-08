@@ -7,6 +7,37 @@ extern const GameData kDefaultGameData;
 bool global_isHost = true; 
 std::string global_ipAddress = "192.168.43.1"; 
 
+// Fungsi Tombol Lokal (Bypass Deklarasi Header agar Langsung Tembus)
+void onHostClick(Ref* sender)
+{
+	global_isHost = true;
+	global_ipAddress = "0.0.0.0"; 
+	CCLOG("Multiplayer: Menjadi HOST");
+	
+	auto handler = getGameModeHandler();
+	if (handler) handler->init();
+}
+
+void onClient1Click(Ref* sender)
+{
+	global_isHost = false;
+	global_ipAddress = "192.168.43.1"; 
+	CCLOG("Multiplayer: CLIENT menyambung ke IP %s", global_ipAddress.c_str());
+	
+	auto handler = getGameModeHandler();
+	if (handler) handler->init();
+}
+
+void onClient2Click(Ref* sender)
+{
+	global_isHost = false;
+	global_ipAddress = "192.168.1.1"; 
+	CCLOG("Multiplayer: CLIENT menyambung ke IP %s", global_ipAddress.c_str());
+	
+	auto handler = getGameModeHandler();
+	if (handler) handler->init();
+}
+
 bool GameModeLayer::init()
 {
 	auto bgSprite = Sprite::create("red_bg.png");
@@ -148,38 +179,6 @@ void GameModeLayer::removeMode(const GameModeData &data)
 {
 }
 
-// Fungsi bantu saat tombol Host diklik (Menghindari Lambda error di engine lama)
-void GameModeLayer::onHostSelected(Ref* sender)
-{
-	global_isHost = true;
-	global_ipAddress = "0.0.0.0"; 
-	CCLOG("Multiplayer: Menjadi HOST");
-	
-	auto handler = getGameModeHandler();
-	if (handler) handler->init();
-}
-
-// Pilihan tombol IP untuk Client
-void GameModeLayer::onClientIp1Selected(Ref* sender)
-{
-	global_isHost = false;
-	global_ipAddress = "192.168.43.1"; // IP Hotspot Android standar umum
-	CCLOG("Multiplayer: CLIENT menyambung ke IP %s", global_ipAddress.c_str());
-	
-	auto handler = getGameModeHandler();
-	if (handler) handler->init();
-}
-
-void GameModeLayer::onClientIp2Selected(Ref* sender)
-{
-	global_isHost = false;
-	global_ipAddress = "192.168.1.1"; // IP Hotspot WiFi Router/Indihome umum
-	CCLOG("Multiplayer: CLIENT menyambung ke IP %s", global_ipAddress.c_str());
-	
-	auto handler = getGameModeHandler();
-	if (handler) handler->init();
-}
-
 void GameModeLayer::selectMode(GameMode mode)
 {
 	auto data = modes[(size_t)mode];
@@ -218,17 +217,17 @@ void GameModeLayer::selectMode(GameMode mode)
 		auto handler = getGameModeHandler();
 		handler->setOldCheats(Cheats);
 
-		// === REVISI TOTAL MULTIPLAYER: Klasik & 100% Aman dari Eror Build ===
+		// === REVISI FINAL MULTIPLAYER: Struktur Pemanggil Tombol yang Valid untuk Cocos2d-x Lawas ===
 		if (mode == GameMode::OneVsOne) 
 		{
-			// Buat teks label tombol menggunakan struktur teks bawaan Cocos2d-x lama yang stabil
 			auto labelHost = CCLabelTTF::create("Buat Room (Host)", "Arial", 28);
 			auto labelClient1 = CCLabelTTF::create("Gabung (IP: 192.168.43.1)", "Arial", 26);
 			auto labelClient2 = CCLabelTTF::create("Gabung (IP: 192.168.1.1)", "Arial", 26);
 
-			auto hostBtn = MenuItemLabel::create(labelHost, this, menu_selector(GameModeLayer::onHostSelected));
-			auto clientBtn1 = MenuItemLabel::create(labelClient1, this, menu_selector(GameModeLayer::onClientIp1Selected));
-			auto clientBtn2 = MenuItemLabel::create(labelClient2, this, menu_selector(GameModeLayer::onClientIp2Selected));
+			// Memakai macro menu_selector global agar terhubung langsung ke fungsi lokal di atas
+			auto hostBtn = MenuItemLabel::create(labelHost, this, menu_selector(onHostClick));
+			auto clientBtn1 = MenuItemLabel::create(labelClient1, this, menu_selector(onClient1Click));
+			auto clientBtn2 = MenuItemLabel::create(labelClient2, this, menu_selector(onClient2Click));
 
 			auto mpMenu = Menu::create(hostBtn, clientBtn1, clientBtn2, nullptr);
 			mpMenu->alignItemsVerticallyWithPadding(25.0f);
