@@ -35,7 +35,6 @@ public:
         extern std::string global_ipAddress;
         isHost = global_isHost;    
 
-
         if (isHost) {
             // 1. Buat Socket TCP
             serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -96,7 +95,8 @@ public:
             float smoothX = currentX + (receivedPacket.posX - currentX) * 0.3f;
             float smoothY = currentY + (receivedPacket.posY - currentY) * 0.3f;
             
-            friendChar->setPosition(smoothX, smoothY);
+            // PERBAIKAN: Menggunakan objek Vec2 agar sesuai dengan fungsi setPosition bawaan engine game
+            friendChar->setPosition(cocos2d::Vec2(smoothX, smoothY));
         }
     }
 
@@ -104,7 +104,8 @@ public:
         auto layer = getGameLayer();
         if (!layer) return;
 
-        auto myHero = layer->getHero(); 
+        // PERBAIKAN: Menggunakan getHero1() sesuai dengan fungsi asli yang terdaftar di GameLayer kamu
+        auto myHero = layer->getHero1(); 
         if (myHero) {
             sendMyPosition(myHero->getPositionX(), myHero->getPositionY(), 0);
         }
