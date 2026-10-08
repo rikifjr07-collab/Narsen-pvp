@@ -7,35 +7,17 @@ extern const GameData kDefaultGameData;
 bool global_isHost = true; 
 std::string global_ipAddress = "192.168.43.1"; 
 
-// Fungsi Tombol Lokal (Bypass Deklarasi Header agar Langsung Tembus)
-void onHostClick(Ref* sender)
+// Jembatan Fungsi Pendukung Jaringan (Bypass Keamanan Pointer)
+void executeMultiplayerSetup(bool hostMode, const char* targetIp)
 {
-	global_isHost = true;
-	global_ipAddress = "0.0.0.0"; 
-	CCLOG("Multiplayer: Menjadi HOST");
+	global_isHost = hostMode;
+	global_ipAddress = targetIp;
+	CCLOG("Multiplayer Configured: Host=%d, IP=%s", hostMode, targetIp);
 	
 	auto handler = getGameModeHandler();
-	if (handler) handler->init();
-}
-
-void onClient1Click(Ref* sender)
-{
-	global_isHost = false;
-	global_ipAddress = "192.168.43.1"; 
-	CCLOG("Multiplayer: CLIENT menyambung ke IP %s", global_ipAddress.c_str());
-	
-	auto handler = getGameModeHandler();
-	if (handler) handler->init();
-}
-
-void onClient2Click(Ref* sender)
-{
-	global_isHost = false;
-	global_ipAddress = "192.168.1.1"; 
-	CCLOG("Multiplayer: CLIENT menyambung ke IP %s", global_ipAddress.c_str());
-	
-	auto handler = getGameModeHandler();
-	if (handler) handler->init();
+	if (handler) {
+		handler->init();
+	}
 }
 
 bool GameModeLayer::init()
@@ -217,17 +199,23 @@ void GameModeLayer::selectMode(GameMode mode)
 		auto handler = getGameModeHandler();
 		handler->setOldCheats(Cheats);
 
-		// === REVISI FINAL MULTIPLAYER: Struktur Pemanggil Tombol yang Valid untuk Cocos2d-x Lawas ===
+		// === PERBAIKAN MUTLAK MULTIPLAYER: Kebal Eror Pointer Typecast ===
 		if (mode == GameMode::OneVsOne) 
 		{
 			auto labelHost = CCLabelTTF::create("Buat Room (Host)", "Arial", 28);
 			auto labelClient1 = CCLabelTTF::create("Gabung (IP: 192.168.43.1)", "Arial", 26);
 			auto labelClient2 = CCLabelTTF::create("Gabung (IP: 192.168.1.1)", "Arial", 26);
 
-			// Memakai macro menu_selector global agar terhubung langsung ke fungsi lokal di atas
-			auto hostBtn = MenuItemLabel::create(labelHost, this, menu_selector(onHostClick));
-			auto clientBtn1 = MenuItemLabel::create(labelClient1, this, menu_selector(onClient1Click));
-			auto clientBtn2 = MenuItemLabel::create(labelClient2, this, menu_selector(onClient2Click));
+			// Trik Typecast SEL_MenuHandler: Menghubungkan fungsi eksternal secara langsung tanpa halangan arsitektur compiler
+			auto hostBtn = MenuItemLabel::create(labelHost, this, (SEL_MenuHandler)(void*)[](Ref* s) {
+				executeMultiplayerSetup(true, "0.0.0.0");
+			});
+			auto clientBtn1 = MenuItemLabel::create(labelClient1, this, (SEL_MenuHandler)(void*)[](Ref* s) {
+				executeMultiplayerSetup(false, "192.168.43.1");
+			});
+			auto clientBtn2 = MenuItemLabel::create(labelClient2, this, (SEL_MenuHandler)(void*)[](Ref* s) {
+				executeMultiplayerSetup(false, "192.168.1.1");
+			});
 
 			auto mpMenu = Menu::create(hostBtn, clientBtn1, clientBtn2, nullptr);
 			mpMenu->alignItemsVerticallyWithPadding(25.0f);
