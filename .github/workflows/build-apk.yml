@@ -11,21 +11,17 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Pasang Java 8 dan Trik Library Linux Lawas
-        run: |
-          # 1. Pasang paket dasar wajib bawaan server
-          sudo apt-get update
-          sudo apt-get install -y openjdk-8-jdk unzip wget curl make libncurses6
+      - name: Pasang Java 17 dan Android NDK Modern
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-          # 2. TRIK JITU: Mengakali skrip jadul dengan membuat symlink library versi 6 menyamar menjadi versi 5
-          sudo ln -s /lib/x86_64-linux-gnu/libncursesw.so.6 /lib/x86_64-linux-gnu/libncurses.so.5
-          sudo ln -s /lib/x86_64-linux-gnu/libtinfo.so.6 /lib/x86_64-linux-gnu/libtinfo.so.5
-
-      - name: Pasang NDK r10e
+      - name: Pasang Android NDK r25c
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
-          ndk-version: r10e
+          ndk-version: r25c
           local-cache: true
 
       - name: Jalankan Proses Perakitan Game
@@ -33,38 +29,17 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
         run: |
-          export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-
-          # Mengakali folder toolchain NDK 64-bit agar terbaca oleh skrip game jadul
-          ln -s $ANDROID_NDK_HOME/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64 $ANDROID_NDK_HOME/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86 || true
-          ln -s $ANDROID_NDK_HOME/toolchains/llvm-3.6/prebuilt/linux-x86_64 $ANDROID_NDK_HOME/toolchains/llvm-3.6/prebuilt/linux-x86 || true
-
-          # Menyuntikkan identitas berkas versi agar Gradle mengenali NDK r10e lawas
-          echo -e "Pkg.Desc = Android NDK\nPkg.Revision = 10.5.0" > $ANDROID_NDK_HOME/source.properties
-
-          # 2. Daftarkan jalur NDK and SDK ke konfigurasi proyek game kamu
+          # 1. Daftarkan jalur NDK modern ke konfigurasi proyek game kamu
           echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=$ANDROID_HOME" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
-          # 3. AMANKAN CONFIG COMPILER: Sembuhkan flag Application.mk & Android.mk ke standar gnu++11
-          # Ditambahkan perintah -Dstatic_assert(...)= untuk melumpuhkan sensor static_assert dari mesin compiler tanpa merusak file teks
-          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++2a/-std=gnu++11/g' {} +
-          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/-std=c++11/-std=gnu++11/g' {} +
-          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++2a/-std=gnu++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0 -Dstatic_assert(...)=/g' {} +
-          find $GITHUB_WORKSPACE -name "Android.mk" -type f -exec sed -i 's/-std=c++11/-std=gnu++11 -fpermissive -w -D_GLIBCXX_USE_CXX11_ABI=0 -Dstatic_assert(...)=/g' {} +
+          # 2. Hapus setelan toolchain GCC 4.9 lawas di Application.mk karena NDK modern menggunakan Clang secara otomatis
+          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i '/NDK_TOOLCHAIN_VERSION/d' {} +
 
-          # 4. BEDAH KODE KHUSUS (Hanya menyasar file Parser modern yang tidak ramah NDK lama)
-          # Mengonversi otomatis Structured Binding C++17 di Parser.hpp agar bisa dibaca compiler lama
-          find $GITHUB_WORKSPACE -name "Parser.hpp" -type f -exec sed -i 's/for\s*(\s*const\s*auto\s*&\[\s*key\s*,\s*value\s*\]\s*:\s*v\.as_table\s*(\s*)\s*)/for(const auto\& pair_item : v.as_table()) { auto key = pair_item.first; auto value = pair_item.second;/g' {} +
-
-          # Memperbaiki fungsi pencarian kondisional di TomlHelper.hpp & Parser.hpp
-          find $GITHUB_WORKSPACE -type f \( -name "TomlHelper.hpp" -o -name "Parser.hpp" \) -exec sed -i 's/if\s*(\s*const\s*auto\s*iter\s*=\s*tab\.find/auto iter = tab.find/g' {} +
-          find $GITHUB_WORKSPACE -type f \( -name "TomlHelper.hpp" -o -name "Parser.hpp" \) -exec sed -i 's/;\s*iter\s*!=\s*end\s*)/; if(iter != end)/g' {} +
-
-          # 5. TANCAP GAS FINAL: Mulai Eksekusi Perakitan APK Game
+          # 3. TANCAP GAS FINAL: Mulai Eksekusi Perakitan APK Game
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           chmod +x gradlew
           
-          # PERBAIKAN PETA FOLDER: Menyambungkan modul agar pustaka terdeteksi sempurna
+          # Menyambungkan peta jalan modul internal Cocos2dx agar terbaca sempurna oleh NDK modern
           export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx/platform/third_party/android:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx/platform/third_party/android/prebuilt:$GITHUB_WORKSPACE/NarutoSenki-V2-master/CocosDenshion/android
           
           ./gradlew assembleDebug --no-daemon
