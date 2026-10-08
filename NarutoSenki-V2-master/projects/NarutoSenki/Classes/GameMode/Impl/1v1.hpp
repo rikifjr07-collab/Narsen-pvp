@@ -94,8 +94,8 @@ public:
             float smoothX = currentX + (receivedPacket.posX - currentX) * 0.3f;
             float smoothY = currentY + (receivedPacket.posY - currentY) * 0.3f;
             
-            // PERBAIKAN MUTLAK: Penulisan namespace cocos2d::Vec2 yang valid dan benar
-            friendChar->setPosition(cocos2d::Vec2(smoothX, smoothY));
+            // PERBAIKAN: Menggunakan ccp() bawaan Cocos2d-x klasik agar tipe data koordinat langsung tembus
+            friendChar->setPosition(ccp(smoothX, smoothY));
         }
     }
 
@@ -103,8 +103,12 @@ public:
         auto layer = getGameLayer();
         if (!layer) return;
 
-        // PERBAIKAN MUTLAK: Menggunakan getHero1() sesuai fungsi internal GameLayer asli milikmu
-        auto myHero = layer->getHero1(); 
+        // PERBAIKAN: Menggunakan fungsi bawaan dari file CharacterBase untuk mencari data player utama secara aman
+        auto myHero = layer->getPlayer(); 
+        if (!myHero) {
+            myHero = layer->getHero1();
+        }
+
         if (myHero) {
             sendMyPosition(myHero->getPositionX(), myHero->getPositionY(), 0);
         }
