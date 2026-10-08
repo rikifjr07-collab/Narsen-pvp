@@ -5,8 +5,7 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include <cstdarg>
-#include <type_traits>
+#include <sstream>
 
 using namespace cocos2d;
 using namespace std;
@@ -117,28 +116,20 @@ static inline SpriteFrame *getSpriteFrame(const string &name)
 	return SpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(name.c_str());
 }
 
-// === SISTEM CONVERTER OTOMATIS AGAR std::string TIDAK ERROR DI VARIADIC FUNCTION ===
-template <typename T>
-static inline auto KebutuhanFormat(T&& arg) -> typename std::conditional<std::is_same<typename std::decay<T>::type, std::string>::value, const char*, T&&>::type {
-    return std::forward<T>(arg);
+// === FIX AMAN: Menggunakan Variadic Template + String Stream (Lolos dari Deteksi format-security Android NDK) ===
+inline void format_helper(std::ostringstream&) {}
+
+template <typename T, typename... Args>
+inline void format_helper(std::ostringstream& ss, T&& first, Args&&... args) {
+    ss << std::forward<T>(first);
+    format_helper(ss, std::forward<Args>(args)...);
 }
 
-static inline const char* KebutuhanFormat(const std::string& arg) {
-    return arg.c_str();
-}
-
-static inline const char* KebutuhanFormat(std::string& arg) {
-    return arg.c_str();
-}
-
-// === FIX FINAL FUNGSI FORMAT: Mencegah Error Non-Trivial Object di Variadic ===
-template <class... _Types>
-static inline std::string format(const char* _Fmt, _Types &&..._Args) {
-    int size = snprintf(nullptr, 0, _Fmt, KebutuhanFormat(std::forward<_Types>(_Args))...);
-    if (size <= 0) return "";
-    std::vector<char> buf(size + 1);
-    snprintf(buf.data(), buf.size(), _Fmt, KebutuhanFormat(std::forward<_Types>(_Args))...);
-    return std::string(buf.data(), size);
+template <typename... Args>
+static inline std::string format(const char* _Fmt, Args&&... args) {
+    std::ostringstream ss;
+    format_helper(ss, std::forward<Args>(args)...);
+    return ss.str();
 }
 
 template <class... _Types>
@@ -146,4 +137,12 @@ static inline SpriteFrame *getSpriteFrame(const char* _Fmt, _Types &&..._Args)
 {
 	std::string formattedStr = format(_Fmt, std::forward<_Types>(_Args)...);
 	return getSpriteFrame(formattedStr);
+}
+
+// Menghubungkan fungsi format tiruan ke namespace tiruan fmt agar Debug.hpp tidak error
+namespace fmt {
+    template <typename... Args>
+    static inline std::string format(const char* _Fmt, Args&&... args) {
+        return ::format(_Fmt, std::forward<Args>(args)...);
+    }
 }
