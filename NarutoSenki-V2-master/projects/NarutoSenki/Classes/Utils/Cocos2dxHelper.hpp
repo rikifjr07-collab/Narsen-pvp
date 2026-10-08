@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <cstdarg>
+#include <type_traits>
 
 using namespace cocos2d;
 using namespace std;
@@ -116,19 +117,28 @@ static inline SpriteFrame *getSpriteFrame(const string &name)
 	return SpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(name.c_str());
 }
 
-// === PERBAIKAN MAKRO FORMAT UNTUK SELURUH PROYEK GAME ===
-static inline std::string format(const char* fmt, ...) {
-	va_list args;
-	va_start(args, fmt);
-	va_list args_copy;
-	va_copy(args_copy, args);
-	int size = vsnprintf(nullptr, 0, fmt, args_copy);
-	va_end(args_copy);
-	if (size <= 0) { va_end(args); return ""; }
-	std::vector<char> buf(size + 1);
-	vsnprintf(buf.data(), buf.size(), fmt, args);
-	va_end(args);
-	return std::string(buf.data(), size);
+// === SISTEM CONVERTER OTOMATIS AGAR std::string TIDAK ERROR DI VARIADIC FUNCTION ===
+template <typename T>
+static inline auto KebutuhanFormat(T&& arg) -> typename std::conditional<std::is_same<typename std::decay<T>::type, std::string>::value, const char*, T&&>::type {
+    return std::forward<T>(arg);
+}
+
+static inline const char* KebutuhanFormat(const std::string& arg) {
+    return arg.c_str();
+}
+
+static inline const char* KebutuhanFormat(std::string& arg) {
+    return arg.c_str();
+}
+
+// === FIX FINAL FUNGSI FORMAT: Mencegah Error Non-Trivial Object di Variadic ===
+template <class... _Types>
+static inline std::string format(const char* _Fmt, _Types &&..._Args) {
+    int size = snprintf(nullptr, 0, _Fmt, KebutuhanFormat(std::forward<_Types>(_Args))...);
+    if (size <= 0) return "";
+    std::vector<char> buf(size + 1);
+    snprintf(buf.data(), buf.size(), _Fmt, KebutuhanFormat(std::forward<_Types>(_Args))...);
+    return std::string(buf.data(), size);
 }
 
 template <class... _Types>
