@@ -4,6 +4,8 @@
 #include "Utils/CCDeprecated.h"
 #include <string>
 #include <memory>
+#include <vector>
+#include <cstdarg>
 
 using namespace cocos2d;
 using namespace std;
@@ -114,11 +116,24 @@ static inline SpriteFrame *getSpriteFrame(const string &name)
 	return SpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(name.c_str());
 }
 
-// === PERBAIKAN: Menggunakan snprintf bawaan C++ standar agar bebas error library hilang ===
+// === PERBAIKAN MAKRO FORMAT UNTUK SELURUH PROYEK GAME ===
+static inline std::string format(const char* fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	va_list args_copy;
+	va_copy(args_copy, args);
+	int size = vsnprintf(nullptr, 0, fmt, args_copy);
+	va_end(args_copy);
+	if (size <= 0) { va_end(args); return ""; }
+	std::vector<char> buf(size + 1);
+	vsnprintf(buf.data(), buf.size(), fmt, args);
+	va_end(args);
+	return std::string(buf.data(), size);
+}
+
 template <class... _Types>
 static inline SpriteFrame *getSpriteFrame(const char* _Fmt, _Types &&..._Args)
 {
-	char buffer[256];
-	snprintf(buffer, sizeof(buffer), _Fmt, std::forward<_Types>(_Args)...);
-	return getSpriteFrame(std::string(buffer));
+	std::string formattedStr = format(_Fmt, std::forward<_Types>(_Args)...);
+	return getSpriteFrame(formattedStr);
 }
