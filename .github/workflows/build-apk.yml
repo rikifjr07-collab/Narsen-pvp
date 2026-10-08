@@ -17,11 +17,11 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
 
-      - name: Pasang Android NDK r25c
+      - name: Pasang Android NDK r21e (Versi Penengah)
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
-          ndk-version: r25c
+          ndk-version: r21e
           local-cache: true
 
       - name: Jalankan Proses Perakitan Game
@@ -29,17 +29,17 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
         run: |
-          # 1. Daftarkan jalur NDK modern ke konfigurasi proyek game kamu
+          # 1. Daftarkan jalur NDK r21e ke konfigurasi proyek game kamu
           echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=$ANDROID_HOME" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
-          # 2. Hapus setelan toolchain GCC 4.9 lawas di Application.mk karena NDK modern menggunakan Clang secara otomatis
-          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i '/NDK_TOOLCHAIN_VERSION/d' {} +
+          # 2. Sesuaikan versi toolchain agar dikenali oleh sistem build r21e
+          find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/NDK_TOOLCHAIN_VERSION\s*:=\s*4.9/NDK_TOOLCHAIN_VERSION := clang/g' {} +
 
           # 3. TANCAP GAS FINAL: Mulai Eksekusi Perakitan APK Game
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
           chmod +x gradlew
           
-          # Menyambungkan peta jalan modul internal Cocos2dx agar terbaca sempurna oleh NDK modern
+          # Menyambungkan peta jalan modul internal Cocos2dx agar terbaca sempurna
           export NDK_MODULE_PATH=$GITHUB_WORKSPACE/NarutoSenki-V2-master:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx/platform/third_party/android:$GITHUB_WORKSPACE/NarutoSenki-V2-master/cocos2dx/platform/third_party/android/prebuilt:$GITHUB_WORKSPACE/NarutoSenki-V2-master/CocosDenshion/android
           
           ./gradlew assembleDebug --no-daemon
