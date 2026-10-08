@@ -11,11 +11,11 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Pasang Java 17 dan Android NDK Modern
+      - name: Pasang Java 8 Ramah Gradle Lama
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '8'
 
       - name: Pasang Android NDK r25c
         uses: nttld/setup-ndk@v1
