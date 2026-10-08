@@ -215,17 +215,17 @@ void GameModeLayer::selectMode(GameMode mode)
 		auto handler = getGameModeHandler();
 		handler->setOldCheats(Cheats);
 
-		// === PERBAIKAN MULTIPLAYER RESMI: Menggunakan Fungsi Member Kelas yang Sah & Bersih dari Typo ===
+		// === PERBAIKAN MULTIPLAYER RESMI ===
 		if (mode == GameMode::OneVsOne) 
 		{
 			auto labelHost = CCLabelTTF::create("Buat Room (Host)", "Arial", 28);
 			auto labelClient1 = CCLabelTTF::create("Gabung (IP: 192.168.43.1)", "Arial", 26);
 			auto labelClient2 = CCLabelTTF::create("Gabung (IP: 192.168.1.1)", "Arial", 26);
 
-			// Memanggil fungsi member resmi lewat macro menu_selector bawaan Cocos asli (Bebas Eror Void Pointer)
-			auto hostBtn = MenuItemLabel::create(labelHost, this, menu_selector(GameModeLayer::onHostClick));
-			auto clientBtn1 = MenuItemLabel::create(labelClient1, this, menu_selector(GameModeLayer::onClient1Click));
-			auto clientBtn2 = MenuItemLabel::create(labelClient2, this, menu_selector(GameModeLayer::onClient2Click));
+			// DIUBAH MENJADI CCMenuItemLabel AGAR SESUAI DENGAN ENGINE COCOS LAMA
+			auto hostBtn = CCMenuItemLabel::create(labelHost, this, menu_selector(GameModeLayer::onHostClick));
+			auto clientBtn1 = CCMenuItemLabel::create(labelClient1, this, menu_selector(GameModeLayer::onClient1Click));
+			auto clientBtn2 = CCMenuItemLabel::create(labelClient2, this, menu_selector(GameModeLayer::onClient2Click));
 
 			auto mpMenu = Menu::create(hostBtn, clientBtn1, clientBtn2, nullptr);
 			mpMenu->alignItemsVerticallyWithPadding(25.0f);
