@@ -32,15 +32,6 @@ void MenuButton::onEnter()
 {
 	Sprite::onEnter();
 	Director::sharedDirector()->getTouchDispatcher()->addTargetedDelegate(this, 10, true);
-
-#if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
-	// JniMethodInfo minfo;
-	// bool isHave = JniHelper::getStaticMethodInfo(minfo, "net/zakume/game/NarutoSenki", "showBanner", "()V");
-	// if (isHave)
-	// {
-	// 	minfo.env->CallStaticVoidMethod(minfo.classID, minfo.methodID);
-	// }
-#endif
 }
 
 void MenuButton::onExit()
@@ -125,7 +116,7 @@ void MenuButton::ccTouchEnded(Touch *touch, Event *event)
 			break;
 		case MenuButtonType::Custom:
 			SimpleAudioEngine::sharedEngine()->playEffect("Audio/Menu/confirm.ogg");
-			_startMenu->onTrainingCallBack(); // Dialihkan ke training secara aman agar tombol bereaksi
+			_startMenu->onTrainingCallBack(); 
 			break;
 		case MenuButtonType::HardCore:
 			SimpleAudioEngine::sharedEngine()->playEffect(SELECT_SOUND);
@@ -324,15 +315,12 @@ bool StartMenu::init()
 	}
 
 	Sprite *avator = Sprite::createWithSpriteFrameName("avator1.png");
-		Vector<SpriteFrame *> frames;
+	Vector<SpriteFrame *> frames;
 	Vector<FiniteTimeAction *> list;
 	int idx = 0;
 	while (++idx < 5)
 	{
-		// Menggunakan CCString bawaan v2 untuk format string nama file gambar
 		CCString* nameStr = CCString::createWithFormat("avator%d.png", idx);
-		
-		// Memperbaiki getInstance() menjadi sharedSpriteFrameCache() untuk Cocos2d-x v2
 		auto frame = SpriteFrameCache::sharedSpriteFrameCache()->getSpriteFrameByName(nameStr->getCString());
 		if (frame) {
 			frames.pushBack(frame);
@@ -349,7 +337,7 @@ bool StartMenu::init()
 		list.pushBack(fadeOut);
 	}
 
-}
+	// KODE DIPINDAHKAN KEMBALI KE DALAM FUNGSI INIT
 	MenuItem *news_btn = MenuItemSprite::create(Sprite::createWithSpriteFrameName("news_btn.png"), nullptr, this, menu_selector(StartMenu::onNewsBtn));
 	Menu *menu = Menu::create(news_btn, nullptr);
 	news_btn->setAnchorPoint(Vec2(0, 0.5f));
@@ -360,35 +348,40 @@ bool StartMenu::init()
 
 	login_btn = MenuItemSprite::create(Sprite::createWithSpriteFrameName("login_btn.png"), nullptr, this, menu_selector(StartMenu::onLoginBtn));
 	Menu *menu2 = Menu::create(login_btn, nullptr);
-    login_btn->setAnchorPoint(Vec2(1, 0.5f));
-menu2->setPosition(winSize.width - 15, winSize.height - 50);
-addChild(menu2, 5);
-scheduleUpdate();
-return true;
+	login_btn->setAnchorPoint(Vec2(1, 0.5f));
+	menu2->setPosition(winSize.width - 15, winSize.height - 50);
+	addChild(menu2, 5);
+	
+	scheduleUpdate();
+	return true;
 }
+
 void StartMenu::onEnter()
 {
-Layer::onEnter();
-SimpleAudioEngine::sharedEngine()->stopBackgroundMusic(true);
-if (UserDefault::sharedUserDefault()->getBoolForKey("isBGM"))
-{
-SimpleAudioEngine::sharedEngine()->playBackgroundMusic(MENU_MUSIC, true);
+	Layer::onEnter();
+	SimpleAudioEngine::sharedEngine()->stopBackgroundMusic(true);
+	if (UserDefault::sharedUserDefault()->getBoolForKey("isBGM"))
+	{
+		SimpleAudioEngine::sharedEngine()->playBackgroundMusic(MENU_MUSIC, true);
+	}
 }
-}
+
 void StartMenu::onExit()
 {
-Layer::onExit();
+	Layer::onExit();
 }
+
 void StartMenu::onLoginBtn(CCObject *sender)
 {
-auto tip = CCTips::create("ServerMainten");
-addChild(tip, 5000);
-return;
+	auto tip = CCTips::create("ServerMainten");
+	addChild(tip, 5000);
+	return;
 }
+
 void StartMenu::update(float dt)
 {
-if (!noticeLabel) {
-return;
+	if (!noticeLabel) {
+		return;
 }
 float currentX = noticeLabel->getPositionX();
 float lableX = noticeLabel->getContentSize().width;
@@ -609,7 +602,6 @@ if (frame && menuText) menuText->setDisplayFrame(frame);
 void StartMenu::keyBackClicked()
 {
 #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
-// Logika dialog keluar HP diserahkan ke sistem utama Android secara aman
 Director::sharedDirector()->end();
 exit(0);
 #else
@@ -627,18 +619,12 @@ keyBackClicked();
 }
 void StartMenu::enterSelectLayer()
 {
-	// Membuat objek CCScene kosong secara aman sesuai standar v2
-	cocos2d::CCScene* scene = cocos2d::CCScene::create();
-	if (scene) {
-		// Menginisialisasi objek SelectLayer
-		SelectLayer* layer = SelectLayer::create();
-		if (layer) {
-			// Menempelkan layer ke dalam scene
-			scene->addChild(layer);
-			// Melakukan transisi scene melalui sharedDirector() bawaan v2
-			cocos2d::CCDirector::sharedDirector()->replaceScene(scene);
-		
-	}
+cocos2d::CCScene* scene = cocos2d::CCScene::create();
+if (scene) {
+SelectLayer* layer = SelectLayer::create();
+if (layer) {
+scene->addChild(layer);
+cocos2d::CCDirector::sharedDirector()->replaceScene(scene);
 }
-
-
+}
+}
