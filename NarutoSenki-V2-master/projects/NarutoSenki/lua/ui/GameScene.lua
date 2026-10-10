@@ -105,20 +105,30 @@ function GameScene:onFinish()
 end
 
 function GameScene:onPush()
-    tools.initSqliteDB()
-
+    -- Menghentikan musik latar belakang intro secara aman
     audio.stopMusic(true)
-    -- Play sound and delayed change scene
-    -- Cleanup audio engine in StartMenu
     audio.playSound(ns.menu.CONFIRM)
 
+    -- MEMPERBAIKI ALUR PERPINDAHAN KE STARTMENU C++ AGAR AMAN DAN TIDAK FC
     local menuScene = CCScene:create()
-    local menuLayer = StartMenu:create()
-    menuLayer:setCheats(self.cheats)
-    menuScene:addChild(menuLayer)
+    
+    -- Menggunakan instansiasi objek bawaan C++ Cocos2d-x v2 secara eksplisit
+    local menuLayer = StartMenu:new()
+    if menuLayer then
+        if menuLayer:init() then
+            menuLayer:autorelease()
+            menuLayer:setCheats(self.cheats)
+            menuScene:addChild(menuLayer)
 
-    -- for auto call c++ layer StartMenu::init after lua called
-    hook.registerInitHandlerOnly(menuLayer)
-
-    director.replaceSceneWithFade(menuScene, 1.0)
+            -- Registrasi handler agar sinkron dengan sistem engine utama
+            hook.registerInitHandlerOnly(menuLayer)
+            director.replaceSceneWithFade(menuScene, 1.0)
+        else
+            menuLayer:release()
+            log("ERROR: Gagal menginisialisasi StartMenu Layer C++")
+        end
+    else
+        log("ERROR: Gagal mengalokasikan memori StartMenu Layer")
+    end
 end
+
