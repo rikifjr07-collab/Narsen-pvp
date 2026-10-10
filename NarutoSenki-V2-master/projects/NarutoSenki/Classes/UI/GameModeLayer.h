@@ -11,10 +11,11 @@ public:
 	bool init();
 	void backToMenu(Ref *sender);
 
-	// Tambahan Deklarasi Tombol Multiplayer Resmi agar Bisa Dibaca di File CPP
-	void onHostClick(Ref* sender);
-	void onClient1Click(Ref* sender);
-	void onClient2Click(Ref* sender);
+	// PEMBERSIHAN & PENYELARASAN: Nama fungsi disamakan persis dengan file .cpp
+	void onHostSelected(Ref* sender);
+	void onClientSelected(Ref* sender);
+	void onJoinHotspot(Ref* sender);
+	void onJoinWifi(Ref* sender);
 
 	void initModeData();
 	bool pushMode(const GameModeData &data);
