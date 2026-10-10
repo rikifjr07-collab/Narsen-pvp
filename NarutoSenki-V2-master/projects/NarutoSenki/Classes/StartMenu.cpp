@@ -376,12 +376,20 @@ void StartMenu::enterCustomMode() {}
 void StartMenu::enterTrainingMode() {}
 
 void StartMenu::enterSelectLayer() {
-    // Memaksa tipe data menggunakan cocos2d::CCScene bawaan v2 secara eksplisit
-    cocos2d::CCScene* scene = SelectLayer::scene();
-    if(scene) {
-        cocos2d::CCDirector::sharedDirector()->replaceScene(scene);
+    // Membuat scene kosong baru
+    auto scene = cocos2d::CCScene::create();
+    if (scene) {
+        // Membuat layer SelectLayer
+        auto layer = SelectLayer::create();
+        if (layer) {
+            // Memasukkan layer ke dalam scene
+            scene->addChild(layer);
+            // Melakukan transisi halaman secara aman
+            cocos2d::CCDirector::sharedDirector()->replaceScene(scene);
+        }
     }
 }
+
 
 
 void StartMenu::onCreditsCallBack() {}
