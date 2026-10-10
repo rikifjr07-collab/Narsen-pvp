@@ -29,13 +29,9 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
         run: |
-          # Memastikan folder tujuan ada sebelum membuat file local.properties
           mkdir -p NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
-          
-          # Mengisi local.properties dengan jalur SDK yang pasti (default GitHub Actions)
           echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=/usr/local/lib/android/sdk" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
-          # Bersihkan setelan toolchain GCC agar menggunakan mesin Clang bawaan r21e
           find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/NDK_TOOLCHAIN_VERSION\s*:=\s*4.9/NDK_TOOLCHAIN_VERSION := clang/g' {} +
 
           cd NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
@@ -51,4 +47,3 @@ jobs:
         with:
           name: Narsen-Multiplayer-APK
           path: NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/app/build/outputs/apk/debug/*.apk
-          
