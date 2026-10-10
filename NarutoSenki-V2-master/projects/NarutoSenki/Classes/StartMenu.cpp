@@ -14,17 +14,11 @@ std::array<std::unique_ptr<IGameModeHandler>, GameMode::__Internal_Max_Length> s
 int Cheats = 0;
 bool enableCustomSelect = false;
 
-/*----------------------
-init MenuButton ;
-----------------------*/
-
 bool MenuButton::init(const char *szImage)
 {
 	RETURN_FALSE_IF(!Sprite::init());
-
 	initWithSpriteFrameName(szImage);
 	setAnchorPoint(Vec2(0.5, 0));
-
 	return true;
 }
 
@@ -65,7 +59,6 @@ bool MenuButton::ccTouchBegan(Touch *touch, Event *event)
 {
 	if (!containsTouchLocation(touch))
 		return false;
-
 	prePosY = 0;
 	return true;
 }
@@ -138,7 +131,6 @@ void MenuButton::ccTouchEnded(Touch *touch, Event *event)
 void MenuButton::playSound()
 {
 	SimpleAudioEngine::sharedEngine()->stopAllEffects();
-
 	switch (_type)
 	{
 	case MenuButtonType::Training:
@@ -173,10 +165,6 @@ MenuButton *MenuButton::create(const char *szImage)
 	}
 }
 
-/*----------------------
-init StartMenu layer;
-----------------------*/
-
 StartMenu::StartMenu()
 {
 	isClockwise = false;
@@ -191,7 +179,6 @@ StartMenu::StartMenu()
 bool StartMenu::init()
 {
 	RETURN_FALSE_IF(!Layer::init());
-
 	addSprites("Menu.plist");
 	addSprites("Result.plist");
 	addSprites("NamePlate.plist");
@@ -370,7 +357,6 @@ void StartMenu::onEnter()
 {
 	Layer::onEnter();
 	SimpleAudioEngine::sharedEngine()->stopBackgroundMusic(true);
-
 	if (UserDefault::sharedUserDefault()->getBoolForKey("isBGM"))
 	{
 		SimpleAudioEngine::sharedEngine()->playBackgroundMusic(MENU_MUSIC, true);
@@ -382,3 +368,22 @@ void StartMenu::onExit()
 	Layer::onExit();
 }
 
+void StartMenu::onTrainingCallBack() { enterTrainingMode(); }
+void StartMenu::onHardCoreOn(Ref *sender) {}
+void StartMenu::onHardCoreOff(Ref *sender) {}
+void StartMenu::onHardLayerCallBack() {}
+void StartMenu::enterCustomMode() {}
+void StartMenu::enterTrainingMode() {}
+void StartMenu::enterSelectLayer() {
+auto scene = SelectLayer::createScene();
+Director::getInstance()->replaceScene(scene);
+}
+void StartMenu::onCreditsCallBack() {}
+void StartMenu::onExitCallBack() { Director::sharedDirector()->end(); }
+void StartMenu::onNewsBtn(Ref *sender) {}
+void StartMenu::onLoginBtn(Ref *sender) {}
+void StartMenu::scrollMenu(int posY) {}
+void StartMenu::setNotice() {}
+void StartMenu::update(float dt) {}
+void StartMenu::keyBackClicked() { onExitCallBack(); }
+void StartMenu::setCheats(int cheats) { Cheats = cheats; }
