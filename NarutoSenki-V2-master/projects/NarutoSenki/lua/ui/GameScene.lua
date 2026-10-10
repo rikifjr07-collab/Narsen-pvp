@@ -105,28 +105,32 @@ function GameScene:onFinish()
 end
 
 function GameScene:onPush()
-    -- Menghentikan musik latar belakang intro secara aman
     audio.stopMusic(true)
     audio.playSound(ns.menu.CONFIRM)
 
-    -- MEMPERBAIKI TRANSISI SCENE MENGGUNAKAN METODE BINDING YANG TEPAT
-    local menuScene = CCScene:create()
-    
-    -- PERBAIKAN UTAMA: Menggunakan titik dua (:) untuk inisialisasi object binding C++
-    local menuLayer = StartMenu:new()
-    if menuLayer then
+    -- BLOK EVALUASI TRANSER SCENE AMAN
+    local status, err = pcall(function()
+        local menuScene = CCScene:create()
+        local menuLayer = StartMenu:new()
+        
+        if not menuLayer then
+            error("GAGAL MEMUAT MEMORI: Objek StartMenu tidak bisa dialokasikan.")
+        end
+
         menuLayer:setCheats(self.cheats)
         menuScene:addChild(menuLayer)
-
-        -- Registrasi handler agar sinkron dengan sistem engine utama
         hook.registerInitHandlerOnly(menuLayer)
-        
-        -- Mematikan efek transisi sementara untuk memastikan scene berpindah tanpa nyangkut
         CCDirector:sharedDirector():replaceScene(menuScene)
-    else
-        log("ERROR: Gagal memuat memori StartMenu melalui StartMenu:new()")
+    end)
+
+    -- JIKA TERJADI SILENT CRASH, PAKSA GAME MENAMPILKAN POP-UP TEXT ERROR
+    if not status then
+        local errorTip = CCTips:create("LUA CRASH: " .. tostring(err))
+        self:addChild(errorTip, 9999)
+        log("CRASH LOG DETECTED: " .. tostring(err))
     end
 end
+
 
 
 
