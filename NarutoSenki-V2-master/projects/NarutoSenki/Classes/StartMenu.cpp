@@ -321,23 +321,22 @@ bool StartMenu::init()
 	while (++idx < 5)
 	{
 		CCString* nameStr = CCString::createWithFormat("avator%d.png", idx);
-		
-		// SUDAH DIPERBAIKI: Menggunakan fungsi v2 yang benar yaitu 'spriteFrameByName'
 		auto frame = SpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(nameStr->getCString());
 		if (frame) {
 			frames.pushBack(frame);
 		}
-		auto tempAnimation = Animation::createWithSpriteFrames(frames, 0.1f);
-		auto tempAction = Animate::create(tempAnimation);
-		if (tempAction) list.pushBack(tempAction);
-		
-		auto fadeIn = FadeIn::create(0.8f);
-		auto delay = DelayTime::create(1.0f);
-		auto fadeOut = FadeOut::create(0.5f);
-		list.pushBack(fadeIn);
-		list.pushBack(delay);
-		list.pushBack(fadeOut);
-	}
+	} // FIXED: Perulangan ditutup di sini agar tidak memakan kode di bawahnya
+
+	auto tempAnimation = Animation::createWithSpriteFrames(frames, 0.1f);
+	auto tempAction = Animate::create(tempAnimation);
+	if (tempAction) list.pushBack(tempAction);
+	
+	auto fadeIn = FadeIn::create(0.8f);
+	auto delay = DelayTime::create(1.0f);
+	auto fadeOut = FadeOut::create(0.5f);
+	list.pushBack(fadeIn);
+	list.pushBack(delay);
+	list.pushBack(fadeOut);
 
 	MenuItem *news_btn = MenuItemSprite::create(Sprite::createWithSpriteFrameName("news_btn.png"), nullptr, this, menu_selector(StartMenu::onNewsBtn));
 	Menu *menu = Menu::create(news_btn, nullptr);
@@ -638,5 +637,5 @@ void StartMenu::enterSelectLayer()
 			scene->addChild(layer);
 			cocos2d::CCDirector::sharedDirector()->replaceScene(scene);
 		}
-	}
+	} // FIXED: Kurung kurawal penutup untuk if (layer) dan if (scene) disesuaikan kembali secara presisi
 }
