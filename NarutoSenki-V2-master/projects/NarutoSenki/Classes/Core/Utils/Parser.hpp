@@ -163,8 +163,9 @@ static void ParseAction(const toml::value &v, UnitMetadata &metadata)
 				auto found = f.find_first_of('=', 1);
 				if (found != string::npos) // parse event
 				{
-					auto eventName = tomlex::trim(f.substr(0, found));
-					auto eventValue = tomlex::trim(f.substr(found + 1, f.length() - found - 1));
+					// BAGIAN INI SUDAH DIPERBAIKI DARI tomlex KE tomlxx
+					auto eventName = tomlxx::trim(f.substr(0, found));
+					auto eventValue = tomlxx::trim(f.substr(found + 1, f.length() - found - 1));
 					frameVector[i++] = make_pair(eventName, f);
 				}
 				else
@@ -177,7 +178,7 @@ static void ParseAction(const toml::value &v, UnitMetadata &metadata)
 	}
 }
 
-DETAIL_NS_END
+DETAIL_NS_BEGIN
 
 static inline bool fromCache(const string &unitName, UnitMetadata &metadata)
 {
