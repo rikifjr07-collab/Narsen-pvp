@@ -40,7 +40,7 @@ public:
 
             bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
             listen(serverSocket, 1);
-        } // <--- FIX: Ditambahkan kurung penutup host yang hilang agar tidak merusak fungsi else di bawahnya
+        }
         else {
             clientSocket = socket(AF_INET, SOCK_STREAM, 0);
             
@@ -82,7 +82,8 @@ public:
             float smoothX = currentX + (receivedPacket.posX - currentX) * 0.3f;
             float smoothY = currentY + (receivedPacket.posY - currentY) * 0.3f;
             
-            friendChar->setPosition(smoothX, smoothY);
+            // PERBAIKAN: Dibungkus ke ccp() agar kompatibel dengan Cocos2d-x lama
+            friendChar->setPosition(ccp(smoothX, smoothY));
         }
     }
 
@@ -90,7 +91,15 @@ public:
         auto layer = getGameLayer();
         if (!layer) return;
 
-        auto myHero = layer->getHero(); 
+        // PERBAIKAN: Membaca instance Hero dari array karakter indeks ke-0 jika getHero() tidak ada
+        CharacterBase* myHero = nullptr;
+        if (layer->_CharacterArray.size() > 0) {
+            auto firstChar = layer->_CharacterArray.at(0);
+            if (firstChar && firstChar->isPlayer()) {
+                myHero = firstChar;
+            }
+        }
+
         if (myHero) {
             sendMyPosition(myHero->getPositionX(), myHero->getPositionY(), 0);
         }
