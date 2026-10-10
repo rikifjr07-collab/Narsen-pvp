@@ -374,10 +374,15 @@ void StartMenu::onHardCoreOff(Ref *sender) {}
 void StartMenu::onHardLayerCallBack() {}
 void StartMenu::enterCustomMode() {}
 void StartMenu::enterTrainingMode() {}
+
 void StartMenu::enterSelectLayer() {
-auto scene = SelectLayer::createScene();
-Director::getInstance()->replaceScene(scene);
+    // Memperbaiki eror v2 scene dan sharedDirector
+    auto scene = SelectLayer::scene();
+    if(scene) {
+        Director::sharedDirector()->replaceScene(scene);
+    }
 }
+
 void StartMenu::onCreditsCallBack() {}
 void StartMenu::onExitCallBack() { Director::sharedDirector()->end(); }
 void StartMenu::onNewsBtn(Ref *sender) {}
@@ -387,3 +392,4 @@ void StartMenu::setNotice() {}
 void StartMenu::update(float dt) {}
 void StartMenu::keyBackClicked() { onExitCallBack(); }
 void StartMenu::setCheats(int cheats) { Cheats = cheats; }
+
