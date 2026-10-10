@@ -109,27 +109,24 @@ function GameScene:onPush()
     audio.stopMusic(true)
     audio.playSound(ns.menu.CONFIRM)
 
-    -- MEMPERBAIKI ALUR PERPINDAHAN KE STARTMENU C++ AGAR AMAN DAN TIDAK FC
+    -- MEMPERBAIKI TRANSISI SCENE MENGGUNAKAN METODE BINDING YANG TEPAT
     local menuScene = CCScene:create()
     
-    -- MENGGUNAKAN TITIK SATU (.) KARENA INI DI DALAM FILE LUA
-    local menuLayer = StartMenu.new()
+    -- PERBAIKAN UTAMA: Menggunakan titik dua (:) untuk inisialisasi object binding C++
+    local menuLayer = StartMenu:new()
     if menuLayer then
-        if menuLayer:init() then
-            menuLayer:autorelease()
-            menuLayer:setCheats(self.cheats)
-            menuScene:addChild(menuLayer)
+        menuLayer:setCheats(self.cheats)
+        menuScene:addChild(menuLayer)
 
-            -- Registrasi handler agar sinkron dengan sistem engine utama
-            hook.registerInitHandlerOnly(menuLayer)
-            director.replaceSceneWithFade(menuScene, 1.0)
-        else
-            menuLayer:release()
-            log("ERROR: Gagal menginisialisasi StartMenu Layer C++")
-        end
+        -- Registrasi handler agar sinkron dengan sistem engine utama
+        hook.registerInitHandlerOnly(menuLayer)
+        
+        -- Mematikan efek transisi sementara untuk memastikan scene berpindah tanpa nyangkut
+        CCDirector:sharedDirector():replaceScene(menuScene)
     else
-        log("ERROR: Gagal mengalokasikan memori StartMenu Layer")
+        log("ERROR: Gagal memuat memori StartMenu melalui StartMenu:new()")
     end
 end
+
 
 
