@@ -105,31 +105,28 @@ function GameScene:onFinish()
 end
 
 function GameScene:onPush()
+    -- Matikan musik latar belakang intro
     audio.stopMusic(true)
     audio.playSound(ns.menu.CONFIRM)
 
-    -- BLOK EVALUASI TRANSER SCENE AMAN
-    local status, err = pcall(function()
-        local menuScene = CCScene:create()
-        local menuLayer = StartMenu:new()
-        
-        if not menuLayer then
-            error("GAGAL MEMUAT MEMORI: Objek StartMenu tidak bisa dialokasikan.")
-        end
-
+    -- FORMAT STRUKTUR BARU YANG BERSIH DAN STANDAR KOKOS
+    local menuScene = CCScene:create()
+    local menuLayer = StartMenu:create()
+    
+    if menuLayer then
         menuLayer:setCheats(self.cheats)
         menuScene:addChild(menuLayer)
-        hook.registerInitHandlerOnly(menuLayer)
-        CCDirector:sharedDirector():replaceScene(menuScene)
-    end)
 
-    -- JIKA TERJADI SILENT CRASH, PAKSA GAME MENAMPILKAN POP-UP TEXT ERROR
-    if not status then
-        local errorTip = CCTips:create("LUA CRASH: " .. tostring(err))
-        self:addChild(errorTip, 9999)
-        log("CRASH LOG DETECTED: " .. tostring(err))
+        -- Daftarkan ke handler sistem internal
+        hook.registerInitHandlerOnly(menuLayer)
+        
+        -- Eksekusi perpindahan layar secara langsung tanpa efek fade Lua
+        CCDirector:sharedDirector():replaceScene(menuScene)
+    else
+        log("ERROR: Gagal mengalokasikan StartMenu dari biner C++")
     end
 end
+
 
 
 
