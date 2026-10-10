@@ -9,16 +9,7 @@ jobs:
 
     steps:
       - name: Check out repo
-        uses: actions/checkout@v3
-
-      # === TAMBAHKAN BLOK BARIS DI BAWAH INI UNTUK MENGOSONGKAN RUANG HARDDISK SERVER ===
-      - name: Kosongkan Ruang Penyimpanan Server
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        uses: actions/checkout@v4
 
       - name: Pasang Java 8 Ramah Gradle Lama
         uses: actions/setup-java@v4
@@ -38,7 +29,11 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
         run: |
-          echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=$ANDROID_HOME" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
+          # Memastikan folder tujuan ada sebelum membuat file local.properties
+          mkdir -p NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio
+          
+          # Mengisi local.properties dengan jalur SDK yang pasti (default GitHub Actions)
+          echo -e "ndk.dir=$ANDROID_NDK_HOME\nsdk.dir=/usr/local/lib/android/sdk" > NarutoSenki-V2-master/projects/NarutoSenki/proj.android-studio/local.properties
 
           # Bersihkan setelan toolchain GCC agar menggunakan mesin Clang bawaan r21e
           find $GITHUB_WORKSPACE -name "Application.mk" -type f -exec sed -i 's/NDK_TOOLCHAIN_VERSION\s*:=\s*4.9/NDK_TOOLCHAIN_VERSION := clang/g' {} +
