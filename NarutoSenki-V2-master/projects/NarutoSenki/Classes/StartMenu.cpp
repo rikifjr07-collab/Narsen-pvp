@@ -376,12 +376,13 @@ void StartMenu::enterCustomMode() {}
 void StartMenu::enterTrainingMode() {}
 
 void StartMenu::enterSelectLayer() {
-    // Memperbaiki eror v2 scene dan sharedDirector
-    auto scene = SelectLayer::scene();
+    // Memaksa tipe data menggunakan cocos2d::CCScene bawaan v2 secara eksplisit
+    cocos2d::CCScene* scene = SelectLayer::scene();
     if(scene) {
-        Director::sharedDirector()->replaceScene(scene);
+        cocos2d::CCDirector::sharedDirector()->replaceScene(scene);
     }
 }
+
 
 void StartMenu::onCreditsCallBack() {}
 void StartMenu::onExitCallBack() { Director::sharedDirector()->end(); }
