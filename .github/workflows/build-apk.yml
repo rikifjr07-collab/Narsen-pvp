@@ -9,7 +9,16 @@ jobs:
 
     steps:
       - name: Check out repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
+
+      # === TAMBAHKAN BLOK BARIS DI BAWAH INI UNTUK MENGOSONGKAN RUANG HARDDISK SERVER ===
+      - name: Kosongkan Ruang Penyimpanan Server
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
       - name: Pasang Java 8 Ramah Gradle Lama
         uses: actions/setup-java@v4
