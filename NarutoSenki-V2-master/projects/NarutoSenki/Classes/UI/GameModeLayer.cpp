@@ -9,28 +9,41 @@ std::string global_ipAddress = "192.168.43.1"; // Default IP Hotspot lokal
 
 bool GameModeLayer::init()
 {
+	// PERBAIKAN UTAMA: Init layer wajib di baris paling pertama!
+	if (!Layer::init()) {
+		return false;
+	}
+
 	auto bgSprite = Sprite::create("red_bg.png");
-	FULL_SCREEN_SPRITE(bgSprite);
-	bgSprite->setAnchorPoint(Vec2(0, 0));
-	bgSprite->setPosition(Vec2(0, 0));
-	addChild(bgSprite, -100);
+	if (bgSprite) {
+		FULL_SCREEN_SPRITE(bgSprite);
+		bgSprite->setAnchorPoint(Vec2(0, 0));
+		bgSprite->setPosition(Vec2(0, 0));
+		addChild(bgSprite, -100);
+	}
 
 	// menu bars
 	auto menu_bar_b = Sprite::create("menu_bar2.png");
-	menu_bar_b->setAnchorPoint(Vec2(0, 0));
-	FULL_SCREEN_SPRITE(menu_bar_b);
-	addChild(menu_bar_b, 2);
+	if (menu_bar_b) {
+		menu_bar_b->setAnchorPoint(Vec2(0, 0));
+		FULL_SCREEN_SPRITE(menu_bar_b);
+		addChild(menu_bar_b, 2);
+	}
 
 	auto menu_bar_t = Sprite::create("menu_bar3.png");
-	menu_bar_t->setAnchorPoint(Vec2(0, 0));
-	menu_bar_t->setPosition(Vec2(0, winSize.height - menu_bar_t->getContentSize().height));
-	FULL_SCREEN_SPRITE(menu_bar_t);
-	addChild(menu_bar_t, 2);
+	if (menu_bar_t) {
+		menu_bar_t->setAnchorPoint(Vec2(0, 0));
+		menu_bar_t->setPosition(Vec2(0, winSize.height - menu_bar_t->getContentSize().height));
+		FULL_SCREEN_SPRITE(menu_bar_t);
+		addChild(menu_bar_t, 2);
+	}
 
 	auto modemenu_title = Sprite::createWithSpriteFrameName("startmenu_title.png");
-	modemenu_title->setAnchorPoint(Vec2(0, 0));
-	modemenu_title->setPosition(Vec2(2, winSize.height - modemenu_title->getContentSize().height - 2));
-	addChild(modemenu_title, 3);
+	if (modemenu_title) {
+		modemenu_title->setAnchorPoint(Vec2(0, 0));
+		modemenu_title->setPosition(Vec2(2, winSize.height - modemenu_title->getContentSize().height - 2));
+		addChild(modemenu_title, 3);
+	}
 
 	initModeData();
 
@@ -39,37 +52,43 @@ bool GameModeLayer::init()
 	for (int i = 0; i < 3; i++)
 	{
 		auto mode_btn = ModeMenuButton::create(format("GameMode/{}.png", i + 1));
-		mode_btn->mode = (GameMode)i;
-		mode_btn->setDelegate(this);
-		mode_btn->setPositionX(offset);
-		mode_btn->setPositionY((posY + 55 + 7.5f) - i * (55 + 7.5f));
-		menuButtons[i] = mode_btn;
-		addChild(mode_btn);
+		if (mode_btn) {
+			mode_btn->mode = (GameMode)i;
+			mode_btn->setDelegate(this);
+			mode_btn->setPositionX(offset);
+			mode_btn->setPositionY((posY + 55 + 7.5f) - i * (55 + 7.5f));
+			menuButtons[i] = mode_btn;
+			addChild(mode_btn);
+		}
 	}
 	for (int i = 3; i < 6; i++)
 	{
 		auto mode_btn = ModeMenuButton::create(format("GameMode/{}.png", i + 1));
-		mode_btn->mode = (GameMode)i;
-		mode_btn->setDelegate(this);
-		mode_btn->setPositionX(offset + 10 + (i - 2) * (80 + 5));
-		mode_btn->setPositionY(posY);
-		menuButtons[i] = mode_btn;
-		addChild(mode_btn);
+		if (mode_btn) {
+			mode_btn->mode = (GameMode)i;
+			mode_btn->setDelegate(this);
+			mode_btn->setPositionX(offset + 10 + (i - 2) * (80 + 5));
+			mode_btn->setPositionY(posY);
+			menuButtons[i] = mode_btn;
+			addChild(mode_btn);
+		}
 	}
 	for (int i = 6; i < GameMode::__Internal_Max_Length; i++)
 	{
 		auto mode_btn = ModeMenuButton::create(format("GameMode/{}.png", i + 1));
-		mode_btn->mode = (GameMode)i;
-		mode_btn->setDelegate(this);
-		mode_btn->setPositionX(offset + 20 + (80 + 5) * 4);
-		mode_btn->setPositionY((posY + 47) - (i - 6) * (86 + 8.0f));
-		menuButtons[i] = mode_btn;
-		addChild(mode_btn);
+		if (mode_btn) {
+			mode_btn->mode = (GameMode)i;
+			mode_btn->setDelegate(this);
+			mode_btn->setPositionX(offset + 20 + (80 + 5) * 4);
+			mode_btn->setPositionY((posY + 47) - (i - 6) * (86 + 8.0f));
+			menuButtons[i] = mode_btn;
+			addChild(mode_btn);
+		}
 	}
 
 	for (size_t i = 0; i < menuButtons.size(); i++)
 	{
-		if (modes[i].isLocked)
+		if (menuButtons.at(i) && modes[i].isLocked)
 		{
 			menuButtons.at(i)->useMask2 = modes.at(i).useMask2;
 			menuButtons.at(i)->lock();
@@ -77,19 +96,31 @@ bool GameModeLayer::init()
 	}
 
 	menuLabel = CCLabelTTF::create();
-	menuLabel->setAnchorPoint(Vec2(0, 0));
-	menuLabel->setPosition(Vec2(10, 2));
-	addChild(menuLabel, 5);
+	if (menuLabel) {
+		menuLabel->setAnchorPoint(Vec2(0, 0));
+		menuLabel->setPosition(Vec2(10, 2));
+		addChild(menuLabel, 5);
+	}
 
-	// init return button
-	auto return_img = MenuItemSprite::create(Sprite::create("UI/return_btn.png"), nullptr, nullptr, this, menu_selector(GameModeLayer::backToMenu));
-	Menu *return_btn = Menu::create(return_img, nullptr);
-	return_btn->setAnchorPoint(Vec2(1, 0.5f));
-	return_btn->setPosition(winSize.width - 38, 65);
-	addChild(return_btn, 5);
+	// init return button secara aman dari null pointer crash
+	auto return_sprite = Sprite::create("UI/return_btn.png");
+	if (!return_sprite) {
+		return_sprite = Sprite::create("menu_bar2.png"); // Fallback jika aset gambar hilang agar tidak FC
+	}
+	
+	auto return_img = MenuItemSprite::create(return_sprite, nullptr, nullptr, this, menu_selector(GameModeLayer::backToMenu));
+	if (return_img) {
+		Menu *return_btn = Menu::create(return_img, nullptr);
+		if (return_btn) {
+			return_btn->setAnchorPoint(Vec2(1, 0.5f));
+			return_btn->setPosition(winSize.width - 38, 65);
+			addChild(return_btn, 5);
+		}
+	}
 
-	return Layer::init();
+	return true;
 }
+
 
 void GameModeLayer::backToMenu(Ref *sender)
 {
