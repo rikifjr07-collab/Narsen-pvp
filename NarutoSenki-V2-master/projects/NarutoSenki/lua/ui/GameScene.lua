@@ -112,7 +112,7 @@ function GameScene:onPush()
     -- MEMPERBAIKI ALUR PERPINDAHAN KE STARTMENU C++ AGAR AMAN DAN TIDAK FC
     local menuScene = CCScene:create()
     
-    -- PERBAIKAN: Menggunakan titik (.) bukan titik dua ganda (::)
+    -- MENGGUNAKAN TITIK SATU (.) KARENA INI DI DALAM FILE LUA
     local menuLayer = StartMenu.new()
     if menuLayer then
         if menuLayer:init() then
@@ -131,4 +131,5 @@ function GameScene:onPush()
         log("ERROR: Gagal mengalokasikan memori StartMenu Layer")
     end
 end
+
 
