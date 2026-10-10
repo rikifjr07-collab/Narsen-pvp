@@ -163,9 +163,9 @@ static void ParseAction(const toml::value &v, UnitMetadata &metadata)
 				auto found = f.find_first_of('=', 1);
 				if (found != string::npos) // parse event
 				{
-					// BAGIAN INI SUDAH DIPERBAIKI DARI tomlex KE tomlxx
-					auto eventName = tomlxx::trim(f.substr(0, found));
-					auto eventValue = tomlxx::trim(f.substr(found + 1, f.length() - found - 1));
+					// DIUBAH MENJADI tomlex KARENA NAMESPACE ASLI DI FILE ANDA ADALAH tomlex
+					auto eventName = tomlex::trim(f.substr(0, found));
+					auto eventValue = tomlex::trim(f.substr(found + 1, f.length() - found - 1));
 					frameVector[i++] = make_pair(eventName, f);
 				}
 				else
