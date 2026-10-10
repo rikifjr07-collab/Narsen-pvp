@@ -114,10 +114,10 @@ void MenuButton::ccTouchEnded(Touch *touch, Event *event)
 			SimpleAudioEngine::sharedEngine()->playEffect("Audio/Menu/confirm.ogg");
 			_startMenu->onExitCallBack();
 			break;
-		case MenuButtonType::Custom:
-			SimpleAudioEngine::sharedEngine()->playEffect("Audio/Menu/confirm.ogg");
-			_startMenu->onTrainingCallBack(); 
-			break;
+		//case MenuButtonType::Custom:
+		//	SimpleAudioEngine::sharedEngine()->playEffect("Audio/Menu/confirm.ogg");
+		//	_startMenu->onTrainingCallBack(); 
+		//	break;
 		case MenuButtonType::HardCore:
 			SimpleAudioEngine::sharedEngine()->playEffect(SELECT_SOUND);
 			auto frame = getSpriteFrame("menu05_text.png");
@@ -473,24 +473,20 @@ void StartMenu::onHardLayerCallBack()
 
 void StartMenu::onTrainingCallBack()
 {
-	// MEMPERBAIKI ALUR MASUK KELAYER SELEKSI GAME MODE AGAR TIDAK FC
+	// MEMPERBAIKI ALUR MASUK KE LAYER SELEKSI GAME MODE SECARA SAH DI C++
 	auto modeScene = Scene::create();
 	if (modeScene) {
-		auto gameModeLayer = GameModeLayer::new();
+		// PERBAIKAN: Menggunakan create() bawaan Cocos2d-x murni
+		auto gameModeLayer = GameModeLayer::create();
 		if (gameModeLayer) {
-			if (gameModeLayer->init()) {
-				gameModeLayer->autorelease();
-				modeScene->addChild(gameModeLayer);
-				Director::sharedDirector()->replaceScene(TransitionFade::create(1.25f, modeScene));
-			} else {
-				gameModeLayer->release();
-				CCLOG("ERROR: Gagal init GameModeLayer");
-			}
+			modeScene->addChild(gameModeLayer);
+			Director::sharedDirector()->replaceScene(TransitionFade::create(1.25f, modeScene));
 		} else {
-			CCLOG("ERROR: Gagal alokasi memori GameModeLayer");
+			CCLOG("ERROR: GameModeLayer gagal dibuat, periksa aset plist/image di folder Resources!");
 		}
 	}
 }
+
 
 
 void StartMenu::onCreditsCallBack()
