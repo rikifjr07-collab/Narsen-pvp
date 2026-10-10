@@ -324,40 +324,32 @@ bool StartMenu::init()
 	}
 
 	Sprite *avator = Sprite::createWithSpriteFrameName("avator1.png");
-	if (avator) {
-		avator->setAnchorPoint(Vec2(0, 0));
-		avator->setOpacity(0);
-		avator->setPosition(Vec2(winSize.width - avator->getContentSize().width, 19));
-		addChild(avator, 1);
-
 		Vector<SpriteFrame *> frames;
-		Vector<FiniteTimeAction *> list;
-		int idx = 0;
-		while (++idx < 5)
-		{
-			// Diperbaiki menggunakan format string %d terpercaya bawaan v2 untuk menghalau Force Close
-			CCString* nameStr = CCString::createWithFormat("avator%d.png", idx);
-			auto frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(nameStr->getCString());
-			if (frame) {
-				frames.pushBack(frame);
-			}
-			auto tempAnimation = Animation::createWithSpriteFrames(frames, 0.1f);
-			auto tempAction = Animate::create(tempAnimation);
-			if (tempAction) list.pushBack(tempAction);
-			
-			auto fadeIn = FadeIn::create(0.8f);
-			auto delay = DelayTime::create(1.0f);
-			auto fadeOut = FadeOut::create(0.5f);
-			list.pushBack(fadeIn);
-			list.pushBack(delay);
-			list.pushBack(fadeOut);
+	Vector<FiniteTimeAction *> list;
+	int idx = 0;
+	while (++idx < 5)
+	{
+		// Menggunakan CCString bawaan v2 untuk format string nama file gambar
+		CCString* nameStr = CCString::createWithFormat("avator%d.png", idx);
+		
+		// Memperbaiki getInstance() menjadi sharedSpriteFrameCache() untuk Cocos2d-x v2
+		auto frame = SpriteFrameCache::sharedSpriteFrameCache()->getSpriteFrameByName(nameStr->getCString());
+		if (frame) {
+			frames.pushBack(frame);
 		}
-
-		if (list.size() > 0) {
-			avator->runAction(RepeatForever::create(Sequence::create(list)));
-		}
+		auto tempAnimation = Animation::createWithSpriteFrames(frames, 0.1f);
+		auto tempAction = Animate::create(tempAnimation);
+		if (tempAction) list.pushBack(tempAction);
+		
+		auto fadeIn = FadeIn::create(0.8f);
+		auto delay = DelayTime::create(1.0f);
+		auto fadeOut = FadeOut::create(0.5f);
+		list.pushBack(fadeIn);
+		list.pushBack(delay);
+		list.pushBack(fadeOut);
 	}
 
+}
 	MenuItem *news_btn = MenuItemSprite::create(Sprite::createWithSpriteFrameName("news_btn.png"), nullptr, this, menu_selector(StartMenu::onNewsBtn));
 	Menu *menu = Menu::create(news_btn, nullptr);
 	news_btn->setAnchorPoint(Vec2(0, 0.5f));
@@ -635,9 +627,18 @@ keyBackClicked();
 }
 void StartMenu::enterSelectLayer()
 {
-// Ditambahkan agar bypass linking aman dan mengarah ke scene pilihan karakter Anda
-auto scene = SelectLayer::createScene();
-if (scene) {
-Director::sharedDirector()->replaceScene(scene);
+	// Membuat objek CCScene kosong secara aman sesuai standar v2
+	cocos2d::CCScene* scene = cocos2d::CCScene::create();
+	if (scene) {
+		// Menginisialisasi objek SelectLayer
+		SelectLayer* layer = SelectLayer::create();
+		if (layer) {
+			// Menempelkan layer ke dalam scene
+			scene->addChild(layer);
+			// Melakukan transisi scene melalui sharedDirector() bawaan v2
+			cocos2d::CCDirector::sharedDirector()->replaceScene(scene);
+		
+	}
 }
-}
+
+
