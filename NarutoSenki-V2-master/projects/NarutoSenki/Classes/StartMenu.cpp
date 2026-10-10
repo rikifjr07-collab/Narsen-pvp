@@ -321,7 +321,9 @@ bool StartMenu::init()
 	while (++idx < 5)
 	{
 		CCString* nameStr = CCString::createWithFormat("avator%d.png", idx);
-		auto frame = SpriteFrameCache::sharedSpriteFrameCache()->getSpriteFrameByName(nameStr->getCString());
+		
+		// SUDAH DIPERBAIKI: Menggunakan fungsi v2 yang benar yaitu 'spriteFrameByName'
+		auto frame = SpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(nameStr->getCString());
 		if (frame) {
 			frames.pushBack(frame);
 		}
@@ -337,7 +339,6 @@ bool StartMenu::init()
 		list.pushBack(fadeOut);
 	}
 
-	// KODE DIPINDAHKAN KEMBALI KE DALAM FUNGSI INIT
 	MenuItem *news_btn = MenuItemSprite::create(Sprite::createWithSpriteFrameName("news_btn.png"), nullptr, this, menu_selector(StartMenu::onNewsBtn));
 	Menu *menu = Menu::create(news_btn, nullptr);
 	news_btn->setAnchorPoint(Vec2(0, 0.5f));
@@ -355,7 +356,6 @@ bool StartMenu::init()
 	scheduleUpdate();
 	return true;
 }
-
 void StartMenu::onEnter()
 {
 	Layer::onEnter();
@@ -382,249 +382,261 @@ void StartMenu::update(float dt)
 {
 	if (!noticeLabel) {
 		return;
+	}
+	float currentX = noticeLabel->getPositionX();
+	float lableX = noticeLabel->getContentSize().width;
+	if (noticeLabel->getPositionX() >= -lableX) {
+		noticeLabel->setPositionX(noticeLabel->getPositionX() - 0.6f);
+	}
+	else {
+		noticeLabel->setPositionX(190);
+	}
 }
-float currentX = noticeLabel->getPositionX();
-float lableX = noticeLabel->getContentSize().width;
-if (noticeLabel->getPositionX() >= -lableX) {
-noticeLabel->setPositionX(noticeLabel->getPositionX() - 0.6f);
-}
-else {
-noticeLabel->setPositionX(190);
-}
-}
+
 void StartMenu::setNotice()
 {
-if (!notice_layer)
-{
-notice_layer = Layer::create();
-Sprite *notice_bg = Sprite::createWithSpriteFrameName("notice_bg.png");
-notice_bg->setAnchorPoint(Vec2(0, 0));
-notice_bg->setPosition(Vec2(15, 228));
-notice_layer->addChild(notice_bg);
-ClippingNode *clipper = ClippingNode::create();
-Node *stencil = Sprite::createWithSpriteFrameName("notice_mask.png");
-stencil->setAnchorPoint(Vec2(0, 0));
-clipper->setStencil(stencil);
-auto strings = CCDictionary::createWithContentsOfFile("Config/strings.xml");
-auto reply = ((CCString *)strings->objectForKey("Notice"))->m_sString.c_str();
-noticeLabel = CCLabelTTF::create(reply, FONT_NAME, 12);
-noticeLabel->setAnchorPoint(Vec2(0, 0));
-clipper->addChild(noticeLabel);
-clipper->setPosition(Vec2(35, 228));
-notice_layer->addChild(clipper);
-addChild(notice_layer);
+	if (!notice_layer)
+	{
+		notice_layer = Layer::create();
+		Sprite *notice_bg = Sprite::createWithSpriteFrameName("notice_bg.png");
+		notice_bg->setAnchorPoint(Vec2(0, 0));
+		notice_bg->setPosition(Vec2(15, 228));
+		notice_layer->addChild(notice_bg);
+		ClippingNode *clipper = ClippingNode::create();
+		Node *stencil = Sprite::createWithSpriteFrameName("notice_mask.png");
+		stencil->setAnchorPoint(Vec2(0, 0));
+		clipper->setStencil(stencil);
+		auto strings = CCDictionary::createWithContentsOfFile("Config/strings.xml");
+		auto reply = ((CCString *)strings->objectForKey("Notice"))->m_sString.c_str();
+		noticeLabel = CCLabelTTF::create(reply, FONT_NAME, 12);
+		noticeLabel->setAnchorPoint(Vec2(0, 0));
+		clipper->addChild(noticeLabel);
+		clipper->setPosition(Vec2(35, 228));
+		notice_layer->addChild(clipper);
+		addChild(notice_layer);
+	}
 }
-}
+
 void StartMenu::onNewsBtn(CCObject *sender)
 {
-// Logika tombol berita dikosongkan secara aman
+	// Logika tombol berita dikosongkan secara aman
 }
+
 void StartMenu::onHardCoreOn(CCObject *sender)
 {
-SimpleAudioEngine::sharedEngine()->playEffect("Audio/Menu/confirm.ogg");
-if (hardCoreLayer)
-{
-hardCoreLayer->removeAllChildren();
-hardCoreLayer->removeFromParent();
-hardCoreLayer = nullptr;
+	SimpleAudioEngine::sharedEngine()->playEffect("Audio/Menu/confirm.ogg");
+	if (hardCoreLayer)
+	{
+		hardCoreLayer->removeAllChildren();
+		hardCoreLayer->removeFromParent();
+		hardCoreLayer = nullptr;
+	}
 }
-}
+
 void StartMenu::onHardCoreOff(CCObject *sender)
 {
-SimpleAudioEngine::sharedEngine()->playEffect("Audio/Menu/cancel.ogg");
-if (hardCoreLayer)
-{
-hardCoreLayer->removeAllChildren();
-hardCoreLayer->removeFromParent();
-hardCoreLayer = nullptr;
+	SimpleAudioEngine::sharedEngine()->playEffect("Audio/Menu/cancel.ogg");
+	if (hardCoreLayer)
+	{
+		hardCoreLayer->removeAllChildren();
+		hardCoreLayer->removeFromParent();
+		hardCoreLayer = nullptr;
+	}
 }
-}
+
 void StartMenu::onHardLayerCallBack()
 {
-if (UserDefault::sharedUserDefault()->getBoolForKey("isHardCore") == false)
-{
-if (!hardCoreLayer)
-{
-hardCoreLayer = Layer::create();
-Sprite *confirm_bg = Sprite::createWithSpriteFrameName("confirm_bg.png");
-confirm_bg->setPosition(Vec2(winSize.width / 2, winSize.height / 2));
-Sprite *hardcore_title = Sprite::createWithSpriteFrameName("hardcore_title.png");
-hardcore_title->setPosition(Vec2(winSize.width / 2, winSize.height / 2 + 38));
-Sprite *hardcore_text = Sprite::createWithSpriteFrameName("hardcore_text.png");
-hardcore_text->setPosition(Vec2(winSize.width / 2, winSize.height / 2 + 8));
-MenuItem *yes_btn = MenuItemSprite::create(Sprite::createWithSpriteFrameName("yes_btn1.png"), Sprite::createWithSpriteFrameName("yes_btn2.png"), this, menu_selector(StartMenu::onHardCoreOn));
-MenuItem *no_btn = MenuItemSprite::create(Sprite::createWithSpriteFrameName("no_btn1.png"), Sprite::createWithSpriteFrameName("no_btn2.png"), this, menu_selector(StartMenu::onHardCoreOff));
-Menu *confirm_menu = Menu::create(yes_btn, no_btn, nullptr);
-confirm_menu->alignItemsHorizontallyWithPadding(24);
-confirm_menu->setPosition(Vec2(winSize.width / 2, winSize.height / 2 - 30));
-hardCoreLayer->addChild(confirm_bg, 600);
-hardCoreLayer->addChild(confirm_menu, 650);
-hardCoreLayer->addChild(hardcore_title, 650);
-hardCoreLayer->addChild(hardcore_text, 650);
-addChild(hardCoreLayer, 700);
+	if (UserDefault::sharedUserDefault()->getBoolForKey("isHardCore") == false)
+	{
+		if (!hardCoreLayer)
+		{
+			hardCoreLayer = Layer::create();
+			Sprite *confirm_bg = Sprite::createWithSpriteFrameName("confirm_bg.png");
+			confirm_bg->setPosition(Vec2(winSize.width / 2, winSize.height / 2));
+			Sprite *hardcore_title = Sprite::createWithSpriteFrameName("hardcore_title.png");
+			hardcore_title->setPosition(Vec2(winSize.width / 2, winSize.height / 2 + 38));
+			Sprite *hardcore_text = Sprite::createWithSpriteFrameName("hardcore_text.png");
+			hardcore_text->setPosition(Vec2(winSize.width / 2, winSize.height / 2 + 8));
+			MenuItem *yes_btn = MenuItemSprite::create(Sprite::createWithSpriteFrameName("yes_btn1.png"), Sprite::createWithSpriteFrameName("yes_btn2.png"), this, menu_selector(StartMenu::onHardCoreOn));
+			MenuItem *no_btn = MenuItemSprite::create(Sprite::createWithSpriteFrameName("no_btn1.png"), Sprite::createWithSpriteFrameName("no_btn2.png"), this, menu_selector(StartMenu::onHardCoreOff));
+			Menu *confirm_menu = Menu::create(yes_btn, no_btn, nullptr);
+			confirm_menu->alignItemsHorizontallyWithPadding(24);
+			confirm_menu->setPosition(Vec2(winSize.width / 2, winSize.height / 2 - 30));
+			hardCoreLayer->addChild(confirm_bg, 600);
+			hardCoreLayer->addChild(confirm_menu, 650);
+			hardCoreLayer->addChild(hardcore_title, 650);
+			hardCoreLayer->addChild(hardcore_text, 650);
+			addChild(hardCoreLayer, 700);
+		}
+	}
 }
-}
-}
+
 void StartMenu::onTrainingCallBack()
 {
-auto modeScene = Scene::create();
-auto gameModeLayer = GameModeLayer::create();
-modeScene->addChild(gameModeLayer);
-Director::sharedDirector()->replaceScene(TransitionFade::create(1.25f, modeScene));
+	auto modeScene = Scene::create();
+	auto gameModeLayer = GameModeLayer::create();
+	modeScene->addChild(gameModeLayer);
+	Director::sharedDirector()->replaceScene(TransitionFade::create(1.25f, modeScene));
 }
+
 void StartMenu::onCreditsCallBack()
 {
-SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
-Scene *creditsScene = Scene::create();
-CreditsLayer *creditsLayer = CreditsLayer::create();
-creditsScene->addChild(creditsLayer);
-Director::sharedDirector()->replaceScene(TransitionFade::create(1.25f, creditsScene));
+	SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
+	Scene *creditsScene = Scene::create();
+	CreditsLayer *creditsLayer = CreditsLayer::create();
+	creditsScene->addChild(creditsLayer);
+	Director::sharedDirector()->replaceScene(TransitionFade::create(1.25f, creditsScene));
 }
+
 void StartMenu::scrollMenu(int posY)
 {
-if (posY > _pos02 || (isDrag && isClockwise))
-{
-for (auto menu : _menuArray)
-{
-if (menu->getPositionY() == _pos01)
-{
-auto spn = MoveTo::create(0.5, Vec2(105, _pos02));
-reorderChild(menu, 1);
-menu->_isBottom = true;
-auto fo = FadeOut::create(0.3f);
-auto seq = Spawn::createWithTwoActions(spn, fo);
-menu->runAction(seq);
+	if (posY > _pos02 || (isDrag && isClockwise))
+	{
+		for (auto menu : _menuArray)
+		{
+			if (menu->getPositionY() == _pos01)
+			{
+				auto spn = MoveTo::create(0.5, Vec2(105, _pos02));
+				reorderChild(menu, 1);
+				menu->_isBottom = true;
+				auto fo = FadeOut::create(0.3f);
+				auto seq = Spawn::createWithTwoActions(spn, fo);
+				menu->runAction(seq);
+			}
+			else if (menu->getPositionY() == _pos03)
+			{
+				auto spn = Spawn::createWithTwoActions(
+					MoveTo::create(0.5, Vec2(105, _pos02)),
+					ScaleTo::create(0.5, 1));
+				reorderChild(menu, 3);
+				menu->_isTop = true;
+				auto call = CallFunc::create(std::bind(&MenuButton::playSound, menu));
+				auto seq = newSequence(spn, call);
+				menu->runAction(seq);
+			}
+			else if (menu->getPositionY() == _pos02 && menu->_isBottom)
+			{
+				auto spn = MoveTo::create(0.5, Vec2(105, _pos03));
+				reorderChild(menu, 1);
+				menu->setVisible(true);
+				auto fi = FadeIn::create(0.3f);
+				auto seq = Spawn::createWithTwoActions(spn, fi);
+				menu->_isBottom = false;
+				menu->runAction(seq);
+			}
+			else if (menu->getPositionY() == _pos02 && !menu->_isBottom)
+			{
+				auto spn = Spawn::createWithTwoActions(
+					MoveTo::create(0.5, Vec2(105, _pos01)),
+					ScaleTo::create(0.5, 0.5));
+				reorderChild(menu, 1);
+				menu->_isTop = false;
+				menu->runAction(spn);
+			}
+		}
+	}
+	else
+	{
+		for (auto menu : _menuArray)
+		{
+			if (menu->getPositionY() == _pos01)
+			{
+				auto spn = Spawn::createWithTwoActions(
+					MoveTo::create(0.5, Vec2(105, _pos02)),
+					ScaleTo::create(0.5, 1));
+				reorderChild(menu, 3);
+				menu->_isTop = true;
+				auto call = CallFunc::create(std::bind(&MenuButton::playSound, menu));
+				auto seq = newSequence(spn, call);
+				menu->runAction(seq);
+			}
+			else if (menu->getPositionY() == _pos03)
+			{
+				auto spn = MoveTo::create(0.5, Vec2(105, _pos02));
+				reorderChild(menu, 1);
+				menu->_isBottom = true;
+				auto fo = FadeOut::create(0.3f);
+				auto seq = Spawn::createWithTwoActions(spn, fo);
+				menu->runAction(seq);
+			}
+			else if (menu->getPositionY() == _pos02 && menu->_isBottom)
+			{
+				auto spn = MoveTo::create(0.5, Vec2(105, _pos01));
+				reorderChild(menu, 2);
+				menu->setVisible(true);
+				auto fi = FadeIn::create(0.3f);
+				auto seq = Spawn::createWithTwoActions(spn, fi);
+				menu->_isBottom = false;
+				menu->runAction(seq);
+			}
+			else if (menu->getPositionY() == _pos02 && !menu->_isBottom)
+			{
+				auto spn = Spawn::createWithTwoActions(
+					MoveTo::create(0.5, Vec2(105, _pos03)),
+					ScaleTo::create(0.5, 0.5));
+				reorderChild(menu, 2);
+				menu->_isTop = false;
+				menu->runAction(spn);
+			}
+		}
+	}
+	std::string src;
+	for (auto menu : _menuArray)
+	{
+		if (menu->_isTop)
+		{
+			switch (menu->getBtnType())
+			{
+			case MenuButtonType::Training:
+				src = "menu02_text.png";
+				break;
+			case MenuButtonType::Custom:
+				src = "menu01_text.png";
+				break;
+			case MenuButtonType::Credits:
+				src = "menu04_text.png";
+				break;
+			case MenuButtonType::Exit:
+				src = "menu03_text.png";
+				break;
+			default:
+				break;
+			}
+		}
+	}
+	auto frame = getSpriteFrame(src);
+	if (frame && menuText) menuText->setDisplayFrame(frame);
 }
-else if (menu->getPositionY() == _pos03)
-{
-auto spn = Spawn::createWithTwoActions(
-MoveTo::create(0.5, Vec2(105, _pos02)),
-ScaleTo::create(0.5, 1));
-reorderChild(menu, 3);
-menu->_isTop = true;
-auto call = CallFunc::create(std::bind(&MenuButton::playSound, menu));
-auto seq = newSequence(spn, call);
-menu->runAction(seq);
-}
-else if (menu->getPositionY() == _pos02 && menu->_isBottom)
-{
-auto spn = MoveTo::create(0.5, Vec2(105, _pos03));
-reorderChild(menu, 1);
-menu->setVisible(true);
-auto fi = FadeIn::create(0.3f);
-auto seq = Spawn::createWithTwoActions(spn, fi);
-menu->_isBottom = false;
-menu->runAction(seq);
-}
-else if (menu->getPositionY() == _pos02 && !menu->_isBottom)
-{
-auto spn = Spawn::createWithTwoActions(
-MoveTo::create(0.5, Vec2(105, _pos01)),
-ScaleTo::create(0.5, 0.5));
-reorderChild(menu, 1);
-menu->_isTop = false;
-menu->runAction(spn);
-}
-}
-}
-else
-{
-for (auto menu : _menuArray)
-{
-if (menu->getPositionY() == _pos01)
-{
-auto spn = Spawn::createWithTwoActions(
-MoveTo::create(0.5, Vec2(105, _pos02)),
-ScaleTo::create(0.5, 1));
-reorderChild(menu, 3);
-menu->_isTop = true;
-auto call = CallFunc::create(std::bind(&MenuButton::playSound, menu));
-auto seq = newSequence(spn, call);
-menu->runAction(seq);
-}
-else if (menu->getPositionY() == _pos03)
-{
-auto spn = MoveTo::create(0.5, Vec2(105, _pos02));
-reorderChild(menu, 1);
-menu->_isBottom = true;
-auto fo = FadeOut::create(0.3f);
-auto seq = Spawn::createWithTwoActions(spn, fo);
-menu->runAction(seq);
-}
-else if (menu->getPositionY() == _pos02 && menu->_isBottom)
-{
-auto spn = MoveTo::create(0.5, Vec2(105, _pos01));
-reorderChild(menu, 2);
-menu->setVisible(true);
-auto fi = FadeIn::create(0.3f);
-auto seq = Spawn::createWithTwoActions(spn, fi);
-menu->_isBottom = false;
-menu->runAction(seq);
-}
-else if (menu->getPositionY() == _pos02 && !menu->_isBottom)
-{
-auto spn = Spawn::createWithTwoActions(
-MoveTo::create(0.5, Vec2(105, _pos03)),
-ScaleTo::create(0.5, 0.5));
-reorderChild(menu, 2);
-menu->_isTop = false;
-menu->runAction(spn);
-}
-}
-}
-std::string src;
-for (auto menu : _menuArray)
-{
-if (menu->_isTop)
-{
-switch (menu->getBtnType())
-{
-case MenuButtonType::Training:
-src = "menu02_text.png";
-break;
-case MenuButtonType::Custom:
-src = "menu01_text.png";
-break;
-case MenuButtonType::Credits:
-src = "menu04_text.png";
-break;
-case MenuButtonType::Exit:
-src = "menu03_text.png";
-break;
-default:
-break;
-}
-}
-}
-auto frame = getSpriteFrame(src);
-if (frame && menuText) menuText->setDisplayFrame(frame);
-}
+
 void StartMenu::keyBackClicked()
 {
 #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
-Director::sharedDirector()->end();
-exit(0);
+	Director::sharedDirector()->end();
+	exit(0);
 #else
-Director::sharedDirector()->end();
-exit(0);
+	Director::sharedDirector()->end();
+	exit(0);
 #endif
 }
+
 void StartMenu::setCheats(int cheats)
 {
-Cheats = cheats;
+	Cheats = cheats;
 }
+
 void StartMenu::onExitCallBack()
 {
-keyBackClicked();
+	keyBackClicked();
 }
+
 void StartMenu::enterSelectLayer()
 {
-cocos2d::CCScene* scene = cocos2d::CCScene::create();
-if (scene) {
-SelectLayer* layer = SelectLayer::create();
-if (layer) {
-scene->addChild(layer);
-cocos2d::CCDirector::sharedDirector()->replaceScene(scene);
-}
-}
+	cocos2d::CCScene* scene = cocos2d::CCScene::create();
+	if (scene) {
+		SelectLayer* layer = SelectLayer::create();
+		if (layer) {
+			scene->addChild(layer);
+			cocos2d::CCDirector::sharedDirector()->replaceScene(scene);
+		}
+	}
 }
