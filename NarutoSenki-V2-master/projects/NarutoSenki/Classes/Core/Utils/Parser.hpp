@@ -87,7 +87,6 @@ public:
 	}
 };
 
-// Menghapus makro DETAIL_NS_BEGIN untuk menghindari bug namespace tersembunyi
 static const std::string nullstr;
 
 static void ParseCoreData(const toml::value &v, UnitMetadata &metadata)
@@ -129,7 +128,6 @@ static void ParseAction(const toml::value &v, UnitMetadata &metadata)
 		};
 		tomlex::try_set(tab, "type", data.type);
         
-		// Memperbaiki konflik tipe data (di-cast eksplisit ke u16 agar compiler tidak error)
 		tomlex::try_set_or<u16>(tab, "value", data.value, (u16)0);
 		tomlex::try_set_or<u16>(tab, "rangeX", data.rangeX, (u16)0);
 		tomlex::try_set_or<u16>(tab, "rangeY", data.rangeY, (u16)0);
@@ -141,28 +139,33 @@ static void ParseAction(const toml::value &v, UnitMetadata &metadata)
 		{
 			const auto &anim = animIter->second.as_table();
 			tomlex::try_set_or<uint8_t>(anim, "fps", data.info.fps, defaultInfo.fps);
-			tomlex::try_set_or<bool>(anim, "loop", data.info.isLoop, defaultInfo.isLoop);
-			tomlex::try_set_or<bool>(anim, "returnIdle", data.info.isReturnToIdle, defaultInfo.isReturnToIdle);
+			
+			// Memperbaiki pemanggilan boolean agar tidak memicu error overload di try_set_or
+			bool isLoopVal = defaultInfo.isLoop;
+			tomlex::try_set_or<bool>(anim, "loop", isLoopVal, isLoopVal);
+			
+			bool isReturnVal = defaultInfo.isReturnToIdle;
+			tomlex::try_set_or<bool>(anim, "returnIdle", isReturnVal, isReturnVal);
 		}
 		else
 		{
 			data.info = defaultInfo;
 		}
 
-		// Memperbaiki pemanggilan toml::find agar mencari secara global sesuai log error
-		auto frame = ::toml::find<vector<string>>(value, "frame");
-		if (!frame.empty())
+		// PERBAIKAN TOTAL: Membaca array 'frame' menggunakan metode yang aman untuk library TOML Anda
+		if (auto frameIter = tab.find("frame"); frameIter != end)
 		{
+			const auto &frameArray = frameIter->second.as_array();
 			auto &frameVector = data.frames;
-			frameVector.resize(frame.size());
+			frameVector.resize(frameArray.size());
 			size_t i = 0;
-			for (const auto &f : frame)
+			for (const auto &fVal : frameArray)
 			{
+				std::string f = fVal.as_string();
 				auto found = f.find_first_of('=', 1);
 				if (found != string::npos)
 				{
 					auto eventName = tomlex::trim(f.substr(0, found));
-					auto eventValue = tomlex::trim(f.substr(found + 1, f.length() - found - 1));
 					frameVector[i++] = make_pair(eventName, f);
 				}
 				else
@@ -188,7 +191,9 @@ static inline UnitMetadata fromToml(const string &fname, bool cache = false)
 		CCLOGERROR("[ERROR] UnitParser::fromToml not found file %s", path.c_str());
 		return {};
 	}
-	const auto data = ::toml::parse(path);
+	
+	// Menggunakan toml::parse bawaan library secara langsung
+	const auto data = toml::parse(path);
 
 	UnitMetadata metadata;
 	ParseCoreData(data, metadata);
