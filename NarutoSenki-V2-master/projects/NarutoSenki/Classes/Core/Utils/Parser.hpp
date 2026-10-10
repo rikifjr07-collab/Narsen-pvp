@@ -87,10 +87,7 @@ public:
 	}
 };
 
-DETAIL_NS_BEGIN
-
-// TODO: Make parser metadata cache
-
+// Menghapus makro DETAIL_NS_BEGIN untuk menghindari bug namespace tersembunyi
 static const std::string nullstr;
 
 static void ParseCoreData(const toml::value &v, UnitMetadata &metadata)
@@ -100,19 +97,18 @@ static void ParseCoreData(const toml::value &v, UnitMetadata &metadata)
 
 	tomlex::try_set(tab, "name", metadata.name);
 	tomlex::try_set(tab, "hp", metadata.hp);
-	// parse hp bar properties
+	
 	if (auto hpBarIter = tab.find("hpBar"); hpBarIter != end)
 	{
 		metadata.enableHPBar = true;
 		const auto &hpBar = hpBarIter->second.as_table();
-		// tomlex::try_set_or<i16>(hpBar, "x", metadata.hpBarX, 0);
-		tomlex::try_set_or<i16>(hpBar, "y", metadata.hpBarY, 0);
+		tomlex::try_set_or<i16>(hpBar, "y", metadata.hpBarY, (i16)0);
 	}
 	else
 	{
 		metadata.enableHPBar = false;
 	}
-	tomlex::try_set_or<u16>(tab, "speed", metadata.speed, kDefaultSpeed);
+	tomlex::try_set_or<u16>(tab, "speed", metadata.speed, (u16)kDefaultSpeed);
 }
 
 static void ParseAction(const toml::value &v, UnitMetadata &metadata)
@@ -124,7 +120,7 @@ static void ParseAction(const toml::value &v, UnitMetadata &metadata)
 		auto flag = ActionConstant::string2ActionFlag(key);
 		if (flag == ActionFlag::None)
 			continue;
-		// parse data
+            
 		const auto &tab = value.as_table();
 		const auto end = tab.end();
 
@@ -132,12 +128,14 @@ static void ParseAction(const toml::value &v, UnitMetadata &metadata)
 			.flag = flag,
 		};
 		tomlex::try_set(tab, "type", data.type);
-		tomlex::try_set_or<u16>(tab, "value", data.value, 0);
-		tomlex::try_set_or<u16>(tab, "rangeX", data.rangeX, 0);
-		tomlex::try_set_or<u16>(tab, "rangeY", data.rangeY, 0);
-		tomlex::try_set_or<u16>(tab, "cd", data.cooldown, 0);
-		tomlex::try_set_or<u16>(tab, "combatPoint", data.combatPoint, 0);
-		// parse animation data
+        
+		// Memperbaiki konflik tipe data (di-cast eksplisit ke u16 agar compiler tidak error)
+		tomlex::try_set_or<u16>(tab, "value", data.value, (u16)0);
+		tomlex::try_set_or<u16>(tab, "rangeX", data.rangeX, (u16)0);
+		tomlex::try_set_or<u16>(tab, "rangeY", data.rangeY, (u16)0);
+		tomlex::try_set_or<u16>(tab, "cd", data.cooldown, (u16)0);
+		tomlex::try_set_or<u16>(tab, "combatPoint", data.combatPoint, (u16)0);
+        
 		const auto &defaultInfo = ActionConstant::getAnimDataByActionFlag(data.flag);
 		if (auto animIter = tab.find("anim"); animIter != end)
 		{
@@ -151,8 +149,8 @@ static void ParseAction(const toml::value &v, UnitMetadata &metadata)
 			data.info = defaultInfo;
 		}
 
-		// parse frame data
-		auto frame = toml::find<vector<string>>(value, "frame");
+		// Memperbaiki pemanggilan toml::find agar mencari secara global sesuai log error
+		auto frame = ::toml::find<vector<string>>(value, "frame");
 		if (!frame.empty())
 		{
 			auto &frameVector = data.frames;
@@ -161,9 +159,8 @@ static void ParseAction(const toml::value &v, UnitMetadata &metadata)
 			for (const auto &f : frame)
 			{
 				auto found = f.find_first_of('=', 1);
-				if (found != string::npos) // parse event
+				if (found != string::npos)
 				{
-					// DIUBAH MENJADI tomlex KARENA NAMESPACE ASLI DI FILE ANDA ADALAH tomlex
 					auto eventName = tomlex::trim(f.substr(0, found));
 					auto eventValue = tomlex::trim(f.substr(found + 1, f.length() - found - 1));
 					frameVector[i++] = make_pair(eventName, f);
@@ -178,8 +175,6 @@ static void ParseAction(const toml::value &v, UnitMetadata &metadata)
 	}
 }
 
-DETAIL_NS_BEGIN
-
 static inline bool fromCache(const string &unitName, UnitMetadata &metadata)
 {
 	return ParserCache::get(unitName, metadata);
@@ -193,11 +188,11 @@ static inline UnitMetadata fromToml(const string &fname, bool cache = false)
 		CCLOGERROR("[ERROR] UnitParser::fromToml not found file %s", path.c_str());
 		return {};
 	}
-	const auto data = toml::parse(path);
+	const auto data = ::toml::parse(path);
 
 	UnitMetadata metadata;
-	detail::ParseCoreData(data, metadata);
-	detail::ParseAction(data, metadata);
+	ParseCoreData(data, metadata);
+	ParseAction(data, metadata);
 	if (cache)
 		ParserCache::set(metadata);
 	return metadata;
