@@ -91,27 +91,29 @@ static const std::string nullstr;
 
 static void ParseCoreData(const toml::value &v, UnitMetadata &metadata)
 {
-	const auto &tab = v.as_table();
-	const auto end = tab.end();
-
-	tomlex::try_set(tab, "name", metadata.name);
-	tomlex::try_set(tab, "hp", metadata.hp);
+	if (!v.is_table()) return;
 	
-	if (auto hpBarIter = tab.find("hpBar"); hpBarIter != end)
+	// Menggunakan fungsi standar library toml bawaan untuk menghindari error try_set_or
+	metadata.name = toml::find_or<string>(v, "name", "");
+	metadata.hp = toml::find_or<u32>(v, "hp", 0);
+	
+	if (v.contains("hpBar"))
 	{
 		metadata.enableHPBar = true;
-		const auto &hpBar = hpBarIter->second.as_table();
-		tomlex::try_set_or<i16>(hpBar, "y", metadata.hpBarY, (i16)0);
+		const auto &hpBar = toml::find(v, "hpBar");
+		metadata.hpBarY = toml::find_or<i16>(hpBar, "y", 0);
 	}
 	else
 	{
 		metadata.enableHPBar = false;
 	}
-	tomlex::try_set_or<u16>(tab, "speed", metadata.speed, (u16)kDefaultSpeed);
+	metadata.speed = toml::find_or<u16>(v, "speed", (u16)kDefaultSpeed);
 }
 
 static void ParseAction(const toml::value &v, UnitMetadata &metadata)
 {
+	if (!v.is_table()) return;
+
 	for (const auto &[key, value] : v.as_table())
 	{
 		if (key.empty() || !value.is_table() || value.size() == 0)
@@ -119,43 +121,35 @@ static void ParseAction(const toml::value &v, UnitMetadata &metadata)
 		auto flag = ActionConstant::string2ActionFlag(key);
 		if (flag == ActionFlag::None)
 			continue;
-            
-		const auto &tab = value.as_table();
-		const auto end = tab.end();
 
 		ActionData data = {
 			.flag = flag,
 		};
-		tomlex::try_set(tab, "type", data.type);
-        
-		tomlex::try_set_or<u16>(tab, "value", data.value, (u16)0);
-		tomlex::try_set_or<u16>(tab, "rangeX", data.rangeX, (u16)0);
-		tomlex::try_set_or<u16>(tab, "rangeY", data.rangeY, (u16)0);
-		tomlex::try_set_or<u16>(tab, "cd", data.cooldown, (u16)0);
-		tomlex::try_set_or<u16>(tab, "combatPoint", data.combatPoint, (u16)0);
+		
+		data.type = toml::find_or<string>(value, "type", "");
+		data.value = toml::find_or<u16>(value, "value", 0);
+		data.rangeX = toml::find_or<u16>(value, "rangeX", 0);
+		data.rangeY = toml::find_or<u16>(value, "rangeY", 0);
+		data.cooldown = toml::find_or<u16>(value, "cd", 0);
+		data.combatPoint = toml::find_or<u16>(value, "combatPoint", 0);
         
 		const auto &defaultInfo = ActionConstant::getAnimDataByActionFlag(data.flag);
-		if (auto animIter = tab.find("anim"); animIter != end)
+		if (value.contains("anim"))
 		{
-			const auto &anim = animIter->second.as_table();
-			tomlex::try_set_or<uint8_t>(anim, "fps", data.info.fps, defaultInfo.fps);
-			
-			// Memperbaiki pemanggilan boolean agar tidak memicu error overload di try_set_or
-			bool isLoopVal = defaultInfo.isLoop;
-			tomlex::try_set_or<bool>(anim, "loop", isLoopVal, isLoopVal);
-			
-			bool isReturnVal = defaultInfo.isReturnToIdle;
-			tomlex::try_set_or<bool>(anim, "returnIdle", isReturnVal, isReturnVal);
+			const auto &anim = toml::find(value, "anim");
+			data.info.fps = toml::find_or<uint8_t>(anim, "fps", defaultInfo.fps);
+			data.info.isLoop = toml::find_or<bool>(anim, "loop", defaultInfo.isLoop);
+			data.info.isReturnToIdle = toml::find_or<bool>(anim, "returnIdle", defaultInfo.isReturnToIdle);
 		}
 		else
 		{
 			data.info = defaultInfo;
 		}
 
-		// PERBAIKAN TOTAL: Membaca array 'frame' menggunakan metode yang aman untuk library TOML Anda
-		if (auto frameIter = tab.find("frame"); frameIter != end)
+		// Alternatif pembacaan array frame yang jauh lebih aman bagi compiler
+		if (value.contains("frame"))
 		{
-			const auto &frameArray = frameIter->second.as_array();
+			const auto &frameArray = toml::find<vector<toml::value>>(value, "frame");
 			auto &frameVector = data.frames;
 			frameVector.resize(frameArray.size());
 			size_t i = 0;
@@ -192,7 +186,6 @@ static inline UnitMetadata fromToml(const string &fname, bool cache = false)
 		return {};
 	}
 	
-	// Menggunakan toml::parse bawaan library secara langsung
 	const auto data = toml::parse(path);
 
 	UnitMetadata metadata;
