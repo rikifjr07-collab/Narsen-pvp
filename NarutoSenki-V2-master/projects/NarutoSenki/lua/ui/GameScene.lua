@@ -112,8 +112,8 @@ function GameScene:onPush()
     -- MEMPERBAIKI ALUR PERPINDAHAN KE STARTMENU C++ AGAR AMAN DAN TIDAK FC
     local menuScene = CCScene:create()
     
-    -- Menggunakan instansiasi objek bawaan C++ Cocos2d-x v2 secara eksplisit
-    local menuLayer = StartMenu:new()
+    -- PERBAIKAN: Menggunakan titik (.) bukan titik dua ganda (::)
+    local menuLayer = StartMenu.new()
     if menuLayer then
         if menuLayer:init() then
             menuLayer:autorelease()
