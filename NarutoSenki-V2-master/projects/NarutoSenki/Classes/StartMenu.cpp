@@ -145,8 +145,9 @@ void MenuButton::playSound()
 		SimpleAudioEngine::sharedEngine()->playEffect(TRAINING_SOUND);
 		break;
 	case MenuButtonType::Custom:
-		SimpleAudioEngine::sharedEngine()->playEffect(NETWORK_SOUND);
+			// Tombol Network dikosongkan total agar tidak ada aksi/reaksi untuk mencegah Force Close
 		break;
+
 	case MenuButtonType::Credits:
 		SimpleAudioEngine::sharedEngine()->playEffect(CREDITS_SOUND);
 		break;
@@ -472,11 +473,25 @@ void StartMenu::onHardLayerCallBack()
 
 void StartMenu::onTrainingCallBack()
 {
+	// MEMPERBAIKI ALUR MASUK KELAYER SELEKSI GAME MODE AGAR TIDAK FC
 	auto modeScene = Scene::create();
-	auto gameModeLayer = GameModeLayer::create();
-	modeScene->addChild(gameModeLayer);
-	Director::sharedDirector()->replaceScene(TransitionFade::create(1.25f, modeScene));
+	if (modeScene) {
+		auto gameModeLayer = GameModeLayer::new();
+		if (gameModeLayer) {
+			if (gameModeLayer->init()) {
+				gameModeLayer->autorelease();
+				modeScene->addChild(gameModeLayer);
+				Director::sharedDirector()->replaceScene(TransitionFade::create(1.25f, modeScene));
+			} else {
+				gameModeLayer->release();
+				CCLOG("ERROR: Gagal init GameModeLayer");
+			}
+		} else {
+			CCLOG("ERROR: Gagal alokasi memori GameModeLayer");
+		}
+	}
 }
+
 
 void StartMenu::onCreditsCallBack()
 {
