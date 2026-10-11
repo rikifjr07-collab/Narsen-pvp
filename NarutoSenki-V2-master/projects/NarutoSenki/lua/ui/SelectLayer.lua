@@ -407,13 +407,13 @@ end
 function SelectLayer:onGameStart()
     log("Engine memproses transisi masuk ke Match...")
     
-    -- Mengunci karakter secara otomatis jika belum dipilih saat tombol ditekan
+    -- 1. Mengunci karakter secara otomatis jika belum terkunci saat tombol ditekan
     if not self._playerSelect then
         self._playerSelect = self.selectHero or "naruto"
         if self.setSelectHero then self:setSelectHero(self._playerSelect) end
     end
 
-    -- Menyiapkan data komputer/bot secara otomatis untuk mode 3v3 dan 4v4
+    -- 2. Menyiapkan data komputer/bot otomatis untuk mode tim 3v3 dan 4v4
     if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
         local totalHeros = #self.selectNameList
         math.randomseed(os.time())
@@ -422,7 +422,7 @@ function SelectLayer:onGameStart()
         if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
     end
 
-    -- Melemparkan penanganan scene sepenuhnya ke induk biner C++
+    -- 3. Melemparkan penanganan scene sepenuhnya ke induk biner C++ secara aman
     pcall(function()
         if self.onGameStart_Base then
             self:onGameStart_Base()
@@ -431,3 +431,4 @@ function SelectLayer:onGameStart()
         end
     end)
 end
+
