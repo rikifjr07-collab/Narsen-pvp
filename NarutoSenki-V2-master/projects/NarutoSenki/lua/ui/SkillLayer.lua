@@ -113,16 +113,28 @@ function SkillLayer:init()
 
     return true
 end
-
 function SkillLayer:initInterface()
-    if self._selectLayer then self.selectHero = self._selectLayer.selectHero end
+    -- Jaminan pengaman agar hero default "naruto" langsung terisi jika selectHero kosong (Mencegah FC)
+    if self._selectLayer and self._selectLayer.selectHero then 
+        self.selectHero = self._selectLayer.selectHero 
+    else
+        self.selectHero = self.selectHero or "naruto"
+    end
 
     local bgSprite = display.newSprite('blue_bg.png', 0, 0)
     bgSprite:fullScreen()
     bgSprite:setAnchorPoint(0, 0)
     self:addChild(bgSprite, -5)
 
-    local winNum = tools.readWinNumFromSQL(self.selectHero)
+    -- Penanganan Amfibi: Jika database mengembalikan nil, otomatis dikonversi ke nilai 0 (Anti-Crash)
+    local winNum = 0
+    local statusWin, errWin = pcall(function()
+        winNum = tools.readWinNumFromSQL(self.selectHero) or 0
+    end)
+    if not statusWin then 
+        log("SQL WIN_NUM WARNING (Fallback ke 0): " .. tostring(errWin))
+        winNum = 0 
+    end
 
     local rank_src
     local isBlink = false
@@ -163,7 +175,13 @@ function SkillLayer:initInterface()
                        display.cy + skill_bg:getContentSize().width / 2 - 74)
     self:addChild(goldBG, 9)
 
-    local coinsNum = tools.readCoinFromSQL()
+    -- Penanganan Amfibi untuk pembacaan koin SQL
+    local coinsNum = 0
+    local statusCoin, errCoin = pcall(function()
+        coinsNum = tools.readCoinFromSQL() or 0
+    end)
+    if not statusCoin then coinsNum = 0 end
+
     self.coinLabel = CCLabelBMFont:create(tostring(coinsNum), 'Fonts/1.fnt')
     self.coinLabel:setScale(0.3)
     self.coinLabel:setAnchorPoint(0.5, 0)
@@ -183,7 +201,6 @@ function SkillLayer:initInterface()
     local bonds = display.newProgressTimer(bondBG2, display.PROGRESS_TIMER_BAR)
     self.bonds = bonds
     bonds:setAnchorPoint(0.5, 0)
-    -- bonds:setMidpoint(CCPoint(0, 0)) -- is default value
     bonds:setBarChangeRate(CCPoint(0, 1))
 
     if coinsNum >= 99999 then
@@ -215,18 +232,18 @@ function SkillLayer:initInterface()
         self:addChild(blink, 9)
 
         local tempArray = CCArray:create()
-
         for i = 1, 6 do
             local frame = display.newSpriteFrame('skill_blink' .. i .. '.png')
-            tempArray:addObject(frame)
+            if frame then tempArray:addObject(frame) end
         end
 
         local tempAnimation = CCAnimation:createWithSpriteFrames(tempArray, 0.1)
-
-        blink:runAction(CCRepeatForever:create(
-                            transition.sequence({
-                CCAnimate:create(tempAnimation), CCDelayTime:create(2.0)
-            })))
+        if tempAnimation then
+            blink:runAction(CCRepeatForever:create(
+                                transition.sequence({
+                    CCAnimate:create(tempAnimation), CCDelayTime:create(2.0)
+                })))
+        end
     end
 
     local frameSprite = display.newSprite('#skill_frame.png', display.cx,
@@ -249,7 +266,12 @@ function SkillLayer:initInterface()
                               skill_bg:getContentSize().height / 2 + 74)
     self:addChild(detailBG1, 5)
 
-    local recordTime = tools.readRecordTimeFromSQL(self.selectHero)
+    -- Penanganan Amfibi untuk catatan waktu rekor SQL
+    local recordTime = ''
+    pcall(function()
+        recordTime = tools.readRecordTimeFromSQL(self.selectHero) or ''
+    end)
+    
     local bestLabel
     if recordTime == '' then
         bestLabel = CCLabelBMFont:create('00:00:00', 'Fonts/1.fnt')
@@ -282,6 +304,7 @@ function SkillLayer:initInterface()
     self:updateSkillGroup()
     self:scheduleUpdateWithPriorityLua(handler(self, SkillLayer.update), 0)
 end
+
 
 function SkillLayer:onChangeBtn()
     audio.playSound('Audio/Menu/chang_btn.ogg')
