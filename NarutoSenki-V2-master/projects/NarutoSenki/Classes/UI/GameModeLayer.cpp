@@ -47,11 +47,14 @@ bool GameModeLayer::init()
 
 	initModeData();
 
-	const int offset = (winSize.width - 460) / 2 + 100 / 2;
+		const int offset = (winSize.width - 460) / 2 + 100 / 2;
 	const float posY = (winSize.height / 2) + 30;
+	
+	// PERBAIKAN: Mengganti format() C++20 dengan CCString bawaan Cocos2d-x agar pembacaan aset aman
 	for (int i = 0; i < 3; i++)
 	{
-		auto mode_btn = ModeMenuButton::create(format("GameMode/{}.png", i + 1));
+		CCString* imgPath = CCString::createWithFormat("GameMode/%d.png", i + 1);
+		auto mode_btn = ModeMenuButton::create(imgPath->getCString());
 		if (mode_btn) {
 			mode_btn->mode = (GameMode)i;
 			mode_btn->setDelegate(this);
@@ -63,7 +66,8 @@ bool GameModeLayer::init()
 	}
 	for (int i = 3; i < 6; i++)
 	{
-		auto mode_btn = ModeMenuButton::create(format("GameMode/{}.png", i + 1));
+		CCString* imgPath = CCString::createWithFormat("GameMode/%d.png", i + 1);
+		auto mode_btn = ModeMenuButton::create(imgPath->getCString());
 		if (mode_btn) {
 			mode_btn->mode = (GameMode)i;
 			mode_btn->setDelegate(this);
@@ -75,7 +79,8 @@ bool GameModeLayer::init()
 	}
 	for (int i = 6; i < GameMode::__Internal_Max_Length; i++)
 	{
-		auto mode_btn = ModeMenuButton::create(format("GameMode/{}.png", i + 1));
+		CCString* imgPath = CCString::createWithFormat("GameMode/%d.png", i + 1);
+		auto mode_btn = ModeMenuButton::create(imgPath->getCString());
 		if (mode_btn) {
 			mode_btn->mode = (GameMode)i;
 			mode_btn->setDelegate(this);
@@ -86,6 +91,7 @@ bool GameModeLayer::init()
 		}
 	}
 
+	
 	for (size_t i = 0; i < menuButtons.size(); i++)
 	{
 		if (menuButtons.at(i) && modes[i].isLocked)
