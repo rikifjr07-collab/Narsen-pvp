@@ -1,5 +1,5 @@
 --
--- SelectLayer Utuh, Stabil & Fixed Index
+-- SelectLayer Paling Stabil & Pas Indeks
 --
 function SelectLayer:init()
     log('Initial SelectLayer...')
@@ -158,7 +158,7 @@ function SelectLayer:init()
     self.selectNameList = selectNameList
     self:setSelectList(table.toCCArray(selectNameList))
 
-    -- FIXED INDEX: Menambahkan indeks [1] agar mendeteksi karakter default awal secara sah
+    -- INDEKS DIKEMBALIKAN KE [1] AGAR SAH MEMUAT HERO DEFAULT PERTAMA
     local hero = selectNameList[1]
     if hero then
         local heroHalfImage = display.newSprite('#' .. hero .. '_half.png', 10, 10)
@@ -173,7 +173,7 @@ function SelectLayer:init()
         self._heroHalfImage = heroHalfImage
     end
 
-    -- FIXED INDEX: Menambahkan indeks [1] agar kotak 1P bisa langsung berkedip di Naruto secara default
+    -- INDEKS DIKEMBALIKAN KE [1] AGAR KOTAK 1P LANGSUNG NYALA BERKEDIP SECARA ALAMI
     local selectBtn = selectButtons[1]
     if selectBtn then
         local selectImg = display.newSprite('#1p.png', selectBtn:getPositionX() - 2, selectBtn:getPositionY() - 2)
@@ -344,8 +344,8 @@ end
 
 function SelectLayer:onGameStart()
     log("Proses alur Start Match...")
-    audio.playSound('Audio/Menu/confirm.ogg')
     
+    -- Jaminan auto-assign data agar biner tidak kemasukan nilai hantu (nil)
     if not self._playerSelect then
         self._playerSelect = self.selectHero or "naruto"
         self:setSelectHero(self._playerSelect)
@@ -359,6 +359,7 @@ function SelectLayer:onGameStart()
         if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
     end
 
+    -- Panggil biner C++ secara aman tanpa interupsi langsung di thread Lua
     local status, err = pcall(function()
         self.onGameStart(self)
     end)
@@ -369,7 +370,6 @@ end
 
 function SelectLayer:onSkillMenuButtonClick()
     log("Membuka UI Menu Skill...")
-    audio.playSound('Audio/Menu/confirm.ogg')
     if not self.selectHero then self.selectHero = "naruto" end
 
     local status, err = pcall(function()
@@ -380,6 +380,7 @@ function SelectLayer:onSkillMenuButtonClick()
             if skillLayer.setHeroPortrait then skillLayer:setHeroPortrait(self.selectHero) end
             CCDirector:sharedDirector():pushScene(scene)
         else
+            -- Tampilan Fallback aman agar Gold, Gambar, dan Data keluar tanpa FC
             local fallbackScene = CCScene:create()
             local infoLayer = CCLayerColor:create(ccc4(15, 15, 30, 245))
             
