@@ -201,23 +201,9 @@ function SelectLayer:init()
     -- MEMAKAI LOGIKA ASLI: Menghindari loop buntu saat menekan tombol start
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        listener = function() 
-            log("Proses alur Start Match...")
-            if not self._playerSelect then
-                self._playerSelect = self.selectHero or "naruto"
-                self:setSelectHero(self._playerSelect)
-            end
-            if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
-                local totalHeros = #self.selectNameList
-                math.randomseed(os.time())
-                if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] self:setCom1Select(self._com1Select) end
-                if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] self:setCom2Select(self._com2Select) end
-                if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
-            end
-            -- Panggil fungsi ke scene pertarungan di engine inti
-            if self.onGameStart_Base then self:onGameStart_Base() end
-        end
+        listener = handler(self, self.onGameStart)
     })
+
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
