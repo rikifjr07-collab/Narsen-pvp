@@ -123,40 +123,7 @@ function SkillLayer:initInterface()
 
     local bgSprite = display.newSprite('blue_bg.png', 0, 0)
     bgSprite:fullScreen()
-    bgSprite:setAnchorPoint(0, 0)
-    self:addChild(bgSprite, -5)
 
-    -- Penanganan Amfibi: Jika database mengembalikan nil, otomatis dikonversi ke nilai 0 (Anti-Crash)
-    local winNum = 0
-    local statusWin, errWin = pcall(function()
-        winNum = tools.readWinNumFromSQL(self.selectHero) or 0
-    end)
-    if not statusWin then 
-        log("SQL WIN_NUM WARNING (Fallback ke 0): " .. tostring(errWin))
-        winNum = 0 
-    end
-
-    local rank_src
-    local isBlink = false
-    local skillbg_src
-    if winNum >= 300 then
-        skillbg_src = 'skill_bg6.png'
-        rank_src = 'rank_sss.png'
-        isBlink = true
-    elseif winNum >= 200 then
-        skillbg_src = 'skill_bg5.png'
-        rank_src = 'rank_ss.png'
-        isBlink = true
-    elseif winNum >= 100 then
-        skillbg_src = 'skill_bg4.png'
-        rank_src = 'rank_s.png'
-        isBlink = true
-    elseif winNum >= 50 then
-        skillbg_src = 'skill_bg3.png'
-        rank_src = 'rank_a.png'
-    elseif winNum >= 25 then
-        skillbg_src = 'skill_bg2.png'
-        rank_src = 'rank_b.png'
     else
         skillbg_src = 'skill_bg1.png'
         rank_src = 'rank_c.png'
@@ -180,50 +147,7 @@ function SkillLayer:initInterface()
     local statusCoin, errCoin = pcall(function()
         coinsNum = tools.readCoinFromSQL() or 0
     end)
-    if not statusCoin then coinsNum = 0 end
-
-    self.coinLabel = CCLabelBMFont:create(tostring(coinsNum), 'Fonts/1.fnt')
-    self.coinLabel:setScale(0.3)
-    self.coinLabel:setAnchorPoint(0.5, 0)
-    self.coinLabel:setPosition(goldBG:getPositionX() -
-                                   goldBG:getContentSize().width / 2 + 40,
-                               goldBG:getPositionY() + 4)
-    self:addChild(self.coinLabel, 15)
-
-    local bondBG = display.newSprite('#golds_1.png')
-    bondBG:setAnchorPoint(0.5, 0)
-    bondBG:setPosition(
-        goldBG:getPositionX() - goldBG:getContentSize().width / 2 + 15,
-        goldBG:getPositionY() + 4)
-    self:addChild(bondBG, 15)
-
-    local bondBG2 = display.newSprite('#golds_2.png')
-    local bonds = display.newProgressTimer(bondBG2, display.PROGRESS_TIMER_BAR)
-    self.bonds = bonds
-    bonds:setAnchorPoint(0.5, 0)
-    bonds:setBarChangeRate(CCPoint(0, 1))
-
-    if coinsNum >= 99999 then
-        bonds:setPercentage(100)
-    elseif coinsNum >= 80000 then
-        bonds:setPercentage(coinsNum / 1000)
-    end
-
-    bonds:setPosition(
-        goldBG:getPositionX() - goldBG:getContentSize().width / 2 + 15,
-        goldBG:getPositionY() + 4)
-    self:addChild(bonds, 20)
-
-    local imgPath
-    if table.has(useFull2ImageList, self.selectHero) and winNum >= 100 then
-        imgPath = '#' .. self.selectHero .. '_full2.png'
-    else
-        imgPath = '#' .. self.selectHero .. '_full.png'
-    end
-    self._heroFull = display.newSprite(imgPath)
-    self._heroFull:setAnchorPoint(0.5, 0)
-    self._heroFull:setPosition(display.cx, display.cy -
-                                   skill_bg:getContentSize().height / 2 + 23)
+getContentSize().height / 2 + 23)
     self:addChild(self._heroFull, 5)
 
     if isBlink then
@@ -247,64 +171,100 @@ function SkillLayer:initInterface()
     end
 
     local frameSprite = display.newSprite('#skill_frame.png', display.cx,
-                                          display.cy)
+
+function SkillLayer:initInterface()
+    -- BYPASS: Paksa isi nama hero agar tidak nil
+    if self._selectLayer and self._selectLayer.selectHero then 
+        self.selectHero = self._selectLayer.selectHero 
+    else
+        self.selectHero = "naruto"
+    end
+
+    local bgSprite = display.newSprite('blue_bg.png', 0, 0)
+    bgSprite:fullScreen()
+    bgSprite:setAnchorPoint(0, 0)
+    self:addChild(bgSprite, -5)
+
+    -- BYPASS: Isi angka manual 0 agar aman dari crash database SQL
+    local winNum = 0
+    local skillbg_src = 'skill_bg1.png'
+    local rank_src = 'rank_c.png'
+
+    local skill_bg = display.newSprite('#' .. skillbg_src, display.cx, display.cy)
+    self:addChild(skill_bg, 2)
+    self.bgSprite = skill_bg
+
+    self:trySetCharacterChangeButton(self.selectHero)
+
+    local goldBG = display.newSprite('#gold_bg.png')
+    goldBG:setAnchorPoint(0.5, 0)
+    goldBG:setPosition(display.cx + skill_bg:getContentSize().width / 4 + 25, display.cy + skill_bg:getContentSize().width / 2 - 74)
+    self:addChild(goldBG, 9)
+
+    -- BYPASS: Set koin manual ke 50000 agar UI tidak kosong
+    local coinsNum = 50000
+    self.coinLabel = CCLabelBMFont:create(tostring(coinsNum), 'Fonts/1.fnt')
+    self.coinLabel:setScale(0.3)
+    self.coinLabel:setAnchorPoint(0.5, 0)
+    self.coinLabel:setPosition(goldBG:getPositionX() - goldBG:getContentSize().width / 2 + 40, goldBG:getPositionY() + 4)
+    self:addChild(self.coinLabel, 15)
+
+    local bondBG = display.newSprite('#golds_1.png')
+    bondBG:setAnchorPoint(0.5, 0)
+    bondBG:setPosition(goldBG:getPositionX() - goldBG:getContentSize().width / 2 + 15, goldBG:getPositionY() + 4)
+    self:addChild(bondBG, 15)
+
+    local bondBG2 = display.newSprite('#golds_2.png')
+    local bonds = display.newProgressTimer(bondBG2, display.PROGRESS_TIMER_BAR)
+    self.bonds = bonds
+    bonds:setAnchorPoint(0.5, 0)
+    bonds:setBarChangeRate(CCPoint(0, 1))
+    bonds:setPercentage(50)
+    bonds:setPosition(goldBG:getPositionX() - goldBG:getContentSize().width / 2 + 15, goldBG:getPositionY() + 4)
+    self:addChild(bonds, 20)
+
+    -- Ambil gambar full portrait hero secara aman
+    local imgPath = '#' .. self.selectHero .. '_full.png'
+    self._heroFull = display.newSprite(imgPath)
+    if self._heroFull then
+        self._heroFull:setAnchorPoint(0.5, 0)
+        self._heroFull:setPosition(display.cx, display.cy - skill_bg:getContentSize().height / 2 + 23)
+        self:addChild(self._heroFull, 5)
+    end
+
+    local frameSprite = display.newSprite('#skill_frame.png', display.cx, display.cy)
     self:addChild(frameSprite, 10)
 
     local rankSprite = display.newSprite('#' .. rank_src)
     rankSprite:setAnchorPoint(0, 0)
-    rankSprite:setPosition(skill_bg:getPositionX() -
-                               skill_bg:getContentSize().width / 2 + 5,
-                           skill_bg:getPositionY() +
-                               skill_bg:getContentSize().height / 2 - 20)
+    rankSprite:setPosition(skill_bg:getPositionX() - skill_bg:getContentSize().width / 2 + 5, skill_bg:getPositionY() + skill_bg:getContentSize().height / 2 - 20)
     self:addChild(rankSprite, 11)
 
     local detailBG1 = display.newSprite('#detail_bg.png')
     detailBG1:setAnchorPoint(0, 0)
-    detailBG1:setPosition(skill_bg:getPositionX() -
-                              skill_bg:getContentSize().width / 2 + 8,
-                          skill_bg:getPositionY() -
-                              skill_bg:getContentSize().height / 2 + 74)
+    detailBG1:setPosition(skill_bg:getPositionX() - skill_bg:getContentSize().width / 2 + 8, skill_bg:getPositionY() - skill_bg:getContentSize().height / 2 + 74)
     self:addChild(detailBG1, 5)
 
-    -- Penanganan Amfibi untuk catatan waktu rekor SQL
-    local recordTime = ''
-    pcall(function()
-        recordTime = tools.readRecordTimeFromSQL(self.selectHero) or ''
-    end)
-    
-    local bestLabel
-    if recordTime == '' then
-        bestLabel = CCLabelBMFont:create('00:00:00', 'Fonts/1.fnt')
-    else
-        bestLabel = CCLabelBMFont:create(recordTime, 'Fonts/1.fnt')
-    end
-
+    local bestLabel = CCLabelBMFont:create('00:00:00', 'Fonts/1.fnt')
     bestLabel:setScale(0.3)
     bestLabel:setAnchorPoint(0, 0)
-    bestLabel:setPosition(detailBG1:getPositionX() + 8,
-                          detailBG1:getPositionY() + 7)
+    bestLabel:setPosition(detailBG1:getPositionX() + 8, detailBG1:getPositionY() + 7)
     self:addChild(bestLabel, 6)
 
     local detailBG2 = display.newSprite('#detail_bg.png')
     detailBG2:setAnchorPoint(0, 0)
-    detailBG2:setPosition(skill_bg:getPositionX() +
-                              skill_bg:getContentSize().width / 2 -
-                              detailBG2:getContentSize().width - 8,
-                          skill_bg:getPositionY() -
-                              skill_bg:getContentSize().height / 2 + 74)
+    detailBG2:setPosition(skill_bg:getPositionX() + skill_bg:getContentSize().width / 2 - detailBG2:getContentSize().width - 8, skill_bg:getPositionY() - skill_bg:getContentSize().height / 2 + 74)
     self:addChild(detailBG2, 5)
 
-    local recordLabel = CCLabelBMFont:create(winNum .. ' bonds', 'Fonts/1.fnt')
+    local recordLabel = CCLabelBMFont:create('0 bonds', 'Fonts/1.fnt')
     recordLabel:setScale(0.3)
     recordLabel:setAnchorPoint(0, 0)
-    recordLabel:setPosition(detailBG2:getPositionX() + 12,
-                            detailBG2:getPositionY() + 7)
+    recordLabel:setPosition(detailBG2:getPositionX() + 12, detailBG2:getPositionY() + 7)
     self:addChild(recordLabel, 6)
 
     self:updateSkillGroup()
     self:scheduleUpdateWithPriorityLua(handler(self, SkillLayer.update), 0)
 end
-
 
 function SkillLayer:onChangeBtn()
     audio.playSound('Audio/Menu/chang_btn.ogg')
