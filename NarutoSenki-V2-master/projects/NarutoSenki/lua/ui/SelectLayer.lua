@@ -221,25 +221,27 @@ function SelectLayer:init()
             end
 
             -- 4. Memberikan jeda waktu mikro agar efek suara sempat berbunyi, lalu eksekusi masuk match
+                        -- 4. Memberikan jeda waktu mikro agar efek suara sempat berbunyi, lalu eksekusi masuk match
             self:performWithDelay(function()
                 local success, err = pcall(function()
-                    -- Coba panggil fungsi interupsi biner C++ utama
+                    -- Coba cari objek target utama yang terhubung langsung dengan Engine C++
+                    local target = self:getTarget() or self
+                    
                     if self.onGameStart_Base then
                         self:onGameStart_Base()
+                    elseif target and target.onGameStart and target ~= self then
+                        -- JALUR UTAMA ENGINE: Panggil fungsi start langsung pada target biner C++
+                        target:onGameStart()
                     elseif self.super and self.super.onGameStart then
                         self.super.onGameStart(self)
                     else
-                        -- Jalur pamungkas: Paksa panggil fungsi transisi lokal terdaftar
-                        -- untuk melontarkan pemain ke dalam loading pertarungan
-                        local target = self:getTarget() or self
-                        if target.onGameStart and target ~= self then
-                            target:onGameStart()
+                        -- JALUR DARURAT: Jika fungsi tertutup, paksa panggil scene pertarungan berikutnya 
+                        -- dengan memicu fungsi global start bawaan game Anda secara tepat
+                        if self.onGameStart then
+                            -- Panggil fungsi penanganan data tanpa memicu looping balik
+                            self.onGameStart(self)
                         else
-                            -- Jika mentok, panggil fungsi pemrosesan data mandiri
-                            if self.onGameStart then
-                                -- Gunakan pemanggilan fungsi tanpa titik ganda agar tidak loop buntu
-                                self.onGameStart(self) 
-                            end
+                            log("PERINGATAN: Seluruh fungsi transisi biner tidak merespons.")
                         end
                     end
                 end)
