@@ -157,22 +157,6 @@ function SkillLayer:initInterface()
     goldBG:setPosition(display.cx + skill_bg:getContentSize().width / 4 + 25, display.cy + skill_bg:getContentSize().width / 2 - 74)
     self:addChild(goldBG, 9)
 
-        -- Mengembalikan pembacaan koin asli dari database SQL permainan secara aman
-    local coinsNum = 0
-    local successCoin, errCoin = pcall(function()
-        local res = tools.readCoinFromSQL()
-        if res and type(res) == "number" then
-            coinsNum = res
-        elseif res and type(res) == "string" then
-            coinsNum = tonumber(res) or 0
-        end
-    end)
-    
-    -- JAMINAN AKHIR: Jika nilainya kosong, paksa jadi angka 0 agar tidak menjadi teks huruf "nil" (Anti-FC)
-    if not successCoin or coinsNum == nil or type(coinsNum) ~= "number" then 
-        coinsNum = 0 
-    end
-
     self.coinLabel = CCLabelBMFont:create(tostring(coinsNum), 'Fonts/1.fnt')
     self.coinLabel:setScale(0.3)
     self.coinLabel:setAnchorPoint(0.5, 0)
