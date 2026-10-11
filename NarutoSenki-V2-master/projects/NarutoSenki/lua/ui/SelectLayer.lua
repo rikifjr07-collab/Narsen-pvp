@@ -1,5 +1,5 @@
 --
--- SelectLayer Utuh & Stabil
+-- SelectLayer Utuh, Stabil & Fixed Index
 --
 function SelectLayer:init()
     log('Initial SelectLayer...')
@@ -158,6 +158,7 @@ function SelectLayer:init()
     self.selectNameList = selectNameList
     self:setSelectList(table.toCCArray(selectNameList))
 
+    -- FIXED INDEX: Menambahkan indeks [1] agar mendeteksi karakter default awal secara sah
     local hero = selectNameList[1]
     if hero then
         local heroHalfImage = display.newSprite('#' .. hero .. '_half.png', 10, 10)
@@ -172,14 +173,17 @@ function SelectLayer:init()
         self._heroHalfImage = heroHalfImage
     end
 
+    -- FIXED INDEX: Menambahkan indeks [1] agar kotak 1P bisa langsung berkedip di Naruto secara default
     local selectBtn = selectButtons[1]
-    local selectImg = display.newSprite('#1p.png', selectBtn:getPositionX() - 2, selectBtn:getPositionY() - 2)
-    selectImg:setAnchorPoint(0, 0)
-    self:addChild(selectImg, 500)
-    local blink = CCBlink:create(0.6, 1)
-    selectImg:runAction(CCRepeatForever:create(blink))
-    self._selectImg = selectImg
-    self.selectHero = selectBtn._charName
+    if selectBtn then
+        local selectImg = display.newSprite('#1p.png', selectBtn:getPositionX() - 2, selectBtn:getPositionY() - 2)
+        selectImg:setAnchorPoint(0, 0)
+        self:addChild(selectImg, 500)
+        local blink = CCBlink:create(0.6, 1)
+        selectImg:runAction(CCRepeatForever:create(blink))
+        self._selectImg = selectImg
+        self.selectHero = selectBtn._charName
+    end
 
     if self.enableCustomSelect then
         if self.is3v3Mode or self.is4v4Mode then
@@ -301,12 +305,12 @@ function SelectLayer:setSelected(btn)
             end
         end
 
-        self._heroHalfImage:removeFromParent()
+        if self._heroHalfImage then self._heroHalfImage:removeFromParent() end
         self._heroHalfImage = display.newSprite('#' .. btn._charName .. '_half.png', 10, 10)
         self._heroHalfImage:setAnchorPoint(CCPoint(0, 0))
         self:addChild(self._heroHalfImage, 1)
 
-        self._heroName:removeFromParent()
+        if self._heroName then self._heroName:removeFromParent() end
         self._heroName = display.newSprite('#' .. btn._charName .. '_font.png', 100, 20)
         self._heroName:setAnchorPoint(CCPoint(0.5, 0))
         self:addChild(self._heroName, 5)
@@ -340,8 +344,8 @@ end
 
 function SelectLayer:onGameStart()
     log("Proses alur Start Match...")
+    audio.playSound('Audio/Menu/confirm.ogg')
     
-    -- Jaminan pengacakan otomatis bagi player & bot jika dilewati kosong
     if not self._playerSelect then
         self._playerSelect = self.selectHero or "naruto"
         self:setSelectHero(self._playerSelect)
@@ -355,7 +359,6 @@ function SelectLayer:onGameStart()
         if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
     end
 
-    -- Panggil biner C++ asli secara aman menggunakan pembungkus objek
     local status, err = pcall(function()
         self.onGameStart(self)
     end)
@@ -366,6 +369,7 @@ end
 
 function SelectLayer:onSkillMenuButtonClick()
     log("Membuka UI Menu Skill...")
+    audio.playSound('Audio/Menu/confirm.ogg')
     if not self.selectHero then self.selectHero = "naruto" end
 
     local status, err = pcall(function()
@@ -376,7 +380,6 @@ function SelectLayer:onSkillMenuButtonClick()
             if skillLayer.setHeroPortrait then skillLayer:setHeroPortrait(self.selectHero) end
             CCDirector:sharedDirector():pushScene(scene)
         else
-            -- UI Fallback agar potret gambar, Gold Info, dan data skill keluar aman tanpa FC
             local fallbackScene = CCScene:create()
             local infoLayer = CCLayerColor:create(ccc4(15, 15, 30, 245))
             
