@@ -231,13 +231,14 @@ function SelectLayer:init()
 
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        -- PERBAIKAN START: Memanggil langsung fungsi C++ yang terdaftar di select.cpp
+        -- PERBAIKAN: Memanggil biner C++ melalui instance layer secara langsung
         listener = function() 
             local status, err = pcall(function()
-                self:onGameStart() -- Memicu callback biner C++ SelectLayer::onGameStart
+                -- Memanggil fungsi C++ asli di select.cpp
+                self.onGameStart(self) 
             end)
             if not status then
-                log("START ERROR: " .. tostring(err))
+                log("START BINDING ERROR: " .. tostring(err))
             end
         end
     })
@@ -248,19 +249,20 @@ function SelectLayer:init()
 
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
-        -- PERBAIKAN SKILL: Mengamankan pemanggilan agar tidak instant crash jika class kosong
+        -- PERBAIKAN: Memanggil scene menu skill C++ secara aman
         listener = function()
             local status, err = pcall(function()
-                -- Memeriksa apakah komponen biner SkillLayer terdaftar
-                if SkillLayer and SkillLayer.create then
+                -- Memeriksa eksistensi biner SkillLayer sebelum dieksekusi
+                if SkillLayer then
                     local scene = CCScene:create()
-                    local skillLayer = SkillLayer:create()
+                    -- Memanggil create() bawaan C++ biner
+                    local skillLayer = SkillLayer:create() 
                     if skillLayer then
                         scene:addChild(skillLayer)
                         CCDirector:sharedDirector():pushScene(scene)
                     end
                 else
-                    log("SKILL ERROR: Class SkillLayer tidak ditemukan di project biner.")
+                    log("SKILL ERROR: Komponen biner SkillLayer tidak aktif di C++.")
                 end
             end)
             if not status then
@@ -511,9 +513,5 @@ function backToStartMenu()
     hook.registerInitHandlerOnly(menuLayer)
     menuScene:addChild(menuLayer)
     director.replaceSceneWithFade(menuScene, 1)
-end
-function SelectLayer:onGameStart()
-    -- Fungsi ini sengaja dikosongkan agar jembatan biner C++ SelectLayer::onGameStart() 
-    -- dapat menangkap eksekusi tombol dari lapisan Lua tanpa mengalami crash.
 end
 
