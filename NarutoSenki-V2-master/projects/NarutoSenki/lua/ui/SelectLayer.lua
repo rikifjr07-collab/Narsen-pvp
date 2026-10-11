@@ -201,11 +201,11 @@ function SelectLayer:init()
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
-            -- 1. Memaksa pemutaran efek suara klik masuk pertarungan (confirm)
+            -- 1. Memaksa pemutaran efek suara klik masuk pertarungan yang benar
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start ditekan! Mempersiapkan alur perpindahan scene...")
+            log("Tombol Start ditekan! Mempersiapkan alur loading pertarungan...")
 
-            -- 2. Mengamankan data pilihan karakter utama agar tidak nil
+            -- 2. Mengamankan data pilihan karakter agar tidak kosong (nil)
             if not self._playerSelect then
                 self._playerSelect = self.selectHero or "naruto"
                 if self.setSelectHero then self:setSelectHero(self._playerSelect) end
@@ -220,33 +220,52 @@ function SelectLayer:init()
                 if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
             end
 
-            -- 4. Memberikan jeda waktu mikro agar efek suara sempat berbunyi, lalu eksekusi masuk match
-                        -- 4. Memberikan jeda waktu mikro agar efek suara sempat berbunyi, lalu eksekusi masuk match
+            -- 4. Memberikan jeda mikro agar suara konfirmasi sempat berbunyi, lalu eksekusi transisi screen
             self:performWithDelay(function()
                 local success, err = pcall(function()
-                    -- Coba cari objek target utama yang terhubung langsung dengan Engine C++
-                    local target = self:getTarget() or self
+                    -- JALUR PERMAINAN UTAMA: Hentikan musik menu pemilihan karakter sebelum masuk pertarungan
+                    audio.stopMusic(true)
+
+                    -- Memicu fungsi pemrosesan data internal game Anda terlebih dahulu
+                    if self.onGameStart then
+                        self.onGameStart(self)
+                    end
+
+                    -- JALUR TRANSISI ABSOLUT LUA (Bypass Engine Pasif):
+                    -- Kita buat wadah adegan (Scene) baru, lalu kita panggil kelas Loading ke dalamnya.
+                    -- Berkas 'LoadingScene' atau 'LoadingLayer' secara otomatis akan memicu animasi 
+                    -- karakter lari di kanan bawah layar sebelum melempar pemain ke dalam arena pertempuran.
+                    local nextScene = CCScene:create()
+                    local loadingTargetLayer = nil
                     
-                    if self.onGameStart_Base then
-                        self:onGameStart_Base()
-                    elseif target and target.onGameStart and target ~= self then
-                        -- JALUR UTAMA ENGINE: Panggil fungsi start langsung pada target biner C++
-                        target:onGameStart()
-                    elseif self.super and self.super.onGameStart then
-                        self.super.onGameStart(self)
+                    if LoadingScene and LoadingScene.create then
+                        loadingTargetLayer = LoadingScene:create()
+                    elseif LoadingLayer and LoadingLayer.create then
+                        loadingTargetLayer = LoadingLayer:create()
+                    elseif GameLayer and GameLayer.create then
+                        loadingTargetLayer = GameLayer:create()
+                    end
+
+                    if loadingTargetLayer then
+                        nextScene:addChild(loadingTargetLayer)
+                        hook.registerInitHandlerOnly(loadingTargetLayer)
+                        director.replaceSceneWithFade(nextScene, 0.5)
+                        log("Berhasil memindahkan scene ke Layar Loading Pertarungan.")
                     else
-                        -- JALUR DARURAT: Jika fungsi tertutup, paksa panggil scene pertarungan berikutnya 
-                        -- dengan memicu fungsi global start bawaan game Anda secara tepat
-                        if self.onGameStart then
-                            -- Panggil fungsi penanganan data tanpa memicu looping balik
-                            self.onGameStart(self)
+                        -- Jika nama kelas di atas berbeda, gunakan interupsi dasar induk biner C++
+                        if self.onGameStart_Base then
+                            self:onGameStart_Base()
                         else
-                            log("PERINGATAN: Seluruh fungsi transisi biner tidak merespons.")
+                            local nativeTarget = self:getTarget() or self
+                            if nativeTarget and nativeTarget.onGameStart and nativeTarget ~= self then
+                                nativeTarget:onGameStart()
+                            end
                         end
                     end
                 end)
+                
                 if not success then 
-                    log("START TRANSITION FAILED: " .. tostring(err)) 
+                    log("CRITICAL START ERROR: " .. tostring(err)) 
                 end
             end, 0.08)
         end
@@ -256,9 +275,6 @@ function SelectLayer:init()
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
     self:addChild(menu, 5)
-
-
-
 
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
