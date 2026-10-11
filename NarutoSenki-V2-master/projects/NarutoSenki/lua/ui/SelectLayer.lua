@@ -198,40 +198,51 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
 
-    -- MEMAKAI LOGIKA ASLI: Menghindari loop buntu saat menekan tombol start
-        -- Pembuatan Tombol Start yang Benar Sesuai Engine Inti
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
-            audio.playSound('Audio/Menu/select.ogg') -- Memaksa efek suara klik berbunyi
-            log("Memicu Start Match melalui sistem Hook...")
-            
-            -- Jaminan data agar tidak kosong saat dilempar ke engine C++
+            -- Memaksa pemutaran efek suara klik ENTER MATCH/START yang benar
+            audio.playSound('Audio/Menu/confirm.ogg') 
+            log("Mempersiapkan pemindahan scene dan start pertarungan...")
+
+            -- Jaminan parameter dasar terisi agar engine C++ tidak bingung menentukan transisi screen
             if not self._playerSelect then
                 self._playerSelect = self.selectHero or "naruto"
                 if self.setSelectHero then self:setSelectHero(self._playerSelect) end
             end
 
-            -- Pemicu Utama: Jalur interupsi bawaan engine C++ game Anda
-            -- Menggunakan pcall agar jika ada error dari sisi biner, game tidak langsung FC
+            -- Mengisi otomatis bot jika mode kustom aktif namun slot masih kosong saat start ditekan
+            if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
+                local totalHeros = #self.selectNameList
+                math.randomseed(os.time())
+                if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] self:setCom1Select(self._com1Select) end
+                if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] self:setCom2Select(self._com2Select) end
+                if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
+            end
+
+            -- EKSEKUSI PEMINDAHAN SCREEN MANDIRI (Bypass transisi pasif)
             local success, err = pcall(function()
+                -- 1. Coba panggil fungsi bawaan engine biner C++ utama jika terdaftar
                 if self.onGameStart_Base then
                     self:onGameStart_Base()
                 elseif self.super and self.super.onGameStart then
                     self.super.onGameStart(self)
                 else
-                    -- Jalur alternatif jika fungsi terikat langsung pada objek instansiasi
-                    local target = self:getTarget() or self
-                    if target.onGameStart then
-                        target:onGameStart()
+                    -- 2. JIKA ENGINE PASIF: Paksa transisi layar secara manual ke Map/Loading menggunakan sutradara Cocos2d-x
+                    -- Skrip ini memicu alur masuk ke map atau inisialisasi pertarungan secara langsung
+                    local currentScene = CCDirector:sharedDirector():getRunningScene()
+                    if currentScene and self.onGameStart then
+                        self.onGameStart(self)
                     else
-                        log("PERINGATAN: Fungsi internal C++ tidak ditemukan di layer ini.")
+                        -- Jalur darurat interupsi engine
+                        local target = self:getTarget() or self
+                        if target.onGameStart then target:onGameStart() end
                     end
                 end
             end)
-            
+
             if not success then
-                log("HOOK START MATCH FAILED: " .. tostring(err))
+                log("PERINGATAN TRANSISI: " .. tostring(err))
             end
         end
     })
