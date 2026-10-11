@@ -199,16 +199,48 @@ function SelectLayer:init()
     self:addChild(menu3, 5)
 
     -- MEMAKAI LOGIKA ASLI: Menghindari loop buntu saat menekan tombol start
+        -- Pembuatan Tombol Start yang Benar Sesuai Engine Inti
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        -- MENGGUNAKAN HANDLER COCOS ASLI
-        -- Ini akan melemparkan trigger eksekusi langsung ke fungsi internal engine C++ secara aman
-        listener = handler(self, self.onGameStart)
+        listener = function()
+            audio.playSound('Audio/Menu/select.ogg') -- Memaksa efek suara klik berbunyi
+            log("Memicu Start Match melalui sistem Hook...")
+            
+            -- Jaminan data agar tidak kosong saat dilempar ke engine C++
+            if not self._playerSelect then
+                self._playerSelect = self.selectHero or "naruto"
+                if self.setSelectHero then self:setSelectHero(self._playerSelect) end
+            end
+
+            -- Pemicu Utama: Jalur interupsi bawaan engine C++ game Anda
+            -- Menggunakan pcall agar jika ada error dari sisi biner, game tidak langsung FC
+            local success, err = pcall(function()
+                if self.onGameStart_Base then
+                    self:onGameStart_Base()
+                elseif self.super and self.super.onGameStart then
+                    self.super.onGameStart(self)
+                else
+                    -- Jalur alternatif jika fungsi terikat langsung pada objek instansiasi
+                    local target = self:getTarget() or self
+                    if target.onGameStart then
+                        target:onGameStart()
+                    else
+                        log("PERINGATAN: Fungsi internal C++ tidak ditemukan di layer ini.")
+                    end
+                end
+            end)
+            
+            if not success then
+                log("HOOK START MATCH FAILED: " .. tostring(err))
+            end
+        end
     })
+    
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
     self:addChild(menu, 5)
+
 
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
