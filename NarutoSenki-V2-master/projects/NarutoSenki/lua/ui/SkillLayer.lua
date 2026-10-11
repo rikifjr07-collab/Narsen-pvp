@@ -133,6 +133,7 @@ function SkillLayer:initInterface()
     local coinsNum = 0
     
     -- Mengambil data koin dari penyimpanan global game secara aman tanpa menyentuh fungsi SQL tools yang rusak
+        -- Mengambil data koin dari penyimpanan global game secara aman tanpa menyentuh fungsi SQL tools yang rusak
     pcall(function()
         if save and save.readCoin then
             coinsNum = save.readCoin() or 0
@@ -157,11 +158,17 @@ function SkillLayer:initInterface()
     goldBG:setPosition(display.cx + skill_bg:getContentSize().width / 4 + 25, display.cy + skill_bg:getContentSize().width / 2 - 74)
     self:addChild(goldBG, 9)
 
+    -- JAMINAN AKHIR: Jika nilainya kosong, paksa jadi angka 0 agar tidak menjadi teks huruf "nil" (Anti-FC)
+    if coinsNum == nil or type(coinsNum) ~= "number" then 
+        coinsNum = 0 
+    end
+
     self.coinLabel = CCLabelBMFont:create(tostring(coinsNum), 'Fonts/1.fnt')
     self.coinLabel:setScale(0.3)
     self.coinLabel:setAnchorPoint(0.5, 0)
     self.coinLabel:setPosition(goldBG:getPositionX() - goldBG:getContentSize().width / 2 + 40, goldBG:getPositionY() + 4)
     self:addChild(self.coinLabel, 15)
+
 
     local bondBG = display.newSprite('#golds_1.png')
     bondBG:setAnchorPoint(0.5, 0)
