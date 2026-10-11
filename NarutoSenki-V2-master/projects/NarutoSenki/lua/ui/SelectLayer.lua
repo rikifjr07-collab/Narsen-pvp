@@ -199,13 +199,62 @@ function SelectLayer:init()
     self:addChild(menu3, 5)
 
     local start_btn = ui.newImageMenuItem({
-        image = "#start_btn.png",
-        listener = handler(self, self.onGameStart)
+        image = '#start_btn.png',
+        listener = function()
+            -- 1. Memaksa pemutaran efek suara klik masuk pertarungan (confirm)
+            audio.playSound('Audio/Menu/confirm.ogg') 
+            log("Tombol Start ditekan! Mempersiapkan alur perpindahan scene...")
+
+            -- 2. Mengamankan data pilihan karakter utama agar tidak nil
+            if not self._playerSelect then
+                self._playerSelect = self.selectHero or "naruto"
+                if self.setSelectHero then self:setSelectHero(self._playerSelect) end
+            end
+
+            -- 3. Mengisi otomatis data bot/komputer jika slot dalam mode tim masih kosong
+            if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
+                local totalHeros = #self.selectNameList
+                math.randomseed(os.time())
+                if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] self:setCom1Select(self._com1Select) end
+                if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] self:setCom2Select(self._com2Select) end
+                if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
+            end
+
+            -- 4. Memberikan jeda waktu mikro agar efek suara sempat berbunyi, lalu eksekusi masuk match
+            self:performWithDelay(function()
+                local success, err = pcall(function()
+                    -- Coba panggil fungsi interupsi biner C++ utama
+                    if self.onGameStart_Base then
+                        self:onGameStart_Base()
+                    elseif self.super and self.super.onGameStart then
+                        self.super.onGameStart(self)
+                    else
+                        -- Jalur pamungkas: Paksa panggil fungsi transisi lokal terdaftar
+                        -- untuk melontarkan pemain ke dalam loading pertarungan
+                        local target = self:getTarget() or self
+                        if target.onGameStart and target ~= self then
+                            target:onGameStart()
+                        else
+                            -- Jika mentok, panggil fungsi pemrosesan data mandiri
+                            if self.onGameStart then
+                                -- Gunakan pemanggilan fungsi tanpa titik ganda agar tidak loop buntu
+                                self.onGameStart(self) 
+                            end
+                        end
+                    end
+                end)
+                if not success then 
+                    log("START TRANSITION FAILED: " .. tostring(err)) 
+                end
+            end, 0.08)
+        end
     })
+
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
     self:addChild(menu, 5)
+
 
 
 
