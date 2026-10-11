@@ -128,7 +128,21 @@ function SkillLayer:initInterface()
     self:addChild(bgSprite, -5)
 
     -- BYPASS: Isi angka manual 0 agar aman dari crash database SQL
+        -- PROTEKSI TOTAL DATABASE: Menggunakan nilai dasar stabil untuk visual UI
     local winNum = 0
+    local coinsNum = 0
+    
+    -- Mengambil data koin dari penyimpanan global game secara aman tanpa menyentuh fungsi SQL tools yang rusak
+    pcall(function()
+        if save and save.readCoin then
+            coinsNum = save.readCoin() or 0
+        elseif _G.coins then
+            coinsNum = _G.coins
+        else
+            coinsNum = 1000 -- Angka visual fallback aman
+        end
+    end)
+
     local skillbg_src = 'skill_bg1.png'
     local rank_src = 'rank_c.png'
 
@@ -143,7 +157,7 @@ function SkillLayer:initInterface()
     goldBG:setPosition(display.cx + skill_bg:getContentSize().width / 4 + 25, display.cy + skill_bg:getContentSize().width / 2 - 74)
     self:addChild(goldBG, 9)
 
-        -- Mengenangkan pembacaan koin asli dari database SQL permainan secara aman
+        -- Mengembalikan pembacaan koin asli dari database SQL permainan secara aman
     local coinsNum = 0
     local successCoin, errCoin = pcall(function()
         local res = tools.readCoinFromSQL()
@@ -154,8 +168,8 @@ function SkillLayer:initInterface()
         end
     end)
     
-    -- Jaminan mutlak: Jika SQL gagal/kosong, paksa jadi nilai angka 0 agar tidak menjadi kata "nil" yang memicu FC
-    if not successCoin or not coinsNum then 
+    -- JAMINAN AKHIR: Jika nilainya kosong, paksa jadi angka 0 agar tidak menjadi teks huruf "nil" (Anti-FC)
+    if not successCoin or coinsNum == nil or type(coinsNum) ~= "number" then 
         coinsNum = 0 
     end
 
@@ -164,8 +178,6 @@ function SkillLayer:initInterface()
     self.coinLabel:setAnchorPoint(0.5, 0)
     self.coinLabel:setPosition(goldBG:getPositionX() - goldBG:getContentSize().width / 2 + 40, goldBG:getPositionY() + 4)
     self:addChild(self.coinLabel, 15)
-
-
 
     local bondBG = display.newSprite('#golds_1.png')
     bondBG:setAnchorPoint(0.5, 0)
