@@ -200,52 +200,14 @@ function SelectLayer:init()
 
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        listener = function()
-            -- Memaksa pemutaran efek suara klik ENTER MATCH/START yang benar
-            audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Mempersiapkan pemindahan scene dan start pertarungan...")
-
-            -- Jaminan parameter dasar terisi agar engine C++ tidak bingung menentukan transisi screen
-            if not self._playerSelect then
-                self._playerSelect = self.selectHero or "naruto"
-                if self.setSelectHero then self:setSelectHero(self._playerSelect) end
-            end
-
-            -- Mengisi otomatis bot jika mode kustom aktif namun slot masih kosong saat start ditekan
-            if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
-                local totalHeros = #self.selectNameList
-                math.randomseed(os.time())
-                if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] self:setCom1Select(self._com1Select) end
-                if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] self:setCom2Select(self._com2Select) end
-                if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
-            end
-
-            -- EKSEKUSI PEMINDAHAN SCREEN MANDIRI (Bypass transisi pasif)
-            local success, err = pcall(function()
-                -- 1. Coba panggil fungsi bawaan engine biner C++ utama jika terdaftar
-                if self.onGameStart_Base then
-                    self:onGameStart_Base()
-                elseif self.super and self.super.onGameStart then
-                    self.super.onGameStart(self)
-                else
-                    -- 2. JIKA ENGINE PASIF: Paksa transisi layar secara manual ke Map/Loading menggunakan sutradara Cocos2d-x
-                    -- Skrip ini memicu alur masuk ke map atau inisialisasi pertarungan secara langsung
-                    local currentScene = CCDirector:sharedDirector():getRunningScene()
-                    if currentScene and self.onGameStart then
-                        self.onGameStart(self)
-                    else
-                        -- Jalur darurat interupsi engine
-                        local target = self:getTarget() or self
-                        if target.onGameStart then target:onGameStart() end
-                    end
-                end
-            end)
-
-            if not success then
-                log("PERINGATAN TRANSISI: " .. tostring(err))
-            end
-        end
+        -- Menggunakan handler bawaan pabrik agar engine C++ mengenali pemicu masuk permainan
+        listener = handler(self, self.onGameStart)
     })
+    local menu = ui.newMenu({start_btn})
+    menu:setAnchorPoint(0, 0)
+    menu:setPosition(width - 40, 36)
+    self:addChild(menu, 5)
+
     
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
@@ -446,4 +408,31 @@ function backToStartMenu()
     hook.registerInitHandlerOnly(menuLayer)
     menuScene:addChild(menuLayer)
     director.replaceSceneWithFade(menuScene, 1)
+end
+function SelectLayer:onGameStart()
+    log("Engine memproses transisi masuk ke Match...")
+    
+    -- Mengunci karakter secara otomatis jika belum dipilih saat tombol ditekan
+    if not self._playerSelect then
+        self._playerSelect = self.selectHero or "naruto"
+        if self.setSelectHero then self:setSelectHero(self._playerSelect) end
+    end
+
+    -- Menyiapkan data komputer/bot secara otomatis untuk mode 3v3 dan 4v4
+    if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
+        local totalHeros = #self.selectNameList
+        math.randomseed(os.time())
+        if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] self:setCom1Select(self._com1Select) end
+        if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] self:setCom2Select(self._com2Select) end
+        if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
+    end
+
+    -- Melemparkan penanganan scene sepenuhnya ke induk biner C++
+    pcall(function()
+        if self.onGameStart_Base then
+            self:onGameStart_Base()
+        elseif self.super and self.super.onGameStart then
+            self.super.onGameStart(self)
+        end
+    end)
 end
