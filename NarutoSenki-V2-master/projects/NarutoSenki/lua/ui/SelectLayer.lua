@@ -1,5 +1,5 @@
 --
--- SelectLayer Paling Stabil & Pas Indeks
+-- SelectLayer (Versi Bersih & Stabil untuk GitHub Repo)
 --
 function SelectLayer:init()
     log('Initial SelectLayer...')
@@ -158,7 +158,6 @@ function SelectLayer:init()
     self.selectNameList = selectNameList
     self:setSelectList(table.toCCArray(selectNameList))
 
-    -- INDEKS DIKEMBALIKAN KE [1] AGAR SAH MEMUAT HERO DEFAULT PERTAMA
     local hero = selectNameList[1]
     if hero then
         local heroHalfImage = display.newSprite('#' .. hero .. '_half.png', 10, 10)
@@ -173,7 +172,6 @@ function SelectLayer:init()
         self._heroHalfImage = heroHalfImage
     end
 
-    -- INDEKS DIKEMBALIKAN KE [1] AGAR KOTAK 1P LANGSUNG NYALA BERKEDIP SECARA ALAMI
     local selectBtn = selectButtons[1]
     if selectBtn then
         local selectImg = display.newSprite('#1p.png', selectBtn:getPositionX() - 2, selectBtn:getPositionY() - 2)
@@ -200,9 +198,25 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
 
+    -- MEMAKAI LOGIKA ASLI: Menghindari loop buntu saat menekan tombol start
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        listener = function() self:onGameStart() end
+        listener = function() 
+            log("Proses alur Start Match...")
+            if not self._playerSelect then
+                self._playerSelect = self.selectHero or "naruto"
+                self:setSelectHero(self._playerSelect)
+            end
+            if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
+                local totalHeros = #self.selectNameList
+                math.randomseed(os.time())
+                if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] self:setCom1Select(self._com1Select) end
+                if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] self:setCom2Select(self._com2Select) end
+                if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
+            end
+            -- Panggil fungsi ke scene pertarungan di engine inti
+            if self.onGameStart_Base then self:onGameStart_Base() end
+        end
     })
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
@@ -211,7 +225,7 @@ function SelectLayer:init()
 
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
-        listener = function() self:onSkillMenuButtonClick() end
+        listener = handler(self, SelectLayer.onSkillMenuButtonClick)
     })
     local menu2 = ui.newMenu({skill_btn})
     menu2:setAnchorPoint(0, 0)
@@ -220,6 +234,7 @@ function SelectLayer:init()
 
     if save.isBGM() then audio.playMusic(ns.music.SELECT_MUSIC, true) end
 end
+
 function SelectLayer:initCustomSelectMode()
     log('Initial Custom Select Mode...')
     local width, height = display.width, display.height
@@ -263,8 +278,19 @@ function SelectLayer:initCustomSelectMode()
     self:addChild(teamSelector, 50)
 end
 
+function SelectLayer:onQuestBtn()
+    self:setTip('ComingSoon')
+end
+
 function SelectLayer:onRankingButtonClick()
-    if CCTips and CCTips.create then self:addChild(CCTips:create('ComingSoon'), 999) end
+    self:setTip('ComingSoon')
+end
+
+function SelectLayer:onSkillMenuButtonClick()
+    local scene = CCScene:create()
+    local skillLayer = SkillLayer:create(self)
+    scene:addChild(skillLayer)
+    director.pushScene(scene)
 end
 
 function SelectLayer:onPageButtonClick(index)
@@ -285,12 +311,10 @@ end
 
 function SelectLayer:setSelected(btn)
     if self._selectImg then
-        self._selectImg:setPosition(CCPoint(btn:getPositionX() - 2,
-                                            btn:getPositionY() - 2))
+        self._selectImg:setPosition(CCPoint(btn:getPositionX() - 2, btn:getPositionY() - 2))
     end
 
     if not self.enableCustomSelect and self._playerSelect then return end
-
     self.selectHero = btn._charName
 
     local fd = CCFadeOut:create(1.0)
@@ -305,9 +329,7 @@ function SelectLayer:setSelected(btn)
                 self._selectImg:removeFromParent()
                 self._selectImg = nil
             else
-                if self._comLabel1 then
-                    self._comLabel1:runAction(seq)
-                end
+                if self._comLabel1 then self._comLabel1:runAction(seq) end
             end
         end
 
@@ -323,49 +345,37 @@ function SelectLayer:setSelected(btn)
         self._heroName:setAnchorPoint(CCPoint(0.5, 0))
         self:addChild(self._heroName, 5)
     elseif not self._com1Select then
-        self._comSelector1:setDisplayFrame(
-            display.newSpriteFrame(self.selectHero .. '_small.png'))
-
+        self._comSelector1:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png'))
         if btn._clickTime >= 2 then
             self._com1Select = self.selectHero
             self:setCom1Select(self._com1Select)
-
             self._comLabel1:stopAllActions()
             self._comLabel1:setOpacity(255)
-            self._comLabel1:setDisplayFrame(
-                display.newSpriteFrame('com_label2.png'))
+            self._comLabel1:setDisplayFrame(display.newSpriteFrame('com_label2.png'))
         end
     elseif not self._com2Select then
-        self._comSelector2:setDisplayFrame(
-            display.newSpriteFrame(self.selectHero .. '_small.png'))
-
+        self._comSelector2:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png'))
         if btn._clickTime >= 2 then
             self._com2Select = self.selectHero
             self:setCom2Select(self._com2Select)
-
             self._comLabel2:stopAllActions()
             self._comLabel2:setOpacity(255)
-            self._comLabel2:setDisplayFrame(
-                display.newSpriteFrame('com_label2.png'))
+            self._comLabel2:setDisplayFrame(display.newSpriteFrame('com_label2.png'))
         end
     elseif not self._com3Select then
-        self._comSelector3:setDisplayFrame(
-            display.newSpriteFrame(self.selectHero .. '_small.png'))
-
+        self._comSelector3:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png'))
         if btn._clickTime >= 2 then
             self._com3Select = self.selectHero
             self:setCom3Select(self._com3Select)
-
             self._comLabel3:stopAllActions()
             self._comLabel3:setOpacity(255)
-            self._comLabel3:setDisplayFrame(
-                display.newSpriteFrame('com_label2.png'))
-
+            self._comLabel3:setDisplayFrame(display.newSpriteFrame('com_label2.png'))
             self._selectImg:removeFromParent()
             self._selectImg = nil
         end
     end
 end
+
 function SelectLayer:noComSelect()
     if self.is4v4Mode then
         return self._com3Select
@@ -374,80 +384,6 @@ function SelectLayer:noComSelect()
     else
         return self._playerSelect
     end
-end
-
-function SelectLayer:onGameStart()
-    log("Proses alur Start Match...")
-    
-    -- 1. Jaminan otomatis mengisikan data agar tidak kosong (nil)
-    if not self._playerSelect then
-        self._playerSelect = self.selectHero or "naruto"
-        self:setSelectHero(self._playerSelect)
-    end
-
-    if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
-        local totalHeros = #self.selectNameList
-        math.randomseed(os.time())
-        if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] self:setCom1Select(self._com1Select) end
-        if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] self:setCom2Select(self._com2Select) end
-        if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
-    end
-
-    -- 2. PERBAIKAN UTAMA: Memanggil fungsi base/C++ menggunakan ke-indukan (Target) secara benar
-    -- Kita bungkus dengan pcall agar jika engine bermasalah, game tidak langsung mematikan paksa (FC)
-    local status, err = pcall(function()
-        -- Menggunakan penanganan tipe tombol menu standar dari engine cocos
-        if self.onGameStart_Base then
-            self:onGameStart_Base()
-        else
-            -- Jika tidak ada base kustom, langsung lemparkan trigger ke scene permainan berikutnya sesuai setup bawaan game Anda
-            log("Memicu start default engine...")
-        end
-    end)
-    
-    if not status then
-        log("C++ START ERROR: " .. tostring(err))
-    end
-end
-
-
-function SelectLayer:onSkillMenuButtonClick()
-    log("Membuka UI Menu Skill...")
-    if not self.selectHero then self.selectHero = "naruto" end
-
-    local status, err = pcall(function()
-        local scene = CCScene:create()
-        local skillLayer = SkillLayer:create()
-        if skillLayer then
-            scene:addChild(skillLayer)
-            if skillLayer.setHeroPortrait then skillLayer:setHeroPortrait(self.selectHero) end
-            CCDirector:sharedDirector():pushScene(scene)
-        else
-            -- Tampilan Fallback aman agar Gold, Gambar, dan Data keluar tanpa FC
-            local fallbackScene = CCScene:create()
-            local infoLayer = CCLayerColor:create(ccc4(15, 15, 30, 245))
-            
-            local portrait = display.newSprite('#' .. self.selectHero .. '_half.png', 60, 80)
-            if portrait then infoLayer:addChild(portrait) end
-            
-            local titleLabel = CCLabelTTF:create("SKILL INFO - " .. string.upper(self.selectHero), "Arial", 16)
-            titleLabel:setPosition(CCPoint(display.width / 2, display.height - 35))
-            infoLayer:addChild(titleLabel)
-            
-            local goldLabel = CCLabelTTF:create("Gold Info: 3000 Ckrs", "Arial", 14)
-            goldLabel:setPosition(CCPoint(240, 210))
-            infoLayer:addChild(goldLabel)
-            
-            local backItem = CCMenuItemFont:create("KEMBALI", infoLayer, function() CCDirector:sharedDirector():popScene() end)
-            local backMenu = CCMenu:create(backItem, nil)
-            backMenu:setPosition(CCPoint(display.width - 60, 40))
-            infoLayer:addChild(backMenu)
-            
-            fallbackScene:addChild(infoLayer)
-            CCDirector:sharedDirector():pushScene(fallbackScene)
-        end
-    end)
-    if not status then log("SKILL CRASH PREVENTED: " .. tostring(err)) end
 end
 
 function backToStartMenu()
