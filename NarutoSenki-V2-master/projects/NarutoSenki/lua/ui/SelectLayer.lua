@@ -200,81 +200,15 @@ function SelectLayer:init()
 
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        listener = function()
-            -- 1. Memaksa pemutaran efek suara klik masuk pertarungan yang benar
-            audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start ditekan! Mempersiapkan alur loading pertarungan...")
-
-            -- 2. Mengamankan data pilihan karakter agar tidak kosong (nil)
-            if not self._playerSelect then
-                self._playerSelect = self.selectHero or "naruto"
-                if self.setSelectHero then self:setSelectHero(self._playerSelect) end
-            end
-
-            -- 3. Mengisi otomatis data bot/komputer jika slot dalam mode tim masih kosong
-            if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
-                local totalHeros = #self.selectNameList
-                math.randomseed(os.time())
-                if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] self:setCom1Select(self._com1Select) end
-                if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] self:setCom2Select(self._com2Select) end
-                if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
-            end
-
-            -- 4. Memberikan jeda mikro agar suara konfirmasi sempat berbunyi, lalu eksekusi transisi screen
-            self:performWithDelay(function()
-                local success, err = pcall(function()
-                    -- JALUR PERMAINAN UTAMA: Hentikan musik menu pemilihan karakter sebelum masuk pertarungan
-                    audio.stopMusic(true)
-
-                    -- Memicu fungsi pemrosesan data internal game Anda terlebih dahulu
-                    if self.onGameStart then
-                        self.onGameStart(self)
-                    end
-
-                    -- JALUR TRANSISI ABSOLUT LUA (Bypass Engine Pasif):
-                    -- Kita buat wadah adegan (Scene) baru, lalu kita panggil kelas Loading ke dalamnya.
-                    -- Berkas 'LoadingScene' atau 'LoadingLayer' secara otomatis akan memicu animasi 
-                    -- karakter lari di kanan bawah layar sebelum melempar pemain ke dalam arena pertempuran.
-                    local nextScene = CCScene:create()
-                    local loadingTargetLayer = nil
-                    
-                    if LoadingScene and LoadingScene.create then
-                        loadingTargetLayer = LoadingScene:create()
-                    elseif LoadingLayer and LoadingLayer.create then
-                        loadingTargetLayer = LoadingLayer:create()
-                    elseif GameLayer and GameLayer.create then
-                        loadingTargetLayer = GameLayer:create()
-                    end
-
-                    if loadingTargetLayer then
-                        nextScene:addChild(loadingTargetLayer)
-                        hook.registerInitHandlerOnly(loadingTargetLayer)
-                        director.replaceSceneWithFade(nextScene, 0.5)
-                        log("Berhasil memindahkan scene ke Layar Loading Pertarungan.")
-                    else
-                        -- Jika nama kelas di atas berbeda, gunakan interupsi dasar induk biner C++
-                        if self.onGameStart_Base then
-                            self:onGameStart_Base()
-                        else
-                            local nativeTarget = self:getTarget() or self
-                            if nativeTarget and nativeTarget.onGameStart and nativeTarget ~= self then
-                                nativeTarget:onGameStart()
-                            end
-                        end
-                    end
-                end)
-                
-                if not success then 
-                    log("CRITICAL START ERROR: " .. tostring(err)) 
-                end
-            end, 0.08)
-        end
+        -- Menggunakan handler murni agar pemicunya langsung ditangkap oleh engine C++ inti
+        listener = handler(self, self.onGameStart)
     })
 
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
     self:addChild(menu, 5)
+
 
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
