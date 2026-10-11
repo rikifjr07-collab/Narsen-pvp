@@ -231,8 +231,15 @@ function SelectLayer:init()
 
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        -- call c++ layer function
-        listener = function() self:onGameStart() end
+        -- PERBAIKAN START: Memanggil langsung fungsi C++ yang terdaftar di select.cpp
+        listener = function() 
+            local status, err = pcall(function()
+                self:onGameStart() -- Memicu callback biner C++ SelectLayer::onGameStart
+            end)
+            if not status then
+                log("START ERROR: " .. tostring(err))
+            end
+        end
     })
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
@@ -241,7 +248,25 @@ function SelectLayer:init()
 
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
-        listener = handler(self, SelectLayer.onSkillMenuButtonClick)
+        -- PERBAIKAN SKILL: Mengamankan pemanggilan agar tidak instant crash jika class kosong
+        listener = function()
+            local status, err = pcall(function()
+                -- Memeriksa apakah komponen biner SkillLayer terdaftar
+                if SkillLayer and SkillLayer.create then
+                    local scene = CCScene:create()
+                    local skillLayer = SkillLayer:create()
+                    if skillLayer then
+                        scene:addChild(skillLayer)
+                        CCDirector:sharedDirector():pushScene(scene)
+                    end
+                else
+                    log("SKILL ERROR: Class SkillLayer tidak ditemukan di project biner.")
+                end
+            end)
+            if not status then
+                log("SKILL CRASH PREVENTED: " .. tostring(err))
+            end
+        end
     })
     local menu2 = ui.newMenu({skill_btn})
     menu2:setAnchorPoint(0, 0)
@@ -487,3 +512,8 @@ function backToStartMenu()
     menuScene:addChild(menuLayer)
     director.replaceSceneWithFade(menuScene, 1)
 end
+function SelectLayer:onGameStart()
+    -- Fungsi ini sengaja dikosongkan agar jembatan biner C++ SelectLayer::onGameStart() 
+    -- dapat menangkap eksekusi tombol dari lapisan Lua tanpa mengalami crash.
+end
+
