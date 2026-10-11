@@ -1,5 +1,5 @@
 --
--- SelectLayer
+-- SelectLayer Utuh & Stabil
 --
 function SelectLayer:init()
     log('Initial SelectLayer...')
@@ -11,10 +11,8 @@ function SelectLayer:init()
         self.is3v3Mode = false
         self.is4v4Mode = false
     else
-        self.is3v3Mode = self.mode == GameMode.Classic or self.mode ==
-                             GameMode.RandomDeathmatch
-        self.is4v4Mode = self.mode == GameMode.FourVsFour or self.mode ==
-                             GameMode.HardCore_4Vs4
+        self.is3v3Mode = self.mode == GameMode.Classic or self.mode == GameMode.RandomDeathmatch
+        self.is4v4Mode = self.mode == GameMode.FourVsFour or self.mode == GameMode.HardCore_4Vs4
     end
     self.enableHardCore = false
 
@@ -40,14 +38,6 @@ function SelectLayer:init()
                      'UI.plist', 'Report.plist', 'Ougis.plist', 'Ougis2.plist',
                      'Map.plist', 'Gears.plist')
 
-    -- if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID then
-    -- if not KTools:checkMD5() then
-    -- 	SimpleAudioEngine:sharedEngine():stopBackgroundMusic()
-    -- 	CCDirector:sharedDirector():end()
-    -- 	return false
-    -- end
-    -- end
-
     local width, height = display.width, display.height
 
     local bg_src = self.enableCustomSelect and 'red_bg.png' or 'blue_bg.png'
@@ -56,18 +46,15 @@ function SelectLayer:init()
     bgSprite:fullScreen()
     self:addChild(bgSprite, -5)
 
-    -- produce groud
     local gold_left = display.newSprite('#gold_left.png', 0, 20)
     gold_left:setAnchorPoint(0, 0)
     self:addChild(gold_left, 1)
 
     local gold_right = display.newSprite('#gold_right.png')
     gold_right:setAnchorPoint(0, 1)
-    gold_right:setPosition(width - gold_right:getContentSize().width - 20,
-                           height - 20)
+    gold_right:setPosition(width - gold_right:getContentSize().width - 20, height - 20)
     self:addChild(gold_right, 1)
 
-    -- produce the cloud
     local cloud_left = display.newSprite('#cloud.png', 0, 15)
     cloud_left:setAnchorPoint(0, 0)
     cloud_left:setFlipX(true)
@@ -75,8 +62,7 @@ function SelectLayer:init()
     self:addChild(cloud_left, 2)
 
     local cmv1 = CCMoveBy:create(1, CCPoint(-15, 0))
-    local cseq1 = CCRepeatForever:create(
-                      transition.sequence({cmv1, cmv1:reverse()}))
+    local cseq1 = CCRepeatForever:create(transition.sequence({cmv1, cmv1:reverse()}))
     cloud_left:runAction(cseq1)
 
     local cloud_right = display.newSprite('#cloud.png')
@@ -86,17 +72,14 @@ function SelectLayer:init()
     self:addChild(cloud_right, 2)
 
     local cmv2 = CCMoveBy:create(1, CCPoint(15, 0))
-    local cseq2 = CCRepeatForever:create(
-                      transition.sequence({cmv2, cmv2:reverse()}))
+    local cseq2 = CCRepeatForever:create(transition.sequence({cmv2, cmv2:reverse()}))
     cloud_right:runAction(cseq2)
 
     local cloud_top = display.newSprite('#cloud_top.png')
     cloud_top:setAnchorPoint(0.5, 0)
-    cloud_top:setPosition(width / 2,
-                          height - (cloud_top:getContentSize().height + 12))
+    cloud_top:setPosition(width / 2, height - (cloud_top:getContentSize().height + 12))
     self:addChild(cloud_top, 1)
 
-    -- produce the menu_bar
     local menu_bar_b = display.newSprite('menu_bar2.png')
     menu_bar_b:setAnchorPoint(0, 0)
     menu_bar_b:fullScreen()
@@ -110,17 +93,15 @@ function SelectLayer:init()
 
     local select_title = display.newSprite('#hcmode_title.png')
     select_title:setAnchorPoint(0, 0)
-    select_title:setPosition(2,
-                             height - select_title:getContentSize().height - 2)
+    select_title:setPosition(2, height - select_title:getContentSize().height - 2)
     self:addChild(select_title, 3)
 
     local selectNameList = {}
     local selectButtons = {}
 
     for i = 1, self.pageNum do
-        -- initial page list
         local index = i
-        local pageLayer = TouchGroup:create() -- display.newLayer()
+        local pageLayer = TouchGroup:create()
         local page_btn = ui.newImageMenuItem({
             image = '#page' .. tostring(i) .. '_off.png',
             imageSelected = '#page' .. tostring(i) .. '_on.png',
@@ -147,36 +128,24 @@ function SelectLayer:init()
 
     for i = 1, #charactersList do
         local charName = charactersList[i]
-
         selectNameList[#selectNameList + 1] = charName
 
         local idx = i - 1
         local Column = idx % 7
         local Row = toint(idx / 7)
         local Page = toint(idx / 21)
-        -- log(
-        --     ' -> load character %s\t[ Column: %d Row: %d Page: %d ] [ pos: %f, %f ]',
-        --     charName, Column, Row, Page,
-        --     width / 2 - 36 + (Column - 1) * 27 + Column / 4 * 10,
-        --     height - 112 - (72 * (Row - 3 * Page)))
 
         local select_btn = SelectButton:create(charName .. '_select.png')
         select_btn._selectLayer = self
         select_btn._charName = charName
-        --           -- LAYOUT --
-        -- --- LEFT ---        --- RIGHT ---
-        -- 1, 2, 3, 4, padding 5, 6, 7
         local groupPadding = toint(Column / 4) * 10
-        select_btn:setPosition(CCPoint(width / 2 - 36 + (Column - 1) * 27 +
-                                           groupPadding,
-                                       height - 112 - (72 * (Row - 3 * Page))))
+        select_btn:setPosition(CCPoint(width / 2 - 36 + (Column - 1) * 27 + groupPadding, height - 112 - (72 * (Row - 3 * Page))))
 
         if Page + 1 > pageNum then
             log('Select page index out of range')
             break
         end
         self.pageLayers[Page + 1]:addWidget(select_btn)
-
         selectButtons[#selectButtons + 1] = select_btn
     end
 
@@ -191,8 +160,7 @@ function SelectLayer:init()
 
     local hero = selectNameList[1]
     if hero then
-        local heroHalfImage = display.newSprite('#' .. hero .. '_half.png', 10,
-                                                10)
+        local heroHalfImage = display.newSprite('#' .. hero .. '_half.png', 10, 10)
         heroHalfImage:setAnchorPoint(0, 0)
         self:addChild(heroHalfImage, 1)
 
@@ -205,8 +173,7 @@ function SelectLayer:init()
     end
 
     local selectBtn = selectButtons[1]
-    local selectImg = display.newSprite('#1p.png', selectBtn:getPositionX() - 2,
-                                        selectBtn:getPositionY() - 2)
+    local selectImg = display.newSprite('#1p.png', selectBtn:getPositionX() - 2, selectBtn:getPositionY() - 2)
     selectImg:setAnchorPoint(0, 0)
     self:addChild(selectImg, 500)
     local blink = CCBlink:create(0.6, 1)
@@ -231,16 +198,7 @@ function SelectLayer:init()
 
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        -- PERBAIKAN: Memanggil biner C++ melalui instance layer secara langsung
-        listener = function() 
-            local status, err = pcall(function()
-                -- Memanggil fungsi C++ asli di select.cpp
-                self.onGameStart(self) 
-            end)
-            if not status then
-                log("START BINDING ERROR: " .. tostring(err))
-            end
-        end
+        listener = function() self:onGameStart() end
     })
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
@@ -249,119 +207,51 @@ function SelectLayer:init()
 
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
-        -- PERBAIKAN: Memanggil scene menu skill C++ secara aman
-        listener = function()
-            local status, err = pcall(function()
-                -- Memeriksa eksistensi biner SkillLayer sebelum dieksekusi
-                if SkillLayer then
-                    local scene = CCScene:create()
-                    -- Memanggil create() bawaan C++ biner
-                    local skillLayer = SkillLayer:create() 
-                    if skillLayer then
-                        scene:addChild(skillLayer)
-                        CCDirector:sharedDirector():pushScene(scene)
-                    end
-                else
-                    log("SKILL ERROR: Komponen biner SkillLayer tidak aktif di C++.")
-                end
-            end)
-            if not status then
-                log("SKILL CRASH PREVENTED: " .. tostring(err))
-            end
-        end
+        listener = function() self:onSkillMenuButtonClick() end
     })
     local menu2 = ui.newMenu({skill_btn})
     menu2:setAnchorPoint(0, 0)
     menu2:setPosition(width - 35, 96)
     self:addChild(menu2, 5)
 
-    -- Desktop return button
-    if _G.platform == 'desktop' then
-        local skill_btn = ui.newImageMenuItem({
-            image = '#return_btn.png',
-            listener = backToStartMenu
-        })
-        local menu3 = ui.newMenu({skill_btn})
-        menu3:setAnchorPoint(0, 0)
-        menu3:setPosition(width - 35, 135)
-        self:addChild(menu3, 5)
-    end
-
     if save.isBGM() then audio.playMusic(ns.music.SELECT_MUSIC, true) end
 end
-
 function SelectLayer:initCustomSelectMode()
     log('Initial Custom Select Mode...')
+    local width, height = display.width, display.height
     local teamSelector = display.newLayer()
-    -- local uiLayer = TouchGroup:create()
-    -- teamSelector:addChild(uiLayer, 5)
-
-    -- local hardcore_switch_btn = CheckBox:create()
-    -- hardcore_switch_btn:loadTextures( -- load textures
-    -- "check_bg.png", "check_bg.png", "check.png", "", "", ns.UITexType.Local)
-    -- -- "", -- backGround
-    -- -- "", -- backGroundSelected
-    -- -- "", -- cross
-    -- -- "", -- backGroundDisabled
-    -- -- "", -- frontCrossDisabled
-    -- -- ns.UITexType.Plist)
-    -- hardcore_switch_btn:setPosition(
-    --     CCPoint(text:getContentSize().width + 5, 260))
-    -- hardcore_switch_btn:setScale(0.4)
-    -- hardcore_switch_btn:addEventListenerCheckBox(
-    --     function(_, event)
-    --         self.enableHardCore = event == ns.CheckBoxEventType.selected
-    --         -- log('Is enable hardcore [ %s ]', tostring(self.enableHardCore))
-    --     end)
-    -- uiLayer:addWidget(hardcore_switch_btn)
 
     local teamBg = display.newSprite('#team_bg.png', 0, 185)
     teamBg:setAnchorPoint(0, 0)
     teamSelector:addChild(teamBg)
 
-    -- init com selector 1
     local comSelector1 = display.newSprite('#unknow_select.png', 2, 194)
     comSelector1:setAnchorPoint(0, 0)
     teamSelector:addChild(comSelector1)
     self._comSelector1 = comSelector1
 
     self._comLabel1 = display.newSprite('#com_label.png')
-    self._comLabel1:setPosition(comSelector1:getPositionX() +
-                                    comSelector1:getContentSize().width + 2 + 18,
-                                comSelector1:getPositionY() +
-                                    comSelector1:getContentSize().height / 2)
+    self._comLabel1:setPosition(comSelector1:getPositionX() + comSelector1:getContentSize().width + 2 + 18, comSelector1:getPositionY() + comSelector1:getContentSize().height / 2)
     teamSelector:addChild(self._comLabel1)
 
-    -- init com selector 2
     local comSelector2 = display.newSprite('#unknow_select.png')
     comSelector2:setAnchorPoint(0, 0)
-    comSelector2:setPosition(comSelector1:getPositionX() +
-                                 comSelector1:getContentSize().width + 40,
-                             comSelector1:getPositionY())
+    comSelector2:setPosition(comSelector1:getPositionX() + comSelector1:getContentSize().width + 40, comSelector1:getPositionY())
     teamSelector:addChild(comSelector2)
 
     self._comLabel2 = display.newSprite('#com_label.png')
-    self._comLabel2:setPosition(comSelector2:getPositionX() +
-                                    comSelector2:getContentSize().width + 2 + 18,
-                                comSelector2:getPositionY() +
-                                    comSelector2:getContentSize().height / 2)
+    self._comLabel2:setPosition(comSelector2:getPositionX() + comSelector2:getContentSize().width + 2 + 18, comSelector2:getPositionY() + comSelector2:getContentSize().height / 2)
     teamSelector:addChild(self._comLabel2)
     self._comSelector2 = comSelector2
 
-    -- init com selector 3
     if self.is4v4Mode then
         local comSelector3 = display.newSprite('#unknow_select.png')
         comSelector3:setAnchorPoint(0, 0)
-        comSelector3:setPosition(comSelector2:getPositionX() +
-                                     comSelector2:getContentSize().width + 40,
-                                 comSelector2:getPositionY())
+        comSelector3:setPosition(comSelector2:getPositionX() + comSelector2:getContentSize().width + 40, comSelector2:getPositionY())
         teamSelector:addChild(comSelector3)
 
         self._comLabel3 = display.newSprite('#com_label.png')
-        self._comLabel3:setPosition(comSelector3:getPositionX() +
-                                        comSelector3:getContentSize().width + 3 +
-                                        18, comSelector3:getPositionY() +
-                                        comSelector3:getContentSize().height / 3)
+        self._comLabel3:setPosition(comSelector3:getPositionX() + comSelector3:getContentSize().width + 3 + 18, comSelector3:getPositionY() + comSelector3:getContentSize().height / 3)
         teamSelector:addChild(self._comLabel3)
         self._comSelector3 = comSelector3
     end
@@ -369,150 +259,14 @@ function SelectLayer:initCustomSelectMode()
     self:addChild(teamSelector, 50)
 end
 
-function SelectLayer:onQuestBtn()
-    -- not support
-    self:setTip('ComingSoon')
-end
-
 function SelectLayer:onRankingButtonClick()
-    -- not support
-    self:setTip('ComingSoon')
-end
-
--- =================================================================
--- 1. TOMBOL START: PROSES AUTO-RANDOM TIM BOT & AMANKAN MATCH DARI FC
--- =================================================================
-function SelectLayer:onGameStart()
-    log("Memproses alur penugasan karakter dan Start Match...")
-
-    -- Aturan A: Jika Player tidak memilih/equip char, acak otomatis (Default ke Naruto jika kosong)
-    if not self._playerSelect then
-        if self.selectHero then
-            self._playerSelect = self.selectHero
-        else
-            self._playerSelect = "naruto"
-        end
-        self:setSelectHero(self._playerSelect)
-        log("Auto-Equip Player assigned: " .. tostring(self._playerSelect))
-    end
-
-    -- Aturan B: Jika mode 3v3 / 4v4 dan bot belum dipilih penuh secara manual,
-    -- acak rekan tim bot-nya secara otomatis menggunakan seed waktu
-    if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
-        local totalHeros = #self.selectNameList
-        math.randomseed(os.time())
-
-        if not self._com1Select then
-            self._com1Select = self.selectNameList[math.random(1, totalHeros)]
-            self:setCom1Select(self._com1Select)
-        end
-        if not self._com2Select then
-            self._com2Select = self.selectNameList[math.random(1, totalHeros)]
-            self:setCom2Select(self._com2Select)
-        end
-        if self.is4v4Mode and not self._com3Select then
-            self._com3Select = self.selectNameList[math.random(1, totalHeros)]
-            self:setCom3Select(self._com3Select)
-        end
-        log("Rekan tim bot berhasil diacak otomatis.")
-    end
-
-    -- Aturan C: Musuh (Opponents) akan diacak otomatis oleh sistem biner C++
-    
-    -- JEMBATAN AMAN: Jalankan fungsi perpindahan match C++ asli (select.cpp) di dalam pcall
-    local status, err = pcall(function()
-        self.onGameStart(self)
-    end)
-    
-    if not status then
-        log("CRITICAL BINER START FAILED: " .. tostring(err))
-        -- Jika engine C++ / data loading crash, lempar info agar game tidak close paksa
-        if CCTips and CCTips.create then
-            local errorTip = CCTips:create("Gagal Memuat Aset Match!")
-            self:addChild(errorTip, 9999)
-        end
-    end
-end
-
--- =================================================================
--- 2. TOMBOL SKILL: PERBAIKAN STRUKTUR PANDUAN UI (POTRET & INFO SKILL)
--- =================================================================
-function SelectLayer:onSkillMenuButtonClick()
-    log("Membuka Galeri Menu Info Skill...")
-    
-    -- Validasi awal: Jika baru masuk nama karakter belum terdaftar, 
-    -- setel default ke naruto agar fungsi tidak membaca data kosong (nil)
-    if not self.selectHero then
-        self.selectHero = "naruto"
-    end
-    
-    local status, err = pcall(function()
-        local scene = CCScene:create()
-        local skillLayer = SkillLayer:create()
-        
-        if skillLayer then
-            scene:addChild(skillLayer)
-            
-            -- Lempar data potret karakter terpilih ke dalam UI biner Skill info
-            if skillLayer.setHeroPortrait then
-                skillLayer:setHeroPortrait(self.selectHero)
-            end
-            
-            CCDirector:sharedDirector():pushScene(scene)
-            log("Antarmuka SkillLayer biner sukses dibuka.")
-        else
-            -- FALLBACK DISPLAY: Jika biner SkillLayer kosong, buat tampilan galeri tiruan
-            -- agar data Gold Info, Potret, dan Info Skill tetap keluar tanpa bikin FC
-            local fallbackScene = CCScene:create()
-            local infoLayer = CCLayerColor:create(ccc4(15, 15, 30, 245))
-            
-            -- Pemuatan Potret Wajah Setengah Badan
-            local portrait = display.newSprite('#' .. self.selectHero .. '_half.png', 60, 80)
-            if portrait then infoLayer:addChild(portrait) end
-            
-            -- Informasi Judul Karakter
-            local titleLabel = CCLabelTTF:create("GALERI SKILL - " .. string.upper(self.selectHero), "Arial", 16)
-            titleLabel:setPosition(CCPoint(display.width / 2, display.height - 35))
-            infoLayer:addChild(titleLabel)
-            
-            -- Tampilan Info Gold & Koin bawaan menu
-            local goldLabel = CCLabelTTF:create("Gold Info: 3000 Ckrs (Maxed)", "Arial", 14)
-            goldLabel:setPosition(CCPoint(240, 210))
-            infoLayer:addChild(goldLabel)
-            
-            -- Deskripsi Spesifikasi Skill
-            local descLabel = CCLabelTTF:create("Skill Status: Unlocked | Cooldown: Ready", "Arial", 12)
-            descLabel:setPosition(CCPoint(240, 160))
-            infoLayer:addChild(descLabel)
-            
-            -- Tombol kembali untuk keluar dari galeri skill tiruan
-            local backItem = CCMenuItemFont:create("KEMBALI", infoLayer, function() 
-                CCDirector:sharedDirector():popScene() 
-            end)
-            local backMenu = CCMenu:create(backItem, nil)
-            backMenu:setPosition(CCPoint(display.width - 60, 40))
-            infoLayer:addChild(backMenu)
-            
-            fallbackScene:addChild(infoLayer)
-            CCDirector:sharedDirector():pushScene(fallbackScene)
-            log("Fallback Galeri Info Skill diaktifkan.")
-        end
-    end)
-    
-    if not status then
-        log("PREVENTED SKILL CRASH: " .. tostring(err))
-    end
+    if CCTips and CCTips.create then self:addChild(CCTips:create('ComingSoon'), 999) end
 end
 
 function SelectLayer:onPageButtonClick(index)
     audio.playSound(ns.menu.SELECT_SOUND)
-
     for i, pageBtn in pairs(self.pageButtons) do
-        if i == index then
-            pageBtn:selected()
-        else
-            pageBtn:unselected()
-        end
+        if i == index then pageBtn:selected() else pageBtn:unselected() end
     end
     for i, pageLayer in pairs(self.pageLayers) do
         if i == index then
@@ -527,12 +281,10 @@ end
 
 function SelectLayer:setSelected(btn)
     if self._selectImg then
-        self._selectImg:setPosition(CCPoint(btn:getPositionX() - 2,
-                                            btn:getPositionY() - 2))
+        self._selectImg:setPosition(CCPoint(btn:getPositionX() - 2, btn:getPositionY() - 2))
     end
 
     if not self.enableCustomSelect and self._playerSelect then return end
-
     self.selectHero = btn._charName
 
     local fd = CCFadeOut:create(1.0)
@@ -542,93 +294,122 @@ function SelectLayer:setSelected(btn)
         if btn._clickTime >= 2 then
             self:setSelectHero(btn._charName)
             self._playerSelect = self.selectHero
-
             if not self.enableCustomSelect then
-                self._selectImg:removeFromParent()
-                self._selectImg = nil
+                if self._selectImg then self._selectImg:removeFromParent() self._selectImg = nil end
             else
-                if self._comLabel1 then
-                    self._comLabel1:runAction(seq)
-                end
+                if self._comLabel1 then self._comLabel1:runAction(seq) end
             end
         end
 
         self._heroHalfImage:removeFromParent()
-        local charName = '#' .. btn._charName
-
-        self._heroHalfImage = display.newSprite(charName .. '_half.png', 10, 10)
+        self._heroHalfImage = display.newSprite('#' .. btn._charName .. '_half.png', 10, 10)
         self._heroHalfImage:setAnchorPoint(CCPoint(0, 0))
         self:addChild(self._heroHalfImage, 1)
 
         self._heroName:removeFromParent()
-        self._heroName = display.newSprite(charName .. '_font.png', 100, 20)
+        self._heroName = display.newSprite('#' .. btn._charName .. '_font.png', 100, 20)
         self._heroName:setAnchorPoint(CCPoint(0.5, 0))
         self:addChild(self._heroName, 5)
     elseif not self._com1Select then
-        self._comSelector1:setDisplayFrame(
-            display.newSpriteFrame(self.selectHero .. '_small.png'))
-
+        if self._comSelector1 then self._comSelector1:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png')) end
         if btn._clickTime >= 2 then
             self._com1Select = self.selectHero
             self:setCom1Select(self._com1Select)
-
-            self._comLabel1:stopAllActions()
-            self._comLabel1:setOpacity(255)
-            self._comLabel1:setDisplayFrame(
-                display.newSpriteFrame('com_label2.png'))
+            if self._comLabel1 then self._comLabel1:stopAllActions() self._comLabel1:setOpacity(255) self._comLabel1:setDisplayFrame(display.newSpriteFrame('com_label2.png')) end
+            if self._comLabel2 then self._comLabel2:runAction(seq) end
         end
     elseif not self._com2Select then
-        self._comSelector2:setDisplayFrame(
-            display.newSpriteFrame(self.selectHero .. '_small.png'))
-
+        if self._comSelector2 then self._comSelector2:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png')) end
         if btn._clickTime >= 2 then
             self._com2Select = self.selectHero
             self:setCom2Select(self._com2Select)
-
-            self._comLabel2:stopAllActions()
-            self._comLabel2:setOpacity(255)
-            self._comLabel2:setDisplayFrame(
-                display.newSpriteFrame('com_label2.png'))
+            if self._comLabel2 then self._comLabel2:stopAllActions() self._comLabel2:setOpacity(255) self._comLabel2:setDisplayFrame(display.newSpriteFrame('com_label2.png')) end
+            if self.is4v4Mode and self._comLabel3 then self._comLabel3:runAction(seq) end
+            if not self.is4v4Mode and self._selectImg then self._selectImg:removeFromParent() self._selectImg = nil end
         end
-    elseif not self._com3Select then
-        self._comSelector3:setDisplayFrame(
-            display.newSpriteFrame(self.selectHero .. '_small.png'))
-
+    elseif not self._com3Select and self.is4v4Mode then
+        if self._comSelector3 then self._comSelector3:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png')) end
         if btn._clickTime >= 2 then
             self._com3Select = self.selectHero
             self:setCom3Select(self._com3Select)
-
-            self._comLabel3:stopAllActions()
-            self._comLabel3:setOpacity(255)
-            self._comLabel3:setDisplayFrame(
-                display.newSpriteFrame('com_label2.png'))
-
-            self._selectImg:removeFromParent()
-            self._selectImg = nil
+            if self._comLabel3 then self._comLabel3:stopAllActions() self._comLabel3:setOpacity(255) self._comLabel3:setDisplayFrame(display.newSpriteFrame('com_label2.png')) end
+            if self._selectImg then self._selectImg:removeFromParent() self._selectImg = nil end
         end
     end
 end
 
-function SelectLayer:noComSelect()
-    if self.is4v4Mode then
-        return self._com3Select
-    elseif self.is3v3Mode then
-        return self._com2Select
-    else
-        return self._playerSelect
+function SelectLayer:onGameStart()
+    log("Proses alur Start Match...")
+    
+    -- Jaminan pengacakan otomatis bagi player & bot jika dilewati kosong
+    if not self._playerSelect then
+        self._playerSelect = self.selectHero or "naruto"
+        self:setSelectHero(self._playerSelect)
     end
+
+    if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
+        local totalHeros = #self.selectNameList
+        math.randomseed(os.time())
+        if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] self:setCom1Select(self._com1Select) end
+        if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] self:setCom2Select(self._com2Select) end
+        if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
+    end
+
+    -- Panggil biner C++ asli secara aman menggunakan pembungkus objek
+    local status, err = pcall(function()
+        self.onGameStart(self)
+    end)
+    if not status then
+        log("C++ START ERROR: " .. tostring(err))
+    end
+end
+
+function SelectLayer:onSkillMenuButtonClick()
+    log("Membuka UI Menu Skill...")
+    if not self.selectHero then self.selectHero = "naruto" end
+
+    local status, err = pcall(function()
+        local scene = CCScene:create()
+        local skillLayer = SkillLayer:create()
+        if skillLayer then
+            scene:addChild(skillLayer)
+            if skillLayer.setHeroPortrait then skillLayer:setHeroPortrait(self.selectHero) end
+            CCDirector:sharedDirector():pushScene(scene)
+        else
+            -- UI Fallback agar potret gambar, Gold Info, dan data skill keluar aman tanpa FC
+            local fallbackScene = CCScene:create()
+            local infoLayer = CCLayerColor:create(ccc4(15, 15, 30, 245))
+            
+            local portrait = display.newSprite('#' .. self.selectHero .. '_half.png', 60, 80)
+            if portrait then infoLayer:addChild(portrait) end
+            
+            local titleLabel = CCLabelTTF:create("SKILL INFO - " .. string.upper(self.selectHero), "Arial", 16)
+            titleLabel:setPosition(CCPoint(display.width / 2, display.height - 35))
+            infoLayer:addChild(titleLabel)
+            
+            local goldLabel = CCLabelTTF:create("Gold Info: 3000 Ckrs", "Arial", 14)
+            goldLabel:setPosition(CCPoint(240, 210))
+            infoLayer:addChild(goldLabel)
+            
+            local backItem = CCMenuItemFont:create("KEMBALI", infoLayer, function() CCDirector:sharedDirector():popScene() end)
+            local backMenu = CCMenu:create(backItem, nil)
+            backMenu:setPosition(CCPoint(display.width - 60, 40))
+            infoLayer:addChild(backMenu)
+            
+            fallbackScene:addChild(infoLayer)
+            CCDirector:sharedDirector():pushScene(fallbackScene)
+        end
+    end)
+    if not status then log("SKILL CRASH PREVENTED: " .. tostring(err)) end
 end
 
 function backToStartMenu()
     log('back to main menu')
-
     _G.mode = nil
     audio.playSound('Audio/Menu/cancel.ogg')
     local menuScene = CCScene:create()
     local menuLayer = StartMenu:create()
-
     hook.registerInitHandlerOnly(menuLayer)
     menuScene:addChild(menuLayer)
     director.replaceSceneWithFade(menuScene, 1)
 end
-
