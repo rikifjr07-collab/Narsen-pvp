@@ -201,11 +201,10 @@ function SelectLayer:init()
     -- MEMAKAI LOGIKA ASLI: Menghindari loop buntu saat menekan tombol start
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        -- Memicu langsung ke fungsi internal engine C++ secara tepat tanpa interupsi Lua yang merusak
+        -- MENGGUNAKAN HANDLER COCOS ASLI
+        -- Ini akan melemparkan trigger eksekusi langsung ke fungsi internal engine C++ secara aman
         listener = handler(self, self.onGameStart)
     })
-
-
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
