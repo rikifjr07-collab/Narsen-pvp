@@ -274,11 +274,32 @@ function SelectLayer:onRankingButtonClick()
 end
 
 function SelectLayer:onSkillMenuButtonClick()
-    local scene = CCScene:create()
-    local skillLayer = SkillLayer:create(self)
-    scene:addChild(skillLayer)
-    director.pushScene(scene)
+    log("Membuka UI Menu Skill...")
+    
+    -- Jaminan jika pemain belum mengetuk karakter apa pun saat menekan tombol skill
+    if not self.selectHero then 
+        self.selectHero = "naruto" 
+    end
+
+    local status, err = pcall(function()
+        local scene = CCScene:create()
+        -- PERBAIKAN UTAMA: Masukkan variabel 'self' ke dalam kurung create
+        -- agar data karakter yang dipilih terkirim dengan sempurna ke SkillLayer
+        local skillLayer = SkillLayer:create(self)
+        
+        if skillLayer then
+            scene:addChild(skillLayer)
+            CCDirector:sharedDirector():pushScene(scene)
+        else
+            log("Gagal membuat objek SkillLayer")
+        end
+    end)
+    
+    if not status then 
+        log("SKILL MENU ERROR: " .. tostring(err)) 
+    end
 end
+
 
 function SelectLayer:onPageButtonClick(index)
     audio.playSound(ns.menu.SELECT_SOUND)
