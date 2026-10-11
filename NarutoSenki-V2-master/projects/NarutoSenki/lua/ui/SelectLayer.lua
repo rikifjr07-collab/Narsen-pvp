@@ -366,6 +366,15 @@ function SelectLayer:setSelected(btn)
         end
     end
 end
+function SelectLayer:noComSelect()
+    if self.is4v4Mode then
+        return self._com3Select
+    elseif self.is3v3Mode then
+        return self._com2Select
+    else
+        return self._playerSelect
+    end
+end
 
 function SelectLayer:onGameStart()
     log("Proses alur Start Match...")
