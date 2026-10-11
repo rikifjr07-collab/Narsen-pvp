@@ -105,12 +105,6 @@ function GameScene:onFinish()
 end
 
 function GameScene:onPush()
-    -- PERBAIKAN UTAMA: Hidupkan database game agar engine C++ mau memproses Match
-    if tools and tools.initSqliteDB then
-        tools.initSqliteDB()
-        log("Database SQLite berhasil diinisialisasi dari GameScene.")
-    end
-
     audio.stopMusic(true)
     audio.playSound(ns.menu.CONFIRM)
 
@@ -127,6 +121,7 @@ function GameScene:onPush()
         director.replaceSceneWithFade(menuScene, 1.0)
     end
 end
+
 
 
 
