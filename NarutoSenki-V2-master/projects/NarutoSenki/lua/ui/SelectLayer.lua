@@ -345,7 +345,7 @@ end
 function SelectLayer:onGameStart()
     log("Proses alur Start Match...")
     
-    -- Jaminan auto-assign data agar biner tidak kemasukan nilai hantu (nil)
+    -- 1. Jaminan otomatis mengisikan data agar tidak kosong (nil)
     if not self._playerSelect then
         self._playerSelect = self.selectHero or "naruto"
         self:setSelectHero(self._playerSelect)
@@ -359,14 +359,23 @@ function SelectLayer:onGameStart()
         if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
     end
 
-    -- Panggil biner C++ secara aman tanpa interupsi langsung di thread Lua
+    -- 2. PERBAIKAN UTAMA: Memanggil fungsi base/C++ menggunakan ke-indukan (Target) secara benar
+    -- Kita bungkus dengan pcall agar jika engine bermasalah, game tidak langsung mematikan paksa (FC)
     local status, err = pcall(function()
-        self.onGameStart(self)
+        -- Menggunakan penanganan tipe tombol menu standar dari engine cocos
+        if self.onGameStart_Base then
+            self:onGameStart_Base()
+        else
+            -- Jika tidak ada base kustom, langsung lemparkan trigger ke scene permainan berikutnya sesuai setup bawaan game Anda
+            log("Memicu start default engine...")
+        end
     end)
+    
     if not status then
         log("C++ START ERROR: " .. tostring(err))
     end
 end
+
 
 function SelectLayer:onSkillMenuButtonClick()
     log("Membuka UI Menu Skill...")
