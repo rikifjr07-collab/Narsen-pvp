@@ -285,10 +285,12 @@ end
 
 function SelectLayer:setSelected(btn)
     if self._selectImg then
-        self._selectImg:setPosition(CCPoint(btn:getPositionX() - 2, btn:getPositionY() - 2))
+        self._selectImg:setPosition(CCPoint(btn:getPositionX() - 2,
+                                            btn:getPositionY() - 2))
     end
 
     if not self.enableCustomSelect and self._playerSelect then return end
+
     self.selectHero = btn._charName
 
     local fd = CCFadeOut:create(1.0)
@@ -298,46 +300,69 @@ function SelectLayer:setSelected(btn)
         if btn._clickTime >= 2 then
             self:setSelectHero(btn._charName)
             self._playerSelect = self.selectHero
+
             if not self.enableCustomSelect then
-                if self._selectImg then self._selectImg:removeFromParent() self._selectImg = nil end
+                self._selectImg:removeFromParent()
+                self._selectImg = nil
             else
-                if self._comLabel1 then self._comLabel1:runAction(seq) end
+                if self._comLabel1 then
+                    self._comLabel1:runAction(seq)
+                end
             end
         end
 
-        if self._heroHalfImage then self._heroHalfImage:removeFromParent() end
-        self._heroHalfImage = display.newSprite('#' .. btn._charName .. '_half.png', 10, 10)
+        self._heroHalfImage:removeFromParent()
+        local charName = '#' .. btn._charName
+
+        self._heroHalfImage = display.newSprite(charName .. '_half.png', 10, 10)
         self._heroHalfImage:setAnchorPoint(CCPoint(0, 0))
         self:addChild(self._heroHalfImage, 1)
 
-        if self._heroName then self._heroName:removeFromParent() end
-        self._heroName = display.newSprite('#' .. btn._charName .. '_font.png', 100, 20)
+        self._heroName:removeFromParent()
+        self._heroName = display.newSprite(charName .. '_font.png', 100, 20)
         self._heroName:setAnchorPoint(CCPoint(0.5, 0))
         self:addChild(self._heroName, 5)
     elseif not self._com1Select then
-        if self._comSelector1 then self._comSelector1:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png')) end
+        self._comSelector1:setDisplayFrame(
+            display.newSpriteFrame(self.selectHero .. '_small.png'))
+
         if btn._clickTime >= 2 then
             self._com1Select = self.selectHero
             self:setCom1Select(self._com1Select)
-            if self._comLabel1 then self._comLabel1:stopAllActions() self._comLabel1:setOpacity(255) self._comLabel1:setDisplayFrame(display.newSpriteFrame('com_label2.png')) end
-            if self._comLabel2 then self._comLabel2:runAction(seq) end
+
+            self._comLabel1:stopAllActions()
+            self._comLabel1:setOpacity(255)
+            self._comLabel1:setDisplayFrame(
+                display.newSpriteFrame('com_label2.png'))
         end
     elseif not self._com2Select then
-        if self._comSelector2 then self._comSelector2:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png')) end
+        self._comSelector2:setDisplayFrame(
+            display.newSpriteFrame(self.selectHero .. '_small.png'))
+
         if btn._clickTime >= 2 then
             self._com2Select = self.selectHero
             self:setCom2Select(self._com2Select)
-            if self._comLabel2 then self._comLabel2:stopAllActions() self._comLabel2:setOpacity(255) self._comLabel2:setDisplayFrame(display.newSpriteFrame('com_label2.png')) end
-            if self.is4v4Mode and self._comLabel3 then self._comLabel3:runAction(seq) end
-            if not self.is4v4Mode and self._selectImg then self._selectImg:removeFromParent() self._selectImg = nil end
+
+            self._comLabel2:stopAllActions()
+            self._comLabel2:setOpacity(255)
+            self._comLabel2:setDisplayFrame(
+                display.newSpriteFrame('com_label2.png'))
         end
-    elseif not self._com3Select and self.is4v4Mode then
-        if self._comSelector3 then self._comSelector3:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png')) end
+    elseif not self._com3Select then
+        self._comSelector3:setDisplayFrame(
+            display.newSpriteFrame(self.selectHero .. '_small.png'))
+
         if btn._clickTime >= 2 then
             self._com3Select = self.selectHero
             self:setCom3Select(self._com3Select)
-            if self._comLabel3 then self._comLabel3:stopAllActions() self._comLabel3:setOpacity(255) self._comLabel3:setDisplayFrame(display.newSpriteFrame('com_label2.png')) end
-            if self._selectImg then self._selectImg:removeFromParent() self._selectImg = nil end
+
+            self._comLabel3:stopAllActions()
+            self._comLabel3:setOpacity(255)
+            self._comLabel3:setDisplayFrame(
+                display.newSpriteFrame('com_label2.png'))
+
+            self._selectImg:removeFromParent()
+            self._selectImg = nil
         end
     end
 end
