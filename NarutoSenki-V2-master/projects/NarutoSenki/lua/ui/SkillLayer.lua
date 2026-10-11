@@ -143,13 +143,18 @@ function SkillLayer:initInterface()
     goldBG:setPosition(display.cx + skill_bg:getContentSize().width / 4 + 25, display.cy + skill_bg:getContentSize().width / 2 - 74)
     self:addChild(goldBG, 9)
 
-    -- BYPASS: Set koin manual ke 50000 agar UI tidak kosong
-    local coinsNum = 50000
+        -- Mengembalikan pembacaan koin asli dari database SQL permainan
+    local coinsNum = 0
+    pcall(function()
+        coinsNum = tools.readCoinFromSQL() or 0
+    end)
+
     self.coinLabel = CCLabelBMFont:create(tostring(coinsNum), 'Fonts/1.fnt')
     self.coinLabel:setScale(0.3)
     self.coinLabel:setAnchorPoint(0.5, 0)
     self.coinLabel:setPosition(goldBG:getPositionX() - goldBG:getContentSize().width / 2 + 40, goldBG:getPositionY() + 4)
     self:addChild(self.coinLabel, 15)
+
 
     local bondBG = display.newSprite('#golds_1.png')
     bondBG:setAnchorPoint(0.5, 0)
