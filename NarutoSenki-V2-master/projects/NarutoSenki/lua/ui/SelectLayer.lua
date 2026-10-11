@@ -405,15 +405,23 @@ function backToStartMenu()
     director.replaceSceneWithFade(menuScene, 1)
 end
 function SelectLayer:onGameStart()
-    log("Engine memproses transisi masuk ke Match...")
+    log("Engine memproses persiapan masuk ke Match...")
     
-    -- 1. Mengunci karakter secara otomatis jika belum terkunci saat tombol ditekan
+    -- 1. Hidupkan database SQLite dengan proteksi pcall agar aman
+    pcall(function()
+        if tools and tools.initSqliteDB then
+            tools.initSqliteDB()
+            log("Database SQLite diaktifkan!")
+        end
+    end)
+    
+    -- 2. Mengunci karakter otomatis jika pemain langsung menekan Start (Fitur Random)
     if not self._playerSelect then
         self._playerSelect = self.selectHero or "naruto"
         if self.setSelectHero then self:setSelectHero(self._playerSelect) end
     end
 
-    -- 2. Menyiapkan data komputer/bot otomatis untuk mode tim 3v3 dan 4v4
+    -- 3. Menyiapkan bot otomatis untuk mode tim 3v3 dan 4v4
     if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
         local totalHeros = #self.selectNameList
         math.randomseed(os.time())
@@ -422,13 +430,37 @@ function SelectLayer:onGameStart()
         if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
     end
 
-    -- 3. Melemparkan penanganan scene sepenuhnya ke induk biner C++ secara aman
-    pcall(function()
+    -- 4. JALUR BYPASS ABSOLUT LUA (Memaksa Transisi ke Loading Biner C++)
+    -- Kita panggil target scene C++ secara langsung menggunakan fungsi bawaan engine permainan Anda
+    local success, err = pcall(function()
+        -- Hentikan musik latar pemilihan karakter
+        audio.stopMusic(true)
+
+        -- Picu fungsi transisi internal biner dengan melempar parameter objek layer
+        local nativeTarget = self:getTarget() or self
+        
         if self.onGameStart_Base then
             self:onGameStart_Base()
+        elseif nativeTarget and nativeTarget.onGameStart and nativeTarget ~= self then
+            -- Jalur Utama Engine Biner C++
+            nativeTarget:onGameStart()
         elseif self.super and self.super.onGameStart then
             self.super.onGameStart(self)
+        else
+            -- JIKA MENTOK: Gunakan pemanggilan paksa ke fungsi inisialisasi pertarungan biner
+            -- Melalui fungsi internal `tools` jika terdaftar di game Anda
+            if tools and tools.startMatch then
+                tools.startMatch(self._playerSelect)
+            else
+                log("PERINGATAN: Mencoba melempar perintah ke target engine terdekat...")
+                if nativeTarget.initMatch then nativeTarget:initMatch() end
+            end
         end
     end)
+
+    if not success then
+        log("CRITICAL BYPASS FAILED: " .. tostring(err))
+    end
 end
+
 
