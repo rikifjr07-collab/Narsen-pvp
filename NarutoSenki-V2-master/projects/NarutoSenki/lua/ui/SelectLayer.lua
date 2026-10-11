@@ -199,8 +199,7 @@ function SelectLayer:init()
     self:addChild(menu3, 5)
 
     local start_btn = ui.newImageMenuItem({
-        image = '#start_btn.png',
-        -- Menggunakan handler bawaan pabrik agar engine C++ mengenali pemicu masuk permainan
+        image = "#start_btn.png",
         listener = handler(self, self.onGameStart)
     })
     local menu = ui.newMenu({start_btn})
@@ -208,11 +207,6 @@ function SelectLayer:init()
     menu:setPosition(width - 40, 36)
     self:addChild(menu, 5)
 
-    
-    local menu = ui.newMenu({start_btn})
-    menu:setAnchorPoint(0, 0)
-    menu:setPosition(width - 40, 36)
-    self:addChild(menu, 5)
 
 
     local skill_btn = ui.newImageMenuItem({
