@@ -105,27 +105,29 @@ function GameScene:onFinish()
 end
 
 function GameScene:onPush()
-    -- Matikan musik latar belakang intro
+    -- PERBAIKAN UTAMA: Hidupkan database game agar engine C++ mau memproses Match
+    if tools and tools.initSqliteDB then
+        tools.initSqliteDB()
+        log("Database SQLite berhasil diinisialisasi dari GameScene.")
+    end
+
     audio.stopMusic(true)
     audio.playSound(ns.menu.CONFIRM)
 
-    -- FORMAT STRUKTUR BARU YANG BERSIH DAN STANDAR KOKOS
     local menuScene = CCScene:create()
     local menuLayer = StartMenu:create()
-    
     if menuLayer then
         menuLayer:setCheats(self.cheats)
         menuScene:addChild(menuLayer)
 
-        -- Daftarkan ke handler sistem internal
+        -- Mendaftarkan layer menu ke hook C++ bawaan pabrik
         hook.registerInitHandlerOnly(menuLayer)
         
-        -- Eksekusi perpindahan layar secara langsung tanpa efek fade Lua
-        CCDirector:sharedDirector():replaceScene(menuScene)
-    else
-        log("ERROR: Gagal mengalokasikan StartMenu dari biner C++")
+        -- Gunakan transisi bawaan asli pabrik agar siklus C++ sinkron sejak awal
+        director.replaceSceneWithFade(menuScene, 1.0)
     end
 end
+
 
 
 
