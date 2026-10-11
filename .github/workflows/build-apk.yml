@@ -47,6 +47,6 @@ jobs:
           tag_name: v2.10-build-${{ github.run_number }}
           name: Naruto Senki Build #${{ github.run_number }}
           files: |
-            project/NarutoSenki/proj.android/bin/*.apk
+            proj.android/bin/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
