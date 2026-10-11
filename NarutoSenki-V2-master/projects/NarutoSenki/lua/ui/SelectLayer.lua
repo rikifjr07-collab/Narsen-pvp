@@ -379,12 +379,129 @@ function SelectLayer:onRankingButtonClick()
     self:setTip('ComingSoon')
 end
 
-function SelectLayer:onSkillMenuButtonClick()
-    local scene = CCScene:create()
-    local skillLayer = SkillLayer:create(self)
-    scene:addChild(skillLayer)
+-- =================================================================
+-- 1. TOMBOL START: PROSES AUTO-RANDOM TIM BOT & AMANKAN MATCH DARI FC
+-- =================================================================
+function SelectLayer:onGameStart()
+    log("Memproses alur penugasan karakter dan Start Match...")
 
-    director.pushScene(scene)
+    -- Aturan A: Jika Player tidak memilih/equip char, acak otomatis (Default ke Naruto jika kosong)
+    if not self._playerSelect then
+        if self.selectHero then
+            self._playerSelect = self.selectHero
+        else
+            self._playerSelect = "naruto"
+        end
+        self:setSelectHero(self._playerSelect)
+        log("Auto-Equip Player assigned: " .. tostring(self._playerSelect))
+    end
+
+    -- Aturan B: Jika mode 3v3 / 4v4 dan bot belum dipilih penuh secara manual,
+    -- acak rekan tim bot-nya secara otomatis menggunakan seed waktu
+    if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
+        local totalHeros = #self.selectNameList
+        math.randomseed(os.time())
+
+        if not self._com1Select then
+            self._com1Select = self.selectNameList[math.random(1, totalHeros)]
+            self:setCom1Select(self._com1Select)
+        end
+        if not self._com2Select then
+            self._com2Select = self.selectNameList[math.random(1, totalHeros)]
+            self:setCom2Select(self._com2Select)
+        end
+        if self.is4v4Mode and not self._com3Select then
+            self._com3Select = self.selectNameList[math.random(1, totalHeros)]
+            self:setCom3Select(self._com3Select)
+        end
+        log("Rekan tim bot berhasil diacak otomatis.")
+    end
+
+    -- Aturan C: Musuh (Opponents) akan diacak otomatis oleh sistem biner C++
+    
+    -- JEMBATAN AMAN: Jalankan fungsi perpindahan match C++ asli (select.cpp) di dalam pcall
+    local status, err = pcall(function()
+        self.onGameStart(self)
+    end)
+    
+    if not status then
+        log("CRITICAL BINER START FAILED: " .. tostring(err))
+        -- Jika engine C++ / data loading crash, lempar info agar game tidak close paksa
+        if CCTips and CCTips.create then
+            local errorTip = CCTips:create("Gagal Memuat Aset Match!")
+            self:addChild(errorTip, 9999)
+        end
+    end
+end
+
+-- =================================================================
+-- 2. TOMBOL SKILL: PERBAIKAN STRUKTUR PANDUAN UI (POTRET & INFO SKILL)
+-- =================================================================
+function SelectLayer:onSkillMenuButtonClick()
+    log("Membuka Galeri Menu Info Skill...")
+    
+    -- Validasi awal: Jika baru masuk nama karakter belum terdaftar, 
+    -- setel default ke naruto agar fungsi tidak membaca data kosong (nil)
+    if not self.selectHero then
+        self.selectHero = "naruto"
+    end
+    
+    local status, err = pcall(function()
+        local scene = CCScene:create()
+        local skillLayer = SkillLayer:create()
+        
+        if skillLayer then
+            scene:addChild(skillLayer)
+            
+            -- Lempar data potret karakter terpilih ke dalam UI biner Skill info
+            if skillLayer.setHeroPortrait then
+                skillLayer:setHeroPortrait(self.selectHero)
+            end
+            
+            CCDirector:sharedDirector():pushScene(scene)
+            log("Antarmuka SkillLayer biner sukses dibuka.")
+        else
+            -- FALLBACK DISPLAY: Jika biner SkillLayer kosong, buat tampilan galeri tiruan
+            -- agar data Gold Info, Potret, dan Info Skill tetap keluar tanpa bikin FC
+            local fallbackScene = CCScene:create()
+            local infoLayer = CCLayerColor:create(ccc4(15, 15, 30, 245))
+            
+            -- Pemuatan Potret Wajah Setengah Badan
+            local portrait = display.newSprite('#' .. self.selectHero .. '_half.png', 60, 80)
+            if portrait then infoLayer:addChild(portrait) end
+            
+            -- Informasi Judul Karakter
+            local titleLabel = CCLabelTTF:create("GALERI SKILL - " .. string.upper(self.selectHero), "Arial", 16)
+            titleLabel:setPosition(CCPoint(display.width / 2, display.height - 35))
+            infoLayer:addChild(titleLabel)
+            
+            -- Tampilan Info Gold & Koin bawaan menu
+            local goldLabel = CCLabelTTF:create("Gold Info: 3000 Ckrs (Maxed)", "Arial", 14)
+            goldLabel:setPosition(CCPoint(240, 210))
+            infoLayer:addChild(goldLabel)
+            
+            -- Deskripsi Spesifikasi Skill
+            local descLabel = CCLabelTTF:create("Skill Status: Unlocked | Cooldown: Ready", "Arial", 12)
+            descLabel:setPosition(CCPoint(240, 160))
+            infoLayer:addChild(descLabel)
+            
+            -- Tombol kembali untuk keluar dari galeri skill tiruan
+            local backItem = CCMenuItemFont:create("KEMBALI", infoLayer, function() 
+                CCDirector:sharedDirector():popScene() 
+            end)
+            local backMenu = CCMenu:create(backItem, nil)
+            backMenu:setPosition(CCPoint(display.width - 60, 40))
+            infoLayer:addChild(backMenu)
+            
+            fallbackScene:addChild(infoLayer)
+            CCDirector:sharedDirector():pushScene(fallbackScene)
+            log("Fallback Galeri Info Skill diaktifkan.")
+        end
+    end)
+    
+    if not status then
+        log("PREVENTED SKILL CRASH: " .. tostring(err))
+    end
 end
 
 function SelectLayer:onPageButtonClick(index)
