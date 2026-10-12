@@ -1,28 +1,34 @@
 --
 -- SelectLayer (Versi Bersih & Stabil untuk GitHub Repo)
---  
+--                            
 function SelectLayer:init()
     log('Initial SelectLayer...')
 
-    -- Mengambil data mode murni yang dikirim langsung dari Menu Utama game Anda
     self.mode = _G.mode
     self.enableCustomSelect = _G.enableCustomSelect
 
-    -- DETEKSI AKURAT: Mencocokkan langsung dengan string/tipe GameMode bawaan engine Anda
-    -- Ini menjamin mode tim seperti 3v3, 4v4, dan Clone terdeteksi dengan jumlah slot yang pas
-    if self.mode == "Clone" or self.mode == "OneVsOne" or tostring(self.mode) == "1" then
-        self.is3v3Mode = false
-        self.is4v4Mode = false
-        self.enableCustomSelect = false
-    elseif self.mode == "FourVsFour" or self.mode == "HardCore_4Vs4" or tostring(self.mode) == "4" or tostring(self.mode) == "5" then
+    -- KOREKSI SINKRONISASI MODE TIM ABSOLUT:
+    -- Disesuaikan dengan struktur identifikasi biner bawaan kelas SelectLayer.cpp game Anda
+    if self.is4v4Mode or tostring(self.mode) == "4" or tostring(self.mode) == "5" or self.mode == "FourVsFour" or self.mode == "HardCore_4Vs4" then
         self.is3v3Mode = false
         self.is4v4Mode = true
         self.enableCustomSelect = true
-    else
-        -- Fallback otomatis untuk semua mode tim berbasis 3 lawan 3 (Classic, Random Deathmatch, Clone 3v3)
+    elseif self.is3v3Mode or tostring(self.mode) == "2" or tostring(self.mode) == "3" or self.mode == "Classic" or self.mode == "RandomDeathmatch" or self.mode == "Clone" then
         self.is3v3Mode = true
         self.is4v4Mode = false
         self.enableCustomSelect = true
+    else
+        -- Opsi mode 1v1 murni (Membatasi kolom agar tidak muncul slot Ready bot)
+        self.is3v3Mode = false
+        self.is4v4Mode = false
+        self.enableCustomSelect = false
+    end
+
+    -- Khusus mode Clone / 1v1 bawaan pabrik, pastikan custom select mati agar slot bot bersih
+    if self.mode == "OneVsOne" or tostring(self.mode) == "1" then
+        self.enableCustomSelect = false
+        self.is3v3Mode = false
+        self.is4v4Mode = false
     end
 
     self.enableHardCore = false
@@ -43,7 +49,6 @@ function SelectLayer:init()
 
     self._playerSelect = nil
     self.selectHero = nil
-    
 
     tools.addSprites('Record.plist', 'Record2.plist', 'Select.plist',
                      'UI.plist', 'Report.plist', 'Ougis.plist', 'Ougis2.plist',
@@ -51,7 +56,6 @@ function SelectLayer:init()
 
     local width, height = display.width, display.height
 
-    -- Tentukan gambar latar belakang berdasarkan status mode permainan
     local bg_src = self.enableCustomSelect and 'red_bg.png' or 'blue_bg.png'
     local bgSprite = display.newSprite(bg_src, 0, 0)
     bgSprite:setAnchorPoint(0, 0)
@@ -195,12 +199,10 @@ function SelectLayer:init()
         self.selectHero = selectBtn._charName
     end
 
-    -- PERBAIKAN TIM: Paksa sistem menghidupkan kolom tim COM jika mode 3v3 atau 4v4 terdeteksi
-    if self.is3v3Mode or self.is4v4Mode then
+    if self.enableCustomSelect then
         self:initCustomSelectMode()
     end
 
-    -- Pemasangan tombol Ranking dengan tanda kurung yang sudah diperbaiki
     local ranking_btn = ui.newImageMenuItem({
         image = '#ranking_btn.png',
         listener = handler(self, self.onRankingButtonClick)
@@ -210,21 +212,18 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
 
-    -- Pemasangan tombol Start dengan handler murni bawaan engine C++ pabrik
+    -- INJEKSI PENYELAMAT TOMBOL START: Panggil paksa LoadLayer C++ secara langsung
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
-            -- 1. Mainkan efek suara klik konfirmasi masuk match
-            audio.playSound('Audio/Menu/confirm.ogg')
-            log("Tombol Start diklik! Memproses penguncian data tim...")
+            audio.playSound('Audio/Menu/confirm.ogg') 
+            log("Memicu alur perpindahan scene ke LoadLayer biner...")
 
-            -- 2. Amankan data karakter pemain agar tidak kosong (nil)
             if not self._playerSelect then
                 self._playerSelect = self.selectHero or "naruto"
                 if self.setSelectHero then self:setSelectHero(self._playerSelect) end
             end
 
-            -- 3. Otomatis isi data bot komputer agar data babak di C++ lengkap
             if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
                 local totalHeros = #self.selectNameList
                 math.randomseed(os.time())
@@ -233,23 +232,41 @@ function SelectLayer:init()
                 if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
             end
 
-            -- 4. Berikan jeda mikro aman agar audio selesai diputar, lalu eksekusi transisi
             self:performWithDelay(function()
-                -- BYPASS JALUR CRASH: Panggil scene pertarungan berikutnya secara langsung menggunakan interupsi sutradara Cocos2d-x
                 local success, err = pcall(function()
                     audio.stopMusic(true)
                     
-                    -- Panggil fungsi dasar internal bawaan engine game Anda
-                    local target = self:getTarget() or self
-                    if self.onGameStart_Base then
-                        self:onGameStart_Base()
-                    elseif target and target.onGameStart and target ~= self then
-                        target:onGameStart()
-                    elseif self.super and self.super.onGameStart then
-                        self.super.onGameStart(self)
+                    -- BYPASS UTAMA: Karena game menggunakan LoadLayer.cpp pada kelas dasar, 
+                    -- kita buat scene Cocos dan paksa instansiasi kelas LoadLayer ke memori visual Lua.
+                    local nextScene = CCScene:create()
+                    local nativeLoadLayer = nil
+                    
+                    if LoadLayer and LoadLayer.create then
+                        nativeLoadLayer = LoadLayer:create()
+                    elseif LoadingLayer and LoadingLayer.create then
+                        nativeLoadLayer = LoadingLayer:create()
+                    end
+                    
+                    if nativeLoadLayer then
+                        nextScene:addChild(nativeLoadLayer)
+                        hook.registerInitHandlerOnly(nativeLoadLayer)
+                        director.replaceSceneWithFade(nextScene, 0.5)
+                        log("Berhasil memindahkan screen secara paksa ke LoadLayer C++")
+                    else
+                        -- Jalur interupsi native cadangan jika objek dibungkus kelas instansiasi target
+                        local target = self:getTarget() or self
+                        if self.onGameStart_Base then
+                            self:onGameStart_Base()
+                        elseif target and target.onGameStart and target ~= self then
+                            target:onGameStart()
+                        elseif self.super and self.super.onGameStart then
+                            self.super.onGameStart(self)
+                        end
                     end
                 end)
-                if not success then log("START TRANSITION WARNING: " .. tostring(err)) end
+                if not success then 
+                    log("TRANSITION TO NATIVE LOAD FAILED: " .. tostring(err)) 
+                end
             end, 0.08)
         end
     })
@@ -258,7 +275,6 @@ function SelectLayer:init()
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
     self:addChild(menu, 5)
-    
 
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
@@ -272,6 +288,9 @@ function SelectLayer:init()
     if save.isBGM() then audio.playMusic(ns.music.SELECT_MUSIC, true) end
 end
 
+    
+    
+                                        
 function SelectLayer:initCustomSelectMode()
     log('Initial Custom Select Mode...')
     local width, height = display.width, display.height
@@ -453,6 +472,11 @@ function backToStartMenu()
     hook.registerInitHandlerOnly(menuLayer)
     menuScene:addChild(menuLayer)
     director.replaceSceneWithFade(menuScene, 1)
+end
+-- Biarkan nama fungsinya tetap ada di paling bawah, tetapi isinya dikosongkan 
+-- agar tugas transisinya diambil alih sepenuhnya oleh tombol Start di atas
+function SelectLayer:onGameStart()
+    log("Fungsi dasar dilewati, alur ditangani langsung oleh listener tombol Start.")
 end
 
 
