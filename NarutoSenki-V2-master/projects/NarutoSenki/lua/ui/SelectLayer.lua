@@ -216,12 +216,6 @@ function SelectLayer:init()
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
     self:addChild(menu, 5)
-    
-
-    local menu = ui.newMenu({start_btn})
-    menu:setAnchorPoint(0, 0)
-    menu:setPosition(width - 40, 36)
-    self:addChild(menu, 5)   
                     
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
