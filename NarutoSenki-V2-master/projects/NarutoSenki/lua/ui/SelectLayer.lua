@@ -4,25 +4,24 @@
 function SelectLayer:init()
     log('Initial SelectLayer...')
 
-    -- 1. Deteksi Amfibi: Menangkap mode baik berupa string maupun angka ID mentah dari engine
+    -- Mengambil data mode murni yang dikirim langsung dari Menu Utama game Anda
     self.mode = _G.mode
     self.enableCustomSelect = _G.enableCustomSelect
-    
-    local modeStr = tostring(self.mode)
-    
-    if modeStr == "1" or self.mode == "Clone" or self.mode == "OneVsOne" then
-        self.enableCustomSelect = false
+
+    -- DETEKSI AKURAT: Mencocokkan langsung dengan string/tipe GameMode bawaan engine Anda
+    -- Ini menjamin mode tim seperti 3v3, 4v4, dan Clone terdeteksi dengan jumlah slot yang pas
+    if self.mode == "Clone" or self.mode == "OneVsOne" or tostring(self.mode) == "1" then
         self.is3v3Mode = false
         self.is4v4Mode = false
+        self.enableCustomSelect = false
+    elseif self.mode == "FourVsFour" or self.mode == "HardCore_4Vs4" or tostring(self.mode) == "4" or tostring(self.mode) == "5" then
+        self.is3v3Mode = false
+        self.is4v4Mode = true
+        self.enableCustomSelect = true
     else
-        -- Jika mode Classic (2), RandomDeathmatch (3), dll.
-        self.is3v3Mode = (modeStr == "2" or modeStr == "3" or self.mode == "Classic" or self.mode == "RandomDeathmatch")
-        -- Jika mode 4v4 (4), HardCore 4v4 (5), dll.
-        self.is4v4Mode = (modeStr == "4" or modeStr == "5" or self.mode == "FourVsFour" or self.mode == "HardCore_4Vs4")
-    end
-    
-    -- Maksimalkan status kustom select untuk mode tim agar kolom bot wajib muncul
-    if self.is3v3Mode or self.is4v4Mode then
+        -- Fallback otomatis untuk semua mode tim berbasis 3 lawan 3 (Classic, Random Deathmatch, Clone 3v3)
+        self.is3v3Mode = true
+        self.is4v4Mode = false
         self.enableCustomSelect = true
     end
 
@@ -44,6 +43,7 @@ function SelectLayer:init()
 
     self._playerSelect = nil
     self.selectHero = nil
+    
 
     tools.addSprites('Record.plist', 'Record2.plist', 'Select.plist',
                      'UI.plist', 'Report.plist', 'Ougis.plist', 'Ougis2.plist',
@@ -213,12 +213,52 @@ function SelectLayer:init()
     -- Pemasangan tombol Start dengan handler murni bawaan engine C++ pabrik
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        listener = handler(self, self.onGameStart)
+        listener = function()
+            -- 1. Mainkan efek suara klik konfirmasi masuk match
+            audio.playSound('Audio/Menu/confirm.ogg')
+            log("Tombol Start diklik! Memproses penguncian data tim...")
+
+            -- 2. Amankan data karakter pemain agar tidak kosong (nil)
+            if not self._playerSelect then
+                self._playerSelect = self.selectHero or "naruto"
+                if self.setSelectHero then self:setSelectHero(self._playerSelect) end
+            end
+
+            -- 3. Otomatis isi data bot komputer agar data babak di C++ lengkap
+            if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
+                local totalHeros = #self.selectNameList
+                math.randomseed(os.time())
+                if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] self:setCom1Select(self._com1Select) end
+                if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] self:setCom2Select(self._com2Select) end
+                if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
+            end
+
+            -- 4. Berikan jeda mikro aman agar audio selesai diputar, lalu eksekusi transisi
+            self:performWithDelay(function()
+                -- BYPASS JALUR CRASH: Panggil scene pertarungan berikutnya secara langsung menggunakan interupsi sutradara Cocos2d-x
+                local success, err = pcall(function()
+                    audio.stopMusic(true)
+                    
+                    -- Panggil fungsi dasar internal bawaan engine game Anda
+                    local target = self:getTarget() or self
+                    if self.onGameStart_Base then
+                        self:onGameStart_Base()
+                    elseif target and target.onGameStart and target ~= self then
+                        target:onGameStart()
+                    elseif self.super and self.super.onGameStart then
+                        self.super.onGameStart(self)
+                    end
+                end)
+                if not success then log("START TRANSITION WARNING: " .. tostring(err)) end
+            end, 0.08)
+        end
     })
+
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
     self:addChild(menu, 5)
+    
 
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
@@ -413,64 +453,6 @@ function backToStartMenu()
     hook.registerInitHandlerOnly(menuLayer)
     menuScene:addChild(menuLayer)
     director.replaceSceneWithFade(menuScene, 1)
-end
-function SelectLayer:onGameStart()
-    log("Engine memproses persiapan masuk ke Match...")
-    
-    -- 1. Hidupkan database SQLite dengan proteksi pcall agar aman
-    pcall(function()
-        if tools and tools.initSqliteDB then
-            tools.initSqliteDB()
-            log("Database SQLite diaktifkan!")
-        end
-    end)
-    
-    -- 2. Mengunci karakter otomatis jika pemain langsung menekan Start (Fitur Random)
-    if not self._playerSelect then
-        self._playerSelect = self.selectHero or "naruto"
-        if self.setSelectHero then self:setSelectHero(self._playerSelect) end
-    end
-
-    -- 3. Menyiapkan bot otomatis untuk mode tim 3v3 dan 4v4
-    if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
-        local totalHeros = #self.selectNameList
-        math.randomseed(os.time())
-        if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] self:setCom1Select(self._com1Select) end
-        if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] self:setCom2Select(self._com2Select) end
-        if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
-    end
-
-    -- 4. JALUR BYPASS ABSOLUT LUA (Memaksa Transisi ke Loading Biner C++)
-    -- Kita panggil target scene C++ secara langsung menggunakan fungsi bawaan engine permainan Anda
-    local success, err = pcall(function()
-        -- Hentikan musik latar pemilihan karakter
-        audio.stopMusic(true)
-
-        -- Picu fungsi transisi internal biner dengan melempar parameter objek layer
-        local nativeTarget = self:getTarget() or self
-        
-        if self.onGameStart_Base then
-            self:onGameStart_Base()
-        elseif nativeTarget and nativeTarget.onGameStart and nativeTarget ~= self then
-            -- Jalur Utama Engine Biner C++
-            nativeTarget:onGameStart()
-        elseif self.super and self.super.onGameStart then
-            self.super.onGameStart(self)
-        else
-            -- JIKA MENTOK: Gunakan pemanggilan paksa ke fungsi inisialisasi pertarungan biner
-            -- Melalui fungsi internal `tools` jika terdaftar di game Anda
-            if tools and tools.startMatch then
-                tools.startMatch(self._playerSelect)
-            else
-                log("PERINGATAN: Mencoba melempar perintah ke target engine terdekat...")
-                if nativeTarget.initMatch then nativeTarget:initMatch() end
-            end
-        end
-    end)
-
-    if not success then
-        log("CRITICAL BYPASS FAILED: " .. tostring(err))
-    end
 end
 
 
