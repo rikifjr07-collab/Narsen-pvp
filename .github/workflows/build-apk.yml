@@ -8,13 +8,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Bersihkan Penyimpanan Runner
+      - name: Bersihkan Penyimpanan Runner (Aman)
         run: |
+          # Hapus framework lain yang tidak digunakan game ini
           sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          
+          # Hapus file mentahan installer Android yang menumpuk tanpa menghapus SDK-nya
+          sudo rm -rf /usr/local/lib/android/tgz
           
       - name: Check out repo
         uses: actions/checkout@v4
@@ -58,3 +61,4 @@ jobs:
             **/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
