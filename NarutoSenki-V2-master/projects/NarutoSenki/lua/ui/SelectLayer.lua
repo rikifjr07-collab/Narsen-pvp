@@ -217,86 +217,11 @@
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
 
-        -- KODE PEMBUATAN TOMBOL START MANDIRI: ANTI FREEZE & SINKRONISASI ASLI C++
-        -- KODE PEMBUATAN TOMBOL START MANDIRI: ANTI FREEZE & SINKRONISASI ASLI C++
+        -- KEMBALI KE HANDLER MURNI PABRIK: Hubungkan langsung ke SelectLayer::onGameStart() di C++
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        listener = function()
-            audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start diketuk! Mengunci data pertarungan...")
-
-            -- A. Kunci data jagoan pilihan pemain secara absolut agar tidak ter-cancel
-            local chosenHero = self.selectHero or "naruto"
-            self._playerSelect = chosenHero
-            if self.setSelectHero then 
-                self:setSelectHero(chosenHero) 
-            end
-
-            -- B. Mengisi otomatis data bot komputer secara acak jika pemain langsung menekan Start
-            if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
-                local totalHeros = #self.selectNameList
-                math.randomseed(os.time())
-                
-                if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] end
-                if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] end
-                
-                if self.setCom1Select then self:setCom1Select(self._com1Select) end
-                if self.setCom2Select then self:setCom2Select(self._com2Select) end
-                
-                if self.is4v4Mode then
-                    if not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] end
-                    if self.setCom3Select then self:setCom3Select(self._com3Select) end
-                end
-            end
-
-            -- C. Jeda Mikro Keamanan: Picu C++ dan buka Layar Loading biner secara mandiri
-            self:performWithDelay(function()
-                local success, err = pcall(function()
-                    SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true)
-                    audio.stopMusic(true)
-                    
-                    -- Memicu fungsi pencatatan internal biner C++
-                    local target = self:getTarget() or self
-                    if target and target.onGameStart and target ~= self then
-                        pcall(function() target:onGameStart() end)
-                    elseif self.onGameStart_Base then
-                        pcall(function() self:onGameStart_Base() end)
-                    end
-
-                    -- SEGERA BUKA SCENE LAYAR LOADING (LOADLAYER) SEARA PAKSA LEWAT DIRECTORS LUA
-                    -- Ini menjamin efek freeze "jert" hilang karena scene langsung diganti secara visual
-                    local nextScene = CCScene:create()
-                    local nativeLoadLayer = nil
-                    
-                    if LoadLayer and LoadLayer.create then
-                        nativeLoadLayer = LoadLayer:create()
-                    elseif LoadingLayer and LoadingLayer.create then
-                        nativeLoadLayer = LoadingLayer:create()
-                    end
-                    
-                    if nativeLoadLayer then
-                        nextScene:addChild(nativeLoadLayer)
-                        hook.registerInitHandlerOnly(nativeLoadLayer)
-                        
-                        -- Jalankan preload audio biner LoadLayer.cpp baris 190 secara aman
-                        if nativeLoadLayer.preloadAudio then
-                            pcall(function() nativeLoadLayer:preloadAudio() end)
-                        end
-                        
-                        director.replaceSceneWithFade(nextScene, 0.5)
-                        log("LoadLayer C++ sukses dieksekusi secara visual!")
-                    end
-                end)
-                if not success then log("START TRANSITION FAILED: " .. tostring(err)) end
-            end, 0.08)
-        end
+        listener = handler(self, self.onGameStart)
     })
-
-    local menu = ui.newMenu({start_btn})
-    menu:setAnchorPoint(0, 0)
-    menu:setPosition(width - 40, 36)
-    self:addChild(menu, 5)
-    
 
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
