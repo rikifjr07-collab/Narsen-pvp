@@ -1,14 +1,13 @@
 --
 -- SelectLayer (Versi Bersih & Stabil untuk GitHub Repo)
---
+--  
 function SelectLayer:init()
     log('Initial SelectLayer...')
 
     -- 1. Deteksi Amfibi: Menangkap mode baik berupa string maupun angka ID mentah dari engine
-    self.mode = _G.mode or 1
+    self.mode = _G.mode
     self.enableCustomSelect = _G.enableCustomSelect
     
-    -- Konversi pencocokan mode cadangan jika menggunakan ID angka standar biner Narsen
     local modeStr = tostring(self.mode)
     
     if modeStr == "1" or self.mode == "Clone" or self.mode == "OneVsOne" then
@@ -58,10 +57,6 @@ function SelectLayer:init()
     bgSprite:setAnchorPoint(0, 0)
     bgSprite:fullScreen()
     self:addChild(bgSprite, -5)
-
-    -- [ ... TETAPKAN KODE BAGIAN TENGAH HINGGA PEMBUATAN BUTTON PAGE DISINI ... ]
-    -- (Biarkan kode asli penyusunan avatar hero, page_menu, dan title tetap seperti aslinya)
-
 
     local gold_left = display.newSprite('#gold_left.png', 0, 20)
     gold_left:setAnchorPoint(0, 0)
@@ -200,36 +195,34 @@ function SelectLayer:init()
         self.selectHero = selectBtn._charName
     end
 
-    if self.enableCustomSelect then
-        if self.is3v3Mode or self.is4v4Mode then
-            self:initCustomSelectMode()
-        end
+    -- PERBAIKAN TIM: Paksa sistem menghidupkan kolom tim COM jika mode 3v3 atau 4v4 terdeteksi
+    if self.is3v3Mode or self.is4v4Mode then
+        self:initCustomSelectMode()
     end
 
+    -- Pemasangan tombol Ranking dengan tanda kurung yang sudah diperbaiki
     local ranking_btn = ui.newImageMenuItem({
         image = '#ranking_btn.png',
-        listener = handler(self, SelectLayer.onRankingButtonClick)
+        listener = handler(self, self.onRankingButtonClick)
     })
     ranking_btn:setAnchorPoint(1, 0.5)
     local menu3 = ui.newMenu({ranking_btn})
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
 
+    -- Pemasangan tombol Start dengan handler murni bawaan engine C++ pabrik
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        -- Menggunakan handler murni agar pemicunya langsung ditangkap oleh engine C++ inti
         listener = handler(self, self.onGameStart)
     })
-
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
     self:addChild(menu, 5)
 
-
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
-        listener = handler(self, SelectLayer.onSkillMenuButtonClick)
+        listener = handler(self, self.onSkillMenuButtonClick)
     })
     local menu2 = ui.newMenu({skill_btn})
     menu2:setAnchorPoint(0, 0)
