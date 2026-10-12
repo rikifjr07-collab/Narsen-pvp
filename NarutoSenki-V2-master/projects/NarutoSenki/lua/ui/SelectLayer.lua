@@ -1,52 +1,35 @@
 --
 -- SelectLayer (Versi Bersih & Stabil untuk GitHub Repo)
---                            
-function SelectLayer:init()
+--  
+    function SelectLayer:init()
     log('Initial SelectLayer...')
 
-    -- Menangkap data mode murni yang dikirim langsung dari Menu Utama game Anda
+    -- Menangkap data mode murni dari engine
     self.mode = _G.mode
     self.enableCustomSelect = _G.enableCustomSelect
     
-    -- DETEKSI SINKRONISASI SLOT TIM ABSOLUT NATIVE GAME MODE:
-    -- Menggunakan pencocokan tabel global GameMode bawaan pabrik agar alokasi memori C++ sinkron
-    if GameMode then
-        if self.mode == GameMode.FourVsFour or self.mode == GameMode.HardCore_4Vs4 or tostring(self.mode) == "4" or tostring(self.mode) == "5" then
-            -- Mode 4v4: Harus memunculkan 3 slot bot tim COM (Total 4 status Ready)
-            self.is3v3Mode = false
-            self.is4v4Mode = true
-            self.enableCustomSelect = true
-        elseif self.mode == GameMode.Classic or self.mode == GameMode.RandomDeathmatch or self.mode == GameMode.Clone then
-            -- Mode 3v3 / Classic / Deathmatch / Clone: Harus memunculkan 2 slot bot tim COM (Total 3 status Ready)
-            self.is3v3Mode = true
-            self.is4v4Mode = false
-            self.enableCustomSelect = true
-        else
-            -- Mode 1v1 / OneVsOne / Indeks 1: Kolom bot wajib mati total (Hanya 1P)
-            self.is3v3Mode = false
-            self.is4v4Mode = false
-            self.enableCustomSelect = false
-        end
+    -- KONVERSI ANGKA ID BINER ASLI (Memaksa C++ mengenali babak agar onInitHeros tidak Crash)
+    local modeCheck = tostring(self.mode)
+    
+    if modeCheck == "4" or modeCheck == "5" or self.mode == "FourVsFour" or self.mode == "HardCore_4Vs4" then
+        -- Mode 4v4 / Hardcore 4v4: Harus memunculkan 3 slot bot tim COM (Total 4 Ready)
+        self.is3v3Mode = false
+        self.is4v4Mode = true
+        self.enableCustomSelect = true
+    elseif modeCheck == "2" or modeCheck == "3" or self.mode == "Classic" or self.mode == "RandomDeathmatch" or self.mode == "Clone" or modeCheck == "Clone" then
+        -- Mode 3v3 / Classic / Deathmatch / Clone: Harus memunculkan 2 slot bot tim COM (Total 3 Ready)
+        self.is3v3Mode = true
+        self.is4v4Mode = false
+        self.enableCustomSelect = true
     else
-        -- Fallback darurat jika tabel GameMode global tidak terbaca di Lua
-        local modeCheck = tostring(self.mode)
-        if modeCheck == "4" or modeCheck == "5" or self.mode == "FourVsFour" then
-            self.is3v3Mode = false
-            self.is4v4Mode = true
-            self.enableCustomSelect = true
-        elseif modeCheck == "2" or modeCheck == "3" or modeCheck == "Classic" or modeCheck == "RandomDeathmatch" or modeCheck == "Clone" then
-            self.is3v3Mode = true
-            self.is4v4Mode = false
-            self.enableCustomSelect = true
-        else
-            self.is3v3Mode = false
-            self.is4v4Mode = false
-            self.enableCustomSelect = false
-        end
+        -- Fallback default untuk Mode 1v1: Kolom bot wajib mati total (Hanya 1P)
+        self.is3v3Mode = false
+        self.is4v4Mode = false
+        self.enableCustomSelect = false
     end
 
-    -- Jaminan kebersihan visual: Jika mode 1v1 murni, paksa matikan semua custom select
-    if self.mode == "OneVsOne" or tostring(self.mode) == "1" then
+    -- Pengunci visual mode 1v1 murni agar slot bot tim bersih total
+    if self.mode == "OneVsOne" or modeCheck == "1" then
         self.enableCustomSelect = false
         self.is3v3Mode = false
         self.is4v4Mode = false
@@ -235,6 +218,7 @@ function SelectLayer:init()
     self:addChild(menu3, 5)
 
         -- KODE PEMBUATAN TOMBOL START MANDIRI: ANTI FREEZE & SINKRONISASI ASLI C++
+        -- KODE PEMBUATAN TOMBOL START MANDIRI: ANTI FREEZE & SINKRONISASI ASLI C++
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
@@ -307,6 +291,12 @@ function SelectLayer:init()
             end, 0.08)
         end
     })
+
+    local menu = ui.newMenu({start_btn})
+    menu:setAnchorPoint(0, 0)
+    menu:setPosition(width - 40, 36)
+    self:addChild(menu, 5)
+    
 
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
@@ -513,7 +503,41 @@ end
 -- Biarkan nama fungsinya tetap ada di paling bawah, tetapi isinya dikosongkan 
 -- agar tugas transisinya diambil alih sepenuhnya oleh tombol Start di atas
 function SelectLayer:onGameStart()
-    log("Fungsi dasar dilewati, alur ditangani langsung oleh listener tombol Start.")
+    log("Memicu onGameStart: Menyuntikkan data pilihan hero ke array memori C++...")
+    
+    -- A. Mengunci data karakter pemain utama secara absolut agar terdaftar di C++
+    local chosenHero = self.selectHero or "naruto"
+    self._playerSelect = chosenHero
+    if self.setSelectHero then 
+        self:setSelectHero(chosenHero) 
+    end
+
+    -- B. Mengisi otomatis data bot komputer secara acak jika pemain langsung menekan Start (Fitur Random)
+    if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
+        local totalHeros = #self.selectNameList
+        math.randomseed(os.time())
+        
+        if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] end
+        if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] end
+        
+        if self.setCom1Select then self:setCom1Select(self._com1Select) end
+        if self.setCom2Select then self:setCom2Select(self._com2Select) end
+        
+        if self.is4v4Mode then
+            if not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] end
+            if self.setCom3Select then self:setCom3Select(self._com3Select) end
+        end
+    end
+
+    -- C. Terakhir, teruskan instruksi masuk match ke fungsi dasar induk biner C++
+    pcall(function()
+        if self.onGameStart_Base then
+            self:onGameStart_Base()
+        elseif self.super and self.super.onGameStart then
+            self.super.onGameStart(self)
+        end
+    end)
 end
+
 
 
