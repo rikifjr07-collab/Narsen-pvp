@@ -4,31 +4,49 @@
 function SelectLayer:init()
     log('Initial SelectLayer...')
 
+    -- Menangkap data mode murni yang dikirim langsung dari Menu Utama game Anda
     self.mode = _G.mode
     self.enableCustomSelect = _G.enableCustomSelect
     
-    local modeCheck = tostring(self.mode)
-    
-    -- DETEKSI SINKRONISASI SLOT TIM ABSOLUT LUA (Membetulkan Slot yang Tertukar/Mengacak)
-    if modeCheck == "4" or modeCheck == "5" or self.mode == "FourVsFour" or self.mode == "HardCore_4Vs4" then
-        self.is3v3Mode = false
-        self.is4v4Mode = true
-        self.enableCustomSelect = true
-    elseif modeCheck == "2" or modeCheck == "3" or self.mode == "Classic" or self.mode == "RandomDeathmatch" then
-        self.is3v3Mode = true
-        self.is4v4Mode = false
-        self.enableCustomSelect = true
-    elseif self.mode == "Clone" or modeCheck == "Clone" then
-        self.is3v3Mode = true
-        self.is4v4Mode = false
-        self.enableCustomSelect = true
+    -- DETEKSI SINKRONISASI SLOT TIM ABSOLUT NATIVE GAME MODE:
+    -- Menggunakan pencocokan tabel global GameMode bawaan pabrik agar alokasi memori C++ sinkron
+    if GameMode then
+        if self.mode == GameMode.FourVsFour or self.mode == GameMode.HardCore_4Vs4 or tostring(self.mode) == "4" or tostring(self.mode) == "5" then
+            -- Mode 4v4: Harus memunculkan 3 slot bot tim COM (Total 4 status Ready)
+            self.is3v3Mode = false
+            self.is4v4Mode = true
+            self.enableCustomSelect = true
+        elseif self.mode == GameMode.Classic or self.mode == GameMode.RandomDeathmatch or self.mode == GameMode.Clone then
+            -- Mode 3v3 / Classic / Deathmatch / Clone: Harus memunculkan 2 slot bot tim COM (Total 3 status Ready)
+            self.is3v3Mode = true
+            self.is4v4Mode = false
+            self.enableCustomSelect = true
+        else
+            -- Mode 1v1 / OneVsOne / Indeks 1: Kolom bot wajib mati total (Hanya 1P)
+            self.is3v3Mode = false
+            self.is4v4Mode = false
+            self.enableCustomSelect = false
+        end
     else
-        self.is3v3Mode = false
-        self.is4v4Mode = false
-        self.enableCustomSelect = false
+        -- Fallback darurat jika tabel GameMode global tidak terbaca di Lua
+        local modeCheck = tostring(self.mode)
+        if modeCheck == "4" or modeCheck == "5" or self.mode == "FourVsFour" then
+            self.is3v3Mode = false
+            self.is4v4Mode = true
+            self.enableCustomSelect = true
+        elseif modeCheck == "2" or modeCheck == "3" or modeCheck == "Classic" or modeCheck == "RandomDeathmatch" or modeCheck == "Clone" then
+            self.is3v3Mode = true
+            self.is4v4Mode = false
+            self.enableCustomSelect = true
+        else
+            self.is3v3Mode = false
+            self.is4v4Mode = false
+            self.enableCustomSelect = false
+        end
     end
 
-    if self.mode == "OneVsOne" or modeCheck == "1" then
+    -- Jaminan kebersihan visual: Jika mode 1v1 murni, paksa matikan semua custom select
+    if self.mode == "OneVsOne" or tostring(self.mode) == "1" then
         self.enableCustomSelect = false
         self.is3v3Mode = false
         self.is4v4Mode = false
@@ -64,7 +82,7 @@ function SelectLayer:init()
     bgSprite:setAnchorPoint(0, 0)
     bgSprite:fullScreen()
     self:addChild(bgSprite, -5)
-
+    
     -- [ ... TETAPKAN KODE BAGIAN TENGAH HINGGA STRUKTUR PENYUSUNAN AVATAR SEPERTI SEBELUMNYA ... ]
     local gold_left = display.newSprite('#gold_left.png', 0, 20)
     gold_left:setAnchorPoint(0, 0)
@@ -216,25 +234,21 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
 
-        -- KODE PEMBUATAN TOMBOL START MANDIRI + BYPASS SINKRONISASI TOOLS MATCH
-    -- KODE PEMBUATAN TOMBOL START MANDIRI: ANTI-CANCEL HERO DAN ANTI-MUSIC STUCK
+        -- KODE PEMBUATAN TOMBOL START MANDIRI: ANTI FREEZE & SINKRONISASI ASLI C++
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
-            -- Memutarkan efek suara masuk pertarungan bawaan biner pabrik
             audio.playSound('Audio/Menu/confirm.ogg') 
             log("Tombol Start diketuk! Mengunci data pertarungan...")
 
-            -- A. Kunci data jagoan pilihan pemain secara absolut
+            -- A. Kunci data jagoan pilihan pemain secara absolut agar tidak ter-cancel
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
-            
-            -- PENTING: Tembakkan langsung data nama string ke fungsi setSelectHero biner C++
             if self.setSelectHero then 
                 self:setSelectHero(chosenHero) 
             end
 
-            -- B. Kunci data bot komputer secara otomatis untuk mode tim agar array heros di C++ terisi lengkap
+            -- B. Mengisi otomatis data bot komputer secara acak jika pemain langsung menekan Start
             if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
                 local totalHeros = #self.selectNameList
                 math.randomseed(os.time())
@@ -251,38 +265,45 @@ function SelectLayer:init()
                 end
             end
 
-            -- C. Jeda Mikro Amfibi: Eksekusi Transisi Biner Resmi
+            -- C. Jeda Mikro Keamanan: Picu C++ dan buka Layar Loading biner secara mandiri
             self:performWithDelay(function()
                 local success, err = pcall(function()
-                    -- JAMINAN AUDIO: Matikan secara paksa musik select melalui Cocos SimpleAudioEngine bawaan pabrik
                     SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true)
                     audio.stopMusic(true)
                     
-                    -- BYPASS RESMI: Panggil fungsi biner asli pabrik SelectLayer::onGameStart() via target biner C++
-                    -- Langkah ini memaksa C++ memproses gameModeHandler->onInitHeros() secara internal sebelum scene berganti!
+                    -- Memicu fungsi pencatatan internal biner C++
                     local target = self:getTarget() or self
                     if target and target.onGameStart and target ~= self then
-                        target:onGameStart()
+                        pcall(function() target:onGameStart() end)
                     elseif self.onGameStart_Base then
-                        self:onGameStart_Base()
-                    else
-                        -- Membuka layar loading biner C++ secara manual menggunakan sutradara Cocos jika jalur di atas terputus
-                        local nextScene = CCScene:create()
-                        local nativeLoadLayer = nil
-                        if LoadLayer and LoadLayer.create then
-                            nativeLoadLayer = LoadLayer:create()
-                        elseif LoadingLayer and LoadingLayer.create then
-                            nativeLoadLayer = LoadingLayer:create()
+                        pcall(function() self:onGameStart_Base() end)
+                    end
+
+                    -- SEGERA BUKA SCENE LAYAR LOADING (LOADLAYER) SEARA PAKSA LEWAT DIRECTORS LUA
+                    -- Ini menjamin efek freeze "jert" hilang karena scene langsung diganti secara visual
+                    local nextScene = CCScene:create()
+                    local nativeLoadLayer = nil
+                    
+                    if LoadLayer and LoadLayer.create then
+                        nativeLoadLayer = LoadLayer:create()
+                    elseif LoadingLayer and LoadingLayer.create then
+                        nativeLoadLayer = LoadingLayer:create()
+                    end
+                    
+                    if nativeLoadLayer then
+                        nextScene:addChild(nativeLoadLayer)
+                        hook.registerInitHandlerOnly(nativeLoadLayer)
+                        
+                        -- Jalankan preload audio biner LoadLayer.cpp baris 190 secara aman
+                        if nativeLoadLayer.preloadAudio then
+                            pcall(function() nativeLoadLayer:preloadAudio() end)
                         end
                         
-                        if nativeLoadLayer then
-                            nextScene:addChild(nativeLoadLayer)
-                            hook.registerInitHandlerOnly(nativeLoadLayer)
-                            director.replaceSceneWithFade(nextScene, 0.5)
-                        end
+                        director.replaceSceneWithFade(nextScene, 0.5)
+                        log("LoadLayer C++ sukses dieksekusi secara visual!")
                     end
                 end)
-                if not success then log("CRITICAL START TRANSITION FAILED: " .. tostring(err)) end
+                if not success then log("START TRANSITION FAILED: " .. tostring(err)) end
             end, 0.08)
         end
     })
