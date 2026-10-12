@@ -1,4 +1,4 @@
---
+udah ya--
 -- SelectLayer (Versi Bersih & Stabil untuk GitHub Repo)
 --  
 function SelectLayer:init()
@@ -217,14 +217,13 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
 
-        -- KEMBALI KE HANDLER MURNI PABRIK DENGAN PENGUNCI DATA HERO
-        -- KODE TOMBOL START JALUR BYPASS LUA RESMI REPO (ANTI FC & BISA MASUK MATCH)
+        -- KODE TOMBOL START BYPASS LUA MURNI (ANTI FC & DIJAMIN TEMBUS MATCH)
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
             -- Mainkan efek suara konfirmasi masuk pertarungan secara tegas
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start ditekan! Memproses transisi via Lua...")
+            log("Tombol Start ditekan! Memproses bypass transisi aman via Lua...")
 
             -- A. Mengunci data jagoan pilihan pemain utama agar terdaftar di C++
             local chosenHero = self.selectHero or "naruto"
@@ -248,22 +247,21 @@ function SelectLayer:init()
                 end
             end
 
-            -- C. Jalankan transisi aman langsung ke LoadLayer Scene via Lua
+            -- C. Jalankan transisi aman langsung ke LoadLayer Scene via Lua tanpa memicu fungsi C++ yang rusak
             self:performWithDelay(function()
                 local success, err = pcall(function()
-                    -- Perbaikan Sintaksis: Menggunakan tanda titik dua (:) agar tidak memicu crash
                     if SimpleAudioEngine and SimpleAudioEngine.sharedEngine then
                         SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true)
                     end
                     audio.stopMusic(true)
                     
-                    -- KUNCI DARURAT DATABASE: Hidupkan database SQL permainan tepat sebelum loading dimuat
+                    -- Hiduplah database SQL permainan tepat sebelum loading dimuat
                     if tools and tools.initSqliteDB then
                         tools.initSqliteDB()
                         log("Database SQLite diaktifkan!")
                     end
 
-                    -- Jembatan interupsi data biner untuk mengisi HerosArray di level C++
+                    -- Jembatan interupsi data biner untuk mengisi HerosArray di level C++ sebelum transisi scene
                     if getGameModeHandler then
                         local handlerInstance = getGameModeHandler()
                         if handlerInstance then
@@ -279,6 +277,7 @@ function SelectLayer:init()
                     local nextScene = CCScene:create()
                     local nativeLoadLayer = nil
                     
+                    -- Melakukan instansiasi LoadLayer resmi milik engine melalui Lua wrapper
                     if LoadLayer and LoadLayer.create then
                         nativeLoadLayer = LoadLayer:create()
                     elseif LoadingLayer and LoadingLayer.create then
@@ -297,17 +296,16 @@ function SelectLayer:init()
                         director.replaceSceneWithFade(nextScene, 0.5)
                         log("LoadLayer sukses dieksekusi secara visual via Skrip Lua!")
                     else
-                        -- Jalur darurat biner dasar jika objek instansiasi tidak terbaca
+                        -- Jalur darurat jika binding tidak terbaca sama sekali
                         if self.onGameStart_Base then
                             self:onGameStart_Base()
                         end
                     end
                 end)
                 if not success then log("START TRANSITION FAILED: " .. tostring(err)) end
-            end, 0.1) -- Jeda waktu 0.1 detik memberikan ruang bagi engine untuk mengunci ingatan karakter
+            end, 0.1) -- Jeda waktu memberikan ruang bagi engine untuk mengunci ingatan karakter
         end
     })
-    
     
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
