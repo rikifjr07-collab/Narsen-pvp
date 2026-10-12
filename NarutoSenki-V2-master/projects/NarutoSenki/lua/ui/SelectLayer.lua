@@ -217,8 +217,7 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
 
-        -- KEMBALI KE HANDLER MURNI PABRIK: Hubungkan langsung ke SelectLayer::onGameStart() di C++
-    -- KODE PEMBUATAN TOMBOL START YANG AMAN (ANTI FREEZE & BEBAS BLACK SCREEN)
+        -- KEMBALI KE HANDLER MURNI PABRIK DENGAN PENGUNCI DATA HERO
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
@@ -248,38 +247,46 @@ function SelectLayer:init()
                 end
             end
 
-            -- C. Eksekusi Transisi Resmi lewat Engine Utama (Aman & Bebas Crash)
+            -- C. Eksekusi Transisi Resmi lewat Engine Utama setelah data terisi
             self:performWithDelay(function()
                 local success, err = pcall(function()
-                    -- PERBAIKAN SINTAKSIS: Mengubah operator -> menjadi : agar tidak memicu Black Screen
                     if SimpleAudioEngine and SimpleAudioEngine.sharedEngine then
                         SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true)
                     end
                     audio.stopMusic(true)
                     
-                    -- KUNCI DARURAT DATABASE: Hidupkan database SQL permainan tepat sebelum loading dimuat
+                    -- JALUR KRITIKAL: Aktifkan database SQL permainan agar C++ tidak crash
                     if tools and tools.initSqliteDB then
                         tools.initSqliteDB()
                         log("Database SQLite diaktifkan!")
                     end
 
+                    -- JALUR KRITIKAL: Isi HerosArray di level biner C++ sebelum transisi scene
+                    if getGameModeHandler then
+                        local handlerInstance = getGameModeHandler()
+                        if handlerInstance then
+                            handlerInstance.selectLayer = self
+                            if handlerInstance.onInitHeros then
+                                handlerInstance:onInitHeros()
+                                log("HerosArray biner C++ sukses terisi!")
+                            end
+                        end
+                    end
+
                     -- MEMANGGIL JALUR NATIVE RESMI C++ UNTUK MEMULAI LOADING GAME
-                    -- Jalur ini mencegah game beku/freeze karena C++ yang akan mengontrol LoadLayer secara penuh
                     if self.onGameStart_Base then
                         self:onGameStart_Base()
                         log("onGameStart_Base sukses dieksekusi!")
                     elseif self.onGameStart then
-                        -- Jika fungsi di bawah sengaja Anda kosongkan di file lama, 
-                        -- pastikan fungsi SelectLayer:onGameStart() asli bawaan game dipanggil di sini.
                         self:onGameStart()
                         log("onGameStart pabrik sukses dipanggil!")
                     end
                 end)
                 if not success then log("START TRANSITION FAILED: " .. tostring(err)) end
-            end, 0.08)
+            end, 0.1) -- Jeda dinaikkan sedikit ke 0.1 detik agar engine punya waktu memproses data
         end
     })
-
+    
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
