@@ -218,13 +218,13 @@ function SelectLayer:init()
     self:addChild(menu3, 5)
 
         -- KEMBALI KE HANDLER MURNI PABRIK: Hubungkan langsung ke SelectLayer::onGameStart() di C++
-        -- KODE PEMBUATAN TOMBOL START JALUR MANDIRI BYPASS RESMI (ANTI PAJANGAN & ANTI LAYAR HITAM)
+    -- KODE PEMBUATAN TOMBOL START YANG AMAN (ANTI FREEZE & BEBAS BLACK SCREEN)
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
             -- Mainkan efek suara konfirmasi masuk pertarungan secara tegas
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start ditekan! Memulai bypass masuk ke pertarungan...")
+            log("Tombol Start ditekan! Memproses data karakter...")
 
             -- A. Mengunci data jagoan pilihan pemain utama agar terdaftar di C++
             local chosenHero = self.selectHero or "naruto"
@@ -248,56 +248,31 @@ function SelectLayer:init()
                 end
             end
 
-            -- C. Jeda Mikro Penyelamat: Picu inisialisasi database dan buka Layar Loading
+            -- C. Eksekusi Transisi Resmi lewat Engine Utama (Aman & Bebas Crash)
             self:performWithDelay(function()
                 local success, err = pcall(function()
-                    SimpleAudioEngine:sharedEngine()->stopBackgroundMusic(true)
+                    -- PERBAIKAN SINTAKSIS: Mengubah operator -> menjadi : agar tidak memicu Black Screen
+                    if SimpleAudioEngine and SimpleAudioEngine.sharedEngine then
+                        SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true)
+                    end
                     audio.stopMusic(true)
                     
                     -- KUNCI DARURAT DATABASE: Hidupkan database SQL permainan tepat sebelum loading dimuat
                     if tools and tools.initSqliteDB then
                         tools.initSqliteDB()
-                        log("Database SQLite diaktifkan di dalam tombol Start!")
+                        log("Database SQLite diaktifkan!")
                     end
 
-                    -- Jembatan interupsi data biner untuk mengisi HerosArray di level biner C++
-                    if getGameModeHandler then
-                        local handlerInstance = getGameModeHandler()
-                        if handlerInstance then
-                            handlerInstance.selectLayer = self
-                            if handlerInstance.onInitHeros then
-                                handlerInstance:onInitHeros()
-                                log("HerosArray biner C++ terisi secara sah!")
-                            end
-                        end
-                    end
-
-                    -- SEGERA BUKA SCENE LAYAR LOADING (LOADLAYER) SEARA PAKSA LEWAT DIRECTORS LUA
-                    local nextScene = CCScene:create()
-                    local nativeLoadLayer = nil
-                    
-                    if LoadLayer and LoadLayer.create then
-                        nativeLoadLayer = LoadLayer:create()
-                    elseif LoadingLayer and LoadingLayer.create then
-                        nativeLoadLayer = LoadingLayer:create()
-                    end
-                    
-                    if nativeLoadLayer then
-                        nextScene:addChild(nativeLoadLayer)
-                        hook.registerInitHandlerOnly(nativeLoadLayer)
-                        
-                        -- Jalankan preload audio biner LoadLayer.cpp baris 190 secara aman
-                        if nativeLoadLayer.preloadAudio then
-                            pcall(function() nativeLoadLayer:preloadAudio() end)
-                        end
-                        
-                        director.replaceSceneWithFade(nextScene, 0.5)
-                        log("LoadLayer C++ sukses dieksekusi secara visual!")
-                    else
-                        -- Jalur darurat biner dasar jika objek instansiasi tidak terbaca
-                        if self.onGameStart_Base then
-                            self:onGameStart_Base()
-                        end
+                    -- MEMANGGIL JALUR NATIVE RESMI C++ UNTUK MEMULAI LOADING GAME
+                    -- Jalur ini mencegah game beku/freeze karena C++ yang akan mengontrol LoadLayer secara penuh
+                    if self.onGameStart_Base then
+                        self:onGameStart_Base()
+                        log("onGameStart_Base sukses dieksekusi!")
+                    elseif self.onGameStart then
+                        -- Jika fungsi di bawah sengaja Anda kosongkan di file lama, 
+                        -- pastikan fungsi SelectLayer:onGameStart() asli bawaan game dipanggil di sini.
+                        self:onGameStart()
+                        log("onGameStart pabrik sukses dipanggil!")
                     end
                 end)
                 if not success then log("START TRANSITION FAILED: " .. tostring(err)) end
@@ -509,9 +484,15 @@ function backToStartMenu()
 end
 -- Biarkan nama fungsinya tetap ada di paling bawah, tetapi isinya dikosongkan 
 -- agar tugas transisinya diambil alih sepenuhnya oleh tombol Start di atas
+-- Jalur cadangan resmi: Jika C++ memicu fungsi ini secara otomatis, 
+-- instruksi langsung dilempar ke base engine agar tidak memicu freeze.
 function SelectLayer:onGameStart()
-    log("Instruksi dialihkan sepenuhnya ke dalam penanganan tombol Start.")
+    log("onGameStart pabrik dipicu otomatis, mengalihkan ke base...")
+    if self.onGameStart_Base then
+        self:onGameStart_Base()
+    end
 end
+
 
 
 
