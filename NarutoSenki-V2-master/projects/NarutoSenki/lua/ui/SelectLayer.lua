@@ -4,30 +4,38 @@
 function SelectLayer:init()
     log('Initial SelectLayer...')
 
-    -- Menangkap data mode murni dari engine
+    -- Menangkap data mode murni yang dikirim langsung dari Menu Utama game Anda
     self.mode = _G.mode
     self.enableCustomSelect = _G.enableCustomSelect
     
-    local modeStr = tostring(self.mode)
+    -- DETEKSI SINKRONISASI SLOT TIM ABSOLUT NATIVE NARSEN:
+    -- Kita gunakan pencocokan berlapis agar format angka ID biner ataupun objek Enum langsung terbaca pas
+    local modeCheck = tostring(self.mode)
     
-    -- DETEKSI SINKRONISASI SLOT TIM ABSOLUT LUA (Membetulkan Slot Mengacak)
-    if modeStr == "4" or modeStr == "5" or self.mode == "FourVsFour" or self.mode == "HardCore_4Vs4" then
+    if modeCheck == "4" or modeCheck == "5" or self.mode == "FourVsFour" or self.mode == "HardCore_4Vs4" then
+        -- Mode 4 VS 4 / Hardcore 4v4: Harus memunculkan 3 slot bot tim COM (Total 4 status OK/Ready)
         self.is3v3Mode = false
         self.is4v4Mode = true
         self.enableCustomSelect = true
-    elseif modeStr == "2" or modeStr == "3" or self.mode == "Classic" or self.mode == "RandomDeathmatch" or self.mode == "Clone" then
+    elseif modeCheck == "2" or modeCheck == "3" or self.mode == "Classic" or self.mode == "RandomDeathmatch" then
+        -- Mode 3 VS 3 / Classic / Random Deathmatch: Harus memunculkan 2 slot bot tim COM (Total 3 status OK/Ready)
+        self.is3v3Mode = true
+        self.is4v4Mode = false
+        self.enableCustomSelect = true
+    elseif self.mode == "Clone" or modeCheck == "Clone" then
+        -- Khusus mode Clone bawaan pabrik: Biasanya berbasis 3v3 namun tanpa kustom pilih manual
         self.is3v3Mode = true
         self.is4v4Mode = false
         self.enableCustomSelect = true
     else
-        -- Opsi mode 1v1 murni (Membatasi kolom agar tidak muncul slot Ready bot)
+        -- Fallback default untuk Mode 1 VS 1 / OneVsOne / Indeks 1: Kolom bot wajib mati total (Hanya 1P)
         self.is3v3Mode = false
         self.is4v4Mode = false
         self.enableCustomSelect = false
     end
 
-    -- Pengunci khusus jika mode 1v1 terdeteksi agar visual tetap bersih latar biru
-    if self.mode == "OneVsOne" or modeStr == "1" then
+    -- Jaminan kebersihan visual: Jika mode 1v1 murni, paksa matikan semua custom select
+    if self.mode == "OneVsOne" or modeCheck == "1" then
         self.enableCustomSelect = false
         self.is3v3Mode = false
         self.is4v4Mode = false
@@ -51,7 +59,7 @@ function SelectLayer:init()
 
     self._playerSelect = nil
     self.selectHero = nil
-
+    
     tools.addSprites('Record.plist', 'Record2.plist', 'Select.plist',
                      'UI.plist', 'Report.plist', 'Ougis.plist', 'Ougis2.plist',
                      'Map.plist', 'Gears.plist')
@@ -218,22 +226,19 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
 
-        -- KODE PEMBUATAN TOMBOL START MANDIRI: BERSIH, AMAN, DAN ANTI-FC BENTROKAN MEMORI
+        -- KODE PEMBUATAN TOMBOL START MANDIRI + BYPASS SINKRONISASI TOOLS MATCH
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
-            -- 1. Mainkan efek suara konfirmasi masuk pertarungan yang benar
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start diketuk! Memulai pemrosesan data native...")
+            log("Tombol Start ditekan! Memproses inisialisasi babak baru...")
 
-            -- 2. Mengunci data karakter pemain utama secara absolut agar terdaftar di C++
+            -- 1. Mengunci data jagoan pilihan pemain utama agar terdaftar di C++
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
-            if self.setSelectHero then 
-                self:setSelectHero(chosenHero) 
-            end
+            if self.setSelectHero then self:setSelectHero(chosenHero) end
 
-            -- 3. Mengunci data bot komputer secara otomatis untuk mode tim (3v3 / 4v4)
+            -- 2. Mengisi otomatis data bot komputer agar muatan array pertempuran lengkap
             if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
                 local totalHeros = #self.selectNameList
                 math.randomseed(os.time())
@@ -250,25 +255,33 @@ function SelectLayer:init()
                 end
             end
 
-            -- 4. Jeda Mikro Penyelamat: Jalankan satu pemicu biner resmi, lalu buka Layar Loading
+            -- 3. Jeda Transisi: Panggil fungsi start pertarungan terpadu permainan Anda
             self:performWithDelay(function()
                 local success, err = pcall(function()
                     audio.stopMusic(true)
                     
-                    -- JALUR SINGLE NATIVE RESMI (TIRU SELECTLAYER.CPP BARIS 26-28):
-                    -- Kita hanya memicu onInitHeros() satu kali agar data array terisi dengan sah
+                    -- LAKUKAN HOOK INTI: Daftarkan objek layer ke sistem interupsi biner
+                    if hook and hook.registerInitHandlerOnly then
+                        hook.registerInitHandlerOnly(self)
+                    end
+
+                    -- JALUR UTAMA PEMBUKA MATCH NATIVE NARSEN:
+                    -- Kita panggil tools.startMatch bawaan engine game Anda untuk mendaftarkan array hero secara sah ke C++
+                    if tools and tools.startMatch then
+                        tools.startMatch(self._playerSelect)
+                        log("tools.startMatch berhasil dipicu!")
+                    end
+
+                    -- Picu juga fungsi pembantu onGameStart biner jika dibutuhkan sistem
                     if getGameModeHandler then
                         local handlerInstance = getGameModeHandler()
                         if handlerInstance then
                             handlerInstance.selectLayer = self
-                            if handlerInstance.onInitHeros then
-                                handlerInstance:onInitHeros()
-                                log("HerosArray biner C++ terisi secara aman!")
-                            end
+                            if handlerInstance.onInitHeros then handlerInstance:onInitHeros() end
                         end
                     end
                     
-                    -- MEMBUAT DAN MEMINDAHKAN SCENE KE LOADLAYER BAWAAN C++
+                    -- EKSEKUSI PEMBUKAAN LAYAR LOADING (LOADLAYER)
                     local nextScene = CCScene:create()
                     local nativeLoadLayer = nil
                     
@@ -281,20 +294,13 @@ function SelectLayer:init()
                     if nativeLoadLayer then
                         nextScene:addChild(nativeLoadLayer)
                         hook.registerInitHandlerOnly(nativeLoadLayer)
-                        
-                        -- Eksekusi transisi pergantian adegan resmi bawaan sistem permainan Anda
                         director.replaceSceneWithFade(nextScene, 0.5)
-                        log("LoadLayer C++ sukses dipicu secara tunggal tanpa bentrokan memori.")
+                        log("LoadLayer C++ sukses dibuka dengan slot data teratur.")
                     else
-                        -- Jalur darurat biner dasar jika objek instansiasi tidak terbaca
-                        if self.onGameStart_Base then
-                            self:onGameStart_Base()
-                        end
+                        if self.onGameStart_Base then self:onGameStart_Base() end
                     end
                 end)
-                if not success then 
-                    log("START TRANSITION FAILED: " .. tostring(err)) 
-                end
+                if not success then log("CRITICAL START TRANSITION FAILED: " .. tostring(err)) end
             end, 0.08)
         end
     })
