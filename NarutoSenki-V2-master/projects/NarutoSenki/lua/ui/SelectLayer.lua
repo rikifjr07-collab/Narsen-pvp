@@ -6,32 +6,18 @@ function SelectLayer:init()
 
     self.mode = _G.mode
     self.enableCustomSelect = _G.enableCustomSelect
-
-    -- KOREKSI SINKRONISASI MODE TIM ABSOLUT:
-    -- Disesuaikan dengan struktur identifikasi biner bawaan kelas SelectLayer.cpp game Anda
-    if self.is4v4Mode or tostring(self.mode) == "4" or tostring(self.mode) == "5" or self.mode == "FourVsFour" or self.mode == "HardCore_4Vs4" then
+    
+    -- Mengikuti struktur pembacaan mode bawaan pabrik
+    if self.mode == GameMode.Clone or self.mode == GameMode.OneVsOne then
+        self.enableCustomSelect = false
         self.is3v3Mode = false
-        self.is4v4Mode = true
-        self.enableCustomSelect = true
-    elseif self.is3v3Mode or tostring(self.mode) == "2" or tostring(self.mode) == "3" or self.mode == "Classic" or self.mode == "RandomDeathmatch" or self.mode == "Clone" then
-        self.is3v3Mode = true
         self.is4v4Mode = false
-        self.enableCustomSelect = true
     else
-        -- Opsi mode 1v1 murni (Membatasi kolom agar tidak muncul slot Ready bot)
-        self.is3v3Mode = false
-        self.is4v4Mode = false
-        self.enableCustomSelect = false
+        self.is3v3Mode = self.mode == GameMode.Classic or self.mode == GameMode.RandomDeathmatch
+        self.is4v4Mode = self.mode == GameMode.FourVsFour or self.mode == GameMode.HardCore_4Vs4
     end
-
-    -- Khusus mode Clone / 1v1 bawaan pabrik, pastikan custom select mati agar slot bot bersih
-    if self.mode == "OneVsOne" or tostring(self.mode) == "1" then
-        self.enableCustomSelect = false
-        self.is3v3Mode = false
-        self.is4v4Mode = false
-    end
-
     self.enableHardCore = false
+
     self.pageNum = 3
 
     self._comLabel1 = nil
@@ -61,6 +47,9 @@ function SelectLayer:init()
     bgSprite:setAnchorPoint(0, 0)
     bgSprite:fullScreen()
     self:addChild(bgSprite, -5)
+
+    -- [ ... TETAPKAN KODE BAGIAN TENGAH HINGGA STRUKTUR PENYUSUNAN AVATAR SEPERTI BIASA ... ]
+    
 
     local gold_left = display.newSprite('#gold_left.png', 0, 20)
     gold_left:setAnchorPoint(0, 0)
@@ -200,8 +189,11 @@ function SelectLayer:init()
     end
 
     if self.enableCustomSelect then
-        self:initCustomSelectMode()
+        if self.is3v3Mode or self.is4v4Mode then
+            self:initCustomSelectMode()
+        end
     end
+    
 
     local ranking_btn = ui.newImageMenuItem({
         image = '#ranking_btn.png',
@@ -216,80 +208,15 @@ function SelectLayer:init()
         -- PERBAIKAN MUTLAK TOMBOL START: Sinkronisasi Data Karakter dan Bot ke Biner C++
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        listener = function()
-            audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start diketuk! Sinkronisasi data ke biner C++...")
-
-            -- 1. Jaminan Mutlak Penguncian Karakter Pemain (Mencegah Layar Hitam / Stuck)
-            -- Jika pemain langsung menekan Start tanpa memilih (Random), otomatis kunci ke "naruto" atau hero yang sedang ditunjuk kotak 1P
-            local chosenHero = self.selectHero or "naruto"
-            self._playerSelect = chosenHero
-            
-            if self.setSelectHero then 
-                self:setSelectHero(chosenHero) 
-            end
-
-            -- 2. Sinkronisasi Data Bot Komputer Secara Urut untuk Mode Tim (3v3 / 4v4)
-            if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
-                local totalHeros = #self.selectNameList
-                math.randomseed(os.time())
-                
-                -- Acak nama hero jika slot bot masih kosong saat tombol start ditekan
-                if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] end
-                if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] end
-                
-                -- Kirimkan data bot secara tegas ke fungsi internal C++ agar sinkron
-                if self.setCom1Select then self:setCom1Select(self._com1Select) end
-                if self.setCom2Select then self:setCom2Select(self._com2Select) end
-                
-                if self.is4v4Mode then
-                    if not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] end
-                    if self.setCom3Select then self:setCom3Select(self._com3Select) end
-                end
-            end
-
-            -- 3. Eksekusi Masuk Ke Layar Loading Biner C++ (LoadLayer)
-            self:performWithDelay(function()
-                local success, err = pcall(function()
-                    audio.stopMusic(true)
-                    
-                    -- Panggil fungsi penanganan dasar biner game Anda terlebih dahulu untuk mencatat pilihan
-                    if self.onGameStart then
-                        -- Jalankan fungsi tanpa loop buntu
-                        self.onGameStart(self)
-                    end
-
-                    -- Coba buka LoadLayer bawaan C++ melalui instansiasi adegan standar Cocos
-                    local nextScene = CCScene:create()
-                    local nativeLoadLayer = nil
-                    
-                    if LoadLayer and LoadLayer.create then
-                        nativeLoadLayer = LoadLayer:create()
-                    elseif LoadingLayer and LoadingLayer.create then
-                        nativeLoadLayer = LoadingLayer:create()
-                    end
-                    
-                    if nativeLoadLayer then
-                        nextScene:addChild(nativeLoadLayer)
-                        hook.registerInitHandlerOnly(nativeLoadLayer)
-                        director.replaceSceneWithFade(nextScene, 0.5)
-                        log("Berhasil meluncurkan LoadLayer C++ secara sinkron.")
-                    else
-                        -- Jalur interupsi native cadangan jika fungsi di atas tertutup
-                        if self.onGameStart_Base then
-                            self:onGameStart_Base()
-                        else
-                            local target = self:getTarget() or self
-                            if target and target.onGameStart and target ~= self then
-                                target:onGameStart()
-                            end
-                        end
-                    end
-                end)
-                if not success then log("TRANSITION ERROR: " .. tostring(err)) end
-            end, 0.08)
-        end
+        -- Memicu langsung ke fungsi virtual C++ SelectLayer::onGameStart() bawaan biner game kamu
+        listener = handler(self, self.onGameStart)
     })
+
+    local menu = ui.newMenu({start_btn})
+    menu:setAnchorPoint(0, 0)
+    menu:setPosition(width - 40, 36)
+    self:addChild(menu, 5)
+    
 
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
