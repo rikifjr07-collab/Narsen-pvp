@@ -4,39 +4,56 @@ udah ya--
 function SelectLayer:init()
     log('Initial SelectLayer...')
 
-    -- Menangkap data mode murni yang dikirim langsung dari Menu Utama game Anda
+    -- Menangkap data mode murni dari Menu Utama game Anda
     self.mode = _G.mode
     self.enableCustomSelect = _G.enableCustomSelect
     
-    -- DETEKSI SINKRONISASI SLOT TIM ABSOLUT LUA (Memaksa Slot Tampil Pas dan Urut)
-    local modeCheck = tostring(self.mode)
-    
-    if modeCheck == "4" or modeCheck == "5" or self.mode == "FourVsFour" or self.mode == "HardCore_4Vs4" then
-        -- Mode 4 VS 4 / Hardcore 4v4: Harus memunculkan 3 slot bot tim COM (Total 4 status Ready)
+    -- MENGUBAH DATA MENJADI STRING UNTUK MULTI-DETEKSI YANG AKURAT
+    local modeStr = tostring(self.mode)
+    log('Deteksi Sistem Mode Game: ' .. modeStr)
+
+    -- STRUKTUR PEMBAGIAN MODE TIM SECARA ABSOLUT (Mengunci Slot Ready & Background)
+    if modeStr == "4" or modeStr == "FourVsFour" or modeStr == "HardCore_4Vs4" or (GameMode and self.mode == GameMode.FourVsFour) or (GameMode and self.mode == GameMode.HardCore_4Vs4) then
+        -- 1. Mode 4 VS 4 / HardCore 4v4: Memunculkan latar merah & 3 slot bot COM (Total 3 Ready)
         self.is3v3Mode = false
         self.is4v4Mode = true
         self.enableCustomSelect = true
-    elseif modeCheck == "2" or modeCheck == "3" or self.mode == "Classic" or self.mode == "RandomDeathmatch" or self.mode == "Clone" or modeCheck == "Clone" then
-        -- Mode 3 VS 3 / Classic / Deathmatch / Clone: Harus memunculkan 2 slot bot tim COM (Total 3 status Ready)
+
+    elseif modeStr == "2" or modeStr == "3" or modeStr == "Classic" or modeStr == "RandomDeathmatch" or modeStr == "Clone" or modeStr == "Deathmatch" 
+       or (GameMode and self.mode == GameMode.Classic) 
+       or (GameMode and self.mode == GameMode.RandomDeathmatch) 
+       or (GameMode and self.mode == GameMode.Clone) then
+        -- 2. Mode 3 VS 3 / Classic / Clone / Random Deathmatch: Memunculkan latar merah & 2 slot bot COM (Total 2 Ready)
         self.is3v3Mode = true
         self.is4v4Mode = false
         self.enableCustomSelect = true
+
     else
-        -- Fallback default untuk Mode 1 VS 1: Kolom bot wajib mati total (Hanya 1P)
+        -- 3. Fallback Khusus Mode 1 VS 1: Latar biru murni & Matikan seluruh kolom Ready tambahan
         self.is3v3Mode = false
         self.is4v4Mode = false
         self.enableCustomSelect = false
     end
 
-    -- Pengunci khusus jika mode 1v1 terdeteksi agar visual tetap bersih latar biru bawaan pabrik
-    if self.mode == "OneVsOne" or modeCheck == "1" then
-        self.enableCustomSelect = false
-        self.is3v3Mode = false
+    -- PENGUNCI KHUSUS CLONE: Sesuai gambar menu, Clone berbasis 3 VS 3 (Harus 2 kolom Ready & Latar Merah)
+    if modeStr == "Clone" or (GameMode and self.mode == GameMode.Clone) then
+        self.is3v3Mode = true
         self.is4v4Mode = false
+        self.enableCustomSelect = true
     end
 
-    self.enableHardCore = false
+    -- PENGUNCI KHUSUS 1V1: Jaminan visual latar biru bersih bawaan asli
+    if modeStr == "1" or modeStr == "OneVsOne" or (GameMode and self.mode == GameMode.OneVsOne) then
+        self.is3v3Mode = false
+        self.is4v4Mode = false
+        self.enableCustomSelect = false
+    end
+
+    self.enableHardCore = (modeStr == "HardCore_4Vs4" or (GameMode and self.mode == GameMode.HardCore_4Vs4))
     self.pageNum = 3
+    
+    -- [ ... LANJUTKAN DENGAN KODE DEKLARASI VARIABEL NIL DAN SPRITE SEPERTI DI FILE ASLI ... ]
+    
 
     self._comLabel1 = nil
     self._comLabel2 = nil
