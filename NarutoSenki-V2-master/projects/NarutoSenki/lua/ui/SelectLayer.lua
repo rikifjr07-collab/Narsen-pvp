@@ -1,7 +1,7 @@
 --
 -- SelectLayer (Versi Bersih & Stabil untuk GitHub Repo)
 --                            
-    function SelectLayer:init()
+function SelectLayer:init()
     log('Initial SelectLayer...')
 
     self.mode = _G.mode
