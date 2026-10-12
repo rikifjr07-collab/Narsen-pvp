@@ -4,18 +4,30 @@
 function SelectLayer:init()
     log('Initial SelectLayer...')
 
-    self.mode = _G.mode
+    -- 1. Deteksi Amfibi: Menangkap mode baik berupa string maupun angka ID mentah dari engine
+    self.mode = _G.mode or 1
     self.enableCustomSelect = _G.enableCustomSelect
-    if self.mode == GameMode.Clone or self.mode == GameMode.OneVsOne then
+    
+    -- Konversi pencocokan mode cadangan jika menggunakan ID angka standar biner Narsen
+    local modeStr = tostring(self.mode)
+    
+    if modeStr == "1" or self.mode == "Clone" or self.mode == "OneVsOne" then
         self.enableCustomSelect = false
         self.is3v3Mode = false
         self.is4v4Mode = false
     else
-        self.is3v3Mode = self.mode == GameMode.Classic or self.mode == GameMode.RandomDeathmatch
-        self.is4v4Mode = self.mode == GameMode.FourVsFour or self.mode == GameMode.HardCore_4Vs4
+        -- Jika mode Classic (2), RandomDeathmatch (3), dll.
+        self.is3v3Mode = (modeStr == "2" or modeStr == "3" or self.mode == "Classic" or self.mode == "RandomDeathmatch")
+        -- Jika mode 4v4 (4), HardCore 4v4 (5), dll.
+        self.is4v4Mode = (modeStr == "4" or modeStr == "5" or self.mode == "FourVsFour" or self.mode == "HardCore_4Vs4")
     end
-    self.enableHardCore = false
+    
+    -- Maksimalkan status kustom select untuk mode tim agar kolom bot wajib muncul
+    if self.is3v3Mode or self.is4v4Mode then
+        self.enableCustomSelect = true
+    end
 
+    self.enableHardCore = false
     self.pageNum = 3
 
     self._comLabel1 = nil
@@ -40,11 +52,16 @@ function SelectLayer:init()
 
     local width, height = display.width, display.height
 
+    -- Tentukan gambar latar belakang berdasarkan status mode permainan
     local bg_src = self.enableCustomSelect and 'red_bg.png' or 'blue_bg.png'
     local bgSprite = display.newSprite(bg_src, 0, 0)
     bgSprite:setAnchorPoint(0, 0)
     bgSprite:fullScreen()
     self:addChild(bgSprite, -5)
+
+    -- [ ... TETAPKAN KODE BAGIAN TENGAH HINGGA PEMBUATAN BUTTON PAGE DISINI ... ]
+    -- (Biarkan kode asli penyusunan avatar hero, page_menu, dan title tetap seperti aslinya)
+
 
     local gold_left = display.newSprite('#gold_left.png', 0, 20)
     gold_left:setAnchorPoint(0, 0)
