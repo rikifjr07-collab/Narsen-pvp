@@ -1,40 +1,33 @@
 --
 -- SelectLayer (Versi Bersih & Stabil untuk GitHub Repo)
 --                            
-function SelectLayer:init()
+    function SelectLayer:init()
     log('Initial SelectLayer...')
 
-    -- Menangkap data mode murni yang dikirim langsung dari Menu Utama game Anda
     self.mode = _G.mode
     self.enableCustomSelect = _G.enableCustomSelect
     
-    -- DETEKSI SINKRONISASI SLOT TIM ABSOLUT NATIVE NARSEN:
-    -- Kita gunakan pencocokan berlapis agar format angka ID biner ataupun objek Enum langsung terbaca pas
     local modeCheck = tostring(self.mode)
     
+    -- DETEKSI SINKRONISASI SLOT TIM ABSOLUT LUA (Membetulkan Slot yang Tertukar/Mengacak)
     if modeCheck == "4" or modeCheck == "5" or self.mode == "FourVsFour" or self.mode == "HardCore_4Vs4" then
-        -- Mode 4 VS 4 / Hardcore 4v4: Harus memunculkan 3 slot bot tim COM (Total 4 status OK/Ready)
         self.is3v3Mode = false
         self.is4v4Mode = true
         self.enableCustomSelect = true
     elseif modeCheck == "2" or modeCheck == "3" or self.mode == "Classic" or self.mode == "RandomDeathmatch" then
-        -- Mode 3 VS 3 / Classic / Random Deathmatch: Harus memunculkan 2 slot bot tim COM (Total 3 status OK/Ready)
         self.is3v3Mode = true
         self.is4v4Mode = false
         self.enableCustomSelect = true
     elseif self.mode == "Clone" or modeCheck == "Clone" then
-        -- Khusus mode Clone bawaan pabrik: Biasanya berbasis 3v3 namun tanpa kustom pilih manual
         self.is3v3Mode = true
         self.is4v4Mode = false
         self.enableCustomSelect = true
     else
-        -- Fallback default untuk Mode 1 VS 1 / OneVsOne / Indeks 1: Kolom bot wajib mati total (Hanya 1P)
         self.is3v3Mode = false
         self.is4v4Mode = false
         self.enableCustomSelect = false
     end
 
-    -- Jaminan kebersihan visual: Jika mode 1v1 murni, paksa matikan semua custom select
     if self.mode == "OneVsOne" or modeCheck == "1" then
         self.enableCustomSelect = false
         self.is3v3Mode = false
@@ -59,7 +52,7 @@ function SelectLayer:init()
 
     self._playerSelect = nil
     self.selectHero = nil
-    
+
     tools.addSprites('Record.plist', 'Record2.plist', 'Select.plist',
                      'UI.plist', 'Report.plist', 'Ougis.plist', 'Ougis2.plist',
                      'Map.plist', 'Gears.plist')
@@ -72,10 +65,7 @@ function SelectLayer:init()
     bgSprite:fullScreen()
     self:addChild(bgSprite, -5)
 
-    -- [ ... TETAPKAN KODE BAGIAN TENGAH HINGGA STRUKTUR PENYUSUNAN AVATAR SEPERTI BIASA ... ]
-    -- (Biarkan asset awan, perulangan tombol avatar, dan label 1P tetap menyambung utuh)
-    
-
+    -- [ ... TETAPKAN KODE BAGIAN TENGAH HINGGA STRUKTUR PENYUSUNAN AVATAR SEPERTI SEBELUMNYA ... ]
     local gold_left = display.newSprite('#gold_left.png', 0, 20)
     gold_left:setAnchorPoint(0, 0)
     self:addChild(gold_left, 1)
@@ -227,18 +217,24 @@ function SelectLayer:init()
     self:addChild(menu3, 5)
 
         -- KODE PEMBUATAN TOMBOL START MANDIRI + BYPASS SINKRONISASI TOOLS MATCH
+    -- KODE PEMBUATAN TOMBOL START MANDIRI: ANTI-CANCEL HERO DAN ANTI-MUSIC STUCK
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
+            -- Memutarkan efek suara masuk pertarungan bawaan biner pabrik
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start ditekan! Memproses inisialisasi babak baru...")
+            log("Tombol Start diketuk! Mengunci data pertarungan...")
 
-            -- 1. Mengunci data jagoan pilihan pemain utama agar terdaftar di C++
+            -- A. Kunci data jagoan pilihan pemain secara absolut
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
-            if self.setSelectHero then self:setSelectHero(chosenHero) end
+            
+            -- PENTING: Tembakkan langsung data nama string ke fungsi setSelectHero biner C++
+            if self.setSelectHero then 
+                self:setSelectHero(chosenHero) 
+            end
 
-            -- 2. Mengisi otomatis data bot komputer agar muatan array pertempuran lengkap
+            -- B. Kunci data bot komputer secara otomatis untuk mode tim agar array heros di C++ terisi lengkap
             if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
                 local totalHeros = #self.selectNameList
                 math.randomseed(os.time())
@@ -255,49 +251,35 @@ function SelectLayer:init()
                 end
             end
 
-            -- 3. Jeda Transisi: Panggil fungsi start pertarungan terpadu permainan Anda
+            -- C. Jeda Mikro Amfibi: Eksekusi Transisi Biner Resmi
             self:performWithDelay(function()
                 local success, err = pcall(function()
+                    -- JAMINAN AUDIO: Matikan secara paksa musik select melalui Cocos SimpleAudioEngine bawaan pabrik
+                    SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true)
                     audio.stopMusic(true)
                     
-                    -- LAKUKAN HOOK INTI: Daftarkan objek layer ke sistem interupsi biner
-                    if hook and hook.registerInitHandlerOnly then
-                        hook.registerInitHandlerOnly(self)
-                    end
-
-                    -- JALUR UTAMA PEMBUKA MATCH NATIVE NARSEN:
-                    -- Kita panggil tools.startMatch bawaan engine game Anda untuk mendaftarkan array hero secara sah ke C++
-                    if tools and tools.startMatch then
-                        tools.startMatch(self._playerSelect)
-                        log("tools.startMatch berhasil dipicu!")
-                    end
-
-                    -- Picu juga fungsi pembantu onGameStart biner jika dibutuhkan sistem
-                    if getGameModeHandler then
-                        local handlerInstance = getGameModeHandler()
-                        if handlerInstance then
-                            handlerInstance.selectLayer = self
-                            if handlerInstance.onInitHeros then handlerInstance:onInitHeros() end
-                        end
-                    end
-                    
-                    -- EKSEKUSI PEMBUKAAN LAYAR LOADING (LOADLAYER)
-                    local nextScene = CCScene:create()
-                    local nativeLoadLayer = nil
-                    
-                    if LoadLayer and LoadLayer.create then
-                        nativeLoadLayer = LoadLayer:create()
-                    elseif LoadingLayer and LoadingLayer.create then
-                        nativeLoadLayer = LoadingLayer:create()
-                    end
-                    
-                    if nativeLoadLayer then
-                        nextScene:addChild(nativeLoadLayer)
-                        hook.registerInitHandlerOnly(nativeLoadLayer)
-                        director.replaceSceneWithFade(nextScene, 0.5)
-                        log("LoadLayer C++ sukses dibuka dengan slot data teratur.")
+                    -- BYPASS RESMI: Panggil fungsi biner asli pabrik SelectLayer::onGameStart() via target biner C++
+                    -- Langkah ini memaksa C++ memproses gameModeHandler->onInitHeros() secara internal sebelum scene berganti!
+                    local target = self:getTarget() or self
+                    if target and target.onGameStart and target ~= self then
+                        target:onGameStart()
+                    elseif self.onGameStart_Base then
+                        self:onGameStart_Base()
                     else
-                        if self.onGameStart_Base then self:onGameStart_Base() end
+                        -- Membuka layar loading biner C++ secara manual menggunakan sutradara Cocos jika jalur di atas terputus
+                        local nextScene = CCScene:create()
+                        local nativeLoadLayer = nil
+                        if LoadLayer and LoadLayer.create then
+                            nativeLoadLayer = LoadLayer:create()
+                        elseif LoadingLayer and LoadingLayer.create then
+                            nativeLoadLayer = LoadingLayer:create()
+                        end
+                        
+                        if nativeLoadLayer then
+                            nextScene:addChild(nativeLoadLayer)
+                            hook.registerInitHandlerOnly(nativeLoadLayer)
+                            director.replaceSceneWithFade(nextScene, 0.5)
+                        end
                     end
                 end)
                 if not success then log("CRITICAL START TRANSITION FAILED: " .. tostring(err)) end
