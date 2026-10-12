@@ -218,12 +218,13 @@ function SelectLayer:init()
     self:addChild(menu3, 5)
 
         -- KEMBALI KE HANDLER MURNI PABRIK DENGAN PENGUNCI DATA HERO
+        -- KODE TOMBOL START JALUR BYPASS LUA RESMI REPO (ANTI FC & BISA MASUK MATCH)
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
             -- Mainkan efek suara konfirmasi masuk pertarungan secara tegas
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start ditekan! Memproses data karakter...")
+            log("Tombol Start ditekan! Memproses transisi via Lua...")
 
             -- A. Mengunci data jagoan pilihan pemain utama agar terdaftar di C++
             local chosenHero = self.selectHero or "naruto"
@@ -247,21 +248,22 @@ function SelectLayer:init()
                 end
             end
 
-            -- C. Eksekusi Transisi Resmi lewat Engine Utama setelah data terisi
+            -- C. Jalankan transisi aman langsung ke LoadLayer Scene via Lua
             self:performWithDelay(function()
                 local success, err = pcall(function()
+                    -- Perbaikan Sintaksis: Menggunakan tanda titik dua (:) agar tidak memicu crash
                     if SimpleAudioEngine and SimpleAudioEngine.sharedEngine then
                         SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true)
                     end
                     audio.stopMusic(true)
                     
-                    -- JALUR KRITIKAL: Aktifkan database SQL permainan agar C++ tidak crash
+                    -- KUNCI DARURAT DATABASE: Hidupkan database SQL permainan tepat sebelum loading dimuat
                     if tools and tools.initSqliteDB then
                         tools.initSqliteDB()
                         log("Database SQLite diaktifkan!")
                     end
 
-                    -- JALUR KRITIKAL: Isi HerosArray di level biner C++ sebelum transisi scene
+                    -- Jembatan interupsi data biner untuk mengisi HerosArray di level C++
                     if getGameModeHandler then
                         local handlerInstance = getGameModeHandler()
                         if handlerInstance then
@@ -273,19 +275,39 @@ function SelectLayer:init()
                         end
                     end
 
-                    -- MEMANGGIL JALUR NATIVE RESMI C++ UNTUK MEMULAI LOADING GAME
-                    if self.onGameStart_Base then
-                        self:onGameStart_Base()
-                        log("onGameStart_Base sukses dieksekusi!")
-                    elseif self.onGameStart then
-                        self:onGameStart()
-                        log("onGameStart pabrik sukses dipanggil!")
+                    -- SEGERA BUKA SCENE LAYAR LOADING (LOADLAYER) SECARA MANDIRI VIA DIRECTORS LUA
+                    local nextScene = CCScene:create()
+                    local nativeLoadLayer = nil
+                    
+                    if LoadLayer and LoadLayer.create then
+                        nativeLoadLayer = LoadLayer:create()
+                    elseif LoadingLayer and LoadingLayer.create then
+                        nativeLoadLayer = LoadingLayer:create()
+                    end
+                    
+                    if nativeLoadLayer then
+                        nextScene:addChild(nativeLoadLayer)
+                        hook.registerInitHandlerOnly(nativeLoadLayer)
+                        
+                        -- Jalankan preload audio biner LoadLayer secara aman
+                        if nativeLoadLayer.preloadAudio then
+                            pcall(function() nativeLoadLayer:preloadAudio() end)
+                        end
+                        
+                        director.replaceSceneWithFade(nextScene, 0.5)
+                        log("LoadLayer sukses dieksekusi secara visual via Skrip Lua!")
+                    else
+                        -- Jalur darurat biner dasar jika objek instansiasi tidak terbaca
+                        if self.onGameStart_Base then
+                            self:onGameStart_Base()
+                        end
                     end
                 end)
                 if not success then log("START TRANSITION FAILED: " .. tostring(err)) end
-            end, 0.1) -- Jeda dinaikkan sedikit ke 0.1 detik agar engine punya waktu memproses data
+            end, 0.1) -- Jeda waktu 0.1 detik memberikan ruang bagi engine untuk mengunci ingatan karakter
         end
     })
+    
     
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
@@ -495,9 +517,6 @@ end
 -- instruksi langsung dilempar ke base engine agar tidak memicu freeze.
 function SelectLayer:onGameStart()
     log("onGameStart pabrik dipicu otomatis, mengalihkan ke base...")
-    if self.onGameStart_Base then
-        self:onGameStart_Base()
-    end
 end
 
 
