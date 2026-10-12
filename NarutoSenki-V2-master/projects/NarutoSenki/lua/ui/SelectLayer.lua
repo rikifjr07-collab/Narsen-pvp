@@ -218,20 +218,22 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
 
-        -- KODE PEMBUATAN TOMBOL START MANDIRI + ISI ARRAY HERO NATIVE C++
-        -- KODE PEMBUATAN TOMBOL START MANDIRI + TRIPLE INJEKSI MEMORI C++ (ANTI LAYAR HITAM)
+        -- KODE PEMBUATAN TOMBOL START MANDIRI: BERSIH, AMAN, DAN ANTI-FC BENTROKAN MEMORI
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
+            -- 1. Mainkan efek suara konfirmasi masuk pertarungan yang benar
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start diketuk! Menghidupkan jembatan data ke LoadLayer biner...")
+            log("Tombol Start diketuk! Memulai pemrosesan data native...")
 
-            -- 1. Mengunci data karakter pemain utama secara absolut
+            -- 2. Mengunci data karakter pemain utama secara absolut agar terdaftar di C++
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
-            if self.setSelectHero then self:setSelectHero(chosenHero) end
+            if self.setSelectHero then 
+                self:setSelectHero(chosenHero) 
+            end
 
-            -- 2. Mengunci data bot komputer secara tegas di sisi Lua agar slot sinkron
+            -- 3. Mengunci data bot komputer secara otomatis untuk mode tim (3v3 / 4v4)
             if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
                 local totalHeros = #self.selectNameList
                 math.randomseed(os.time())
@@ -248,45 +250,25 @@ function SelectLayer:init()
                 end
             end
 
-            -- 3. Jeda Mikro Penyelamat: Pengiriman data terpadu dan pembukaan scene loading
+            -- 4. Jeda Mikro Penyelamat: Jalankan satu pemicu biner resmi, lalu buka Layar Loading
             self:performWithDelay(function()
                 local success, err = pcall(function()
                     audio.stopMusic(true)
                     
-                    -- ========================================================
-                    -- TRIPLE FALLBACK PROTECTION: ISI MEMORI C++ SEBELUM LOADING
-                    -- ========================================================
-                    
-                    -- METODE A: Menggunakan fungsi API global biner bawaan tabel tools (Jika terdaftar)
-                    if tools and tools.initHeros then
-                        tools.initHeros(self._playerSelect, self._com1Select, self._com2Select, self._com3Select)
-                    elseif tools and tools.startMatch then
-                        tools.startMatch(self._playerSelect)
-                    end
-
-                    -- METODE B: Panggil instansiasi gameModeHandler menggunakan format biner murni
+                    -- JALUR SINGLE NATIVE RESMI (TIRU SELECTLAYER.CPP BARIS 26-28):
+                    -- Kita hanya memicu onInitHeros() satu kali agar data array terisi dengan sah
                     if getGameModeHandler then
                         local handlerInstance = getGameModeHandler()
                         if handlerInstance then
-                            -- Daftarkan alamat memory layer Lua ke C++
                             handlerInstance.selectLayer = self
-                            
-                            -- Panggil fungsi onInitHeros secara aman menggunakan format titik dan parameter manual
                             if handlerInstance.onInitHeros then
-                                pcall(function() handlerInstance.onInitHeros(handlerInstance) end)
-                                pcall(function() handlerInstance:onInitHeros() end)
+                                handlerInstance:onInitHeros()
+                                log("HerosArray biner C++ terisi secara aman!")
                             end
                         end
                     end
-
-                    -- METODE C: Daftarkan objek layer saat ini ke penanganan Hook biner
-                    if hook and hook.registerInitHandlerOnly then
-                        hook.registerInitHandlerOnly(self)
-                    end
                     
-                    -- ========================================================
-                    -- BUKA LAYAR LOADING BINER C++ (LOADLAYER)
-                    -- ========================================================
+                    -- MEMBUAT DAN MEMINDAHKAN SCENE KE LOADLAYER BAWAAN C++
                     local nextScene = CCScene:create()
                     local nativeLoadLayer = nil
                     
@@ -298,33 +280,30 @@ function SelectLayer:init()
                     
                     if nativeLoadLayer then
                         nextScene:addChild(nativeLoadLayer)
-                        -- Daftarkan adegan loading ke jembatan C++ agar siklus preloadIMG() berjalan
                         hook.registerInitHandlerOnly(nativeLoadLayer)
                         
-                        -- Jalankan fungsi inisialisasi audio biner bawaan LoadLayer.cpp baris 190
-                        if nativeLoadLayer.preloadAudio then
-                            pcall(function() nativeLoadLayer:preloadAudio() end)
-                        end
-                        
+                        -- Eksekusi transisi pergantian adegan resmi bawaan sistem permainan Anda
                         director.replaceSceneWithFade(nextScene, 0.5)
-                        log("LoadLayer C++ berhasil dieksekusi bersama Triple Data Fallback!")
+                        log("LoadLayer C++ sukses dipicu secara tunggal tanpa bentrokan memori.")
                     else
-                        log("Gagal membuat objek LoadLayer dari Lua, mencoba interupsi biner dasar...")
+                        -- Jalur darurat biner dasar jika objek instansiasi tidak terbaca
                         if self.onGameStart_Base then
                             self:onGameStart_Base()
                         end
                     end
                 end)
-                if not success then log("CRITICAL START TRANSITION FAILED: " .. tostring(err)) end
+                if not success then 
+                    log("START TRANSITION FAILED: " .. tostring(err)) 
+                end
             end, 0.08)
         end
     })
-    
+
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
     self:addChild(menu, 5)
-                    
+    
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
         listener = handler(self, self.onSkillMenuButtonClick)
