@@ -4,13 +4,13 @@
 function SelectLayer:init()
     log('Initial SelectLayer...')
 
-    -- Menangkap data mode mentah dari menu utama
+    -- Menangkap data mode murni dari engine
     self.mode = _G.mode
     self.enableCustomSelect = _G.enableCustomSelect
     
     local modeStr = tostring(self.mode)
     
-    -- DETEKSI SINKRONISASI SLOT TIM ABSOLUT LUA
+    -- DETEKSI SINKRONISASI SLOT TIM ABSOLUT LUA (Membetulkan Slot Mengacak)
     if modeStr == "4" or modeStr == "5" or self.mode == "FourVsFour" or self.mode == "HardCore_4Vs4" then
         self.is3v3Mode = false
         self.is4v4Mode = true
@@ -63,6 +63,10 @@ function SelectLayer:init()
     bgSprite:setAnchorPoint(0, 0)
     bgSprite:fullScreen()
     self:addChild(bgSprite, -5)
+
+    -- [ ... TETAPKAN KODE BAGIAN TENGAH HINGGA STRUKTUR PENYUSUNAN AVATAR SEPERTI BIASA ... ]
+    -- (Biarkan asset awan, perulangan tombol avatar, dan label 1P tetap menyambung utuh)
+    
 
     local gold_left = display.newSprite('#gold_left.png', 0, 20)
     gold_left:setAnchorPoint(0, 0)
@@ -201,11 +205,10 @@ function SelectLayer:init()
         self.selectHero = selectBtn._charName
     end
 
-    
-    if self.is3v3Mode or self.is4v4Mode then
+    if self.enableCustomSelect or self.is3v3Mode or self.is4v4Mode then
         self:initCustomSelectMode()
     end
-    
+
     local ranking_btn = ui.newImageMenuItem({
         image = '#ranking_btn.png',
         listener = handler(self, self.onRankingButtonClick)
@@ -215,20 +218,19 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
 
-    -- INJEKSI PENYELAMAT TOMBOL START: Panggil paksa LoadLayer C++ secara langsung
-        -- PERBAIKAN MUTLAK TOMBOL START: Sinkronisasi Data Karakter dan Bot ke Biner C++
+        -- KODE PEMBUATAN TOMBOL START MANDIRI + ISI ARRAY HERO NATIVE C++
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start ditekan! Memproses sinkronisasi data karakter...")
+            log("Tombol Start diketuk! Memulai alur pengisian array hero native...")
 
-            -- 1. Mengunci data karakter pemain (Mencegah Layar Loading Hitam/Stuck)
+            -- 1. Mengunci data karakter pemain utama
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
             if self.setSelectHero then self:setSelectHero(chosenHero) end
 
-            -- 2. Mengunci data bot tim secara otomatis agar array heros di C++ terisi lengkap
+            -- 2. Mengunci data bot komputer secara tegas di sisi Lua agar slot sinkron
             if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
                 local totalHeros = #self.selectNameList
                 math.randomseed(os.time())
@@ -245,18 +247,22 @@ function SelectLayer:init()
                 end
             end
 
-            -- 3. Jeda Mikro Amfibi: Eksekusi Transisi Adegan Pertarungan
+            -- 3. Jeda Mikro Penyelamat: Picu data C++ dan buka Layar Loading
             self:performWithDelay(function()
                 local success, err = pcall(function()
                     audio.stopMusic(true)
                     
-                    -- PENTING: Panggil fungsi biner SelectLayer::onGameStart() bawaan biner game kamu
-                    -- Langkah ini memaksa C++ memproses gameModeHandler->onInitHeros() agar array terisi!
-                    local target = self:getTarget() or self
-                    if target and target.onGameStart and target ~= self then
-                        target:onGameStart()
-                    elseif self.onGameStart_Base then
-                        self:onGameStart_Base()
+                    -- KUNCI PEMBUKA LAYAR HITAM: Paksa engine C++ mengisi HerosArray dari Lua!
+                    -- Kita tiru urutan penanganan eksklusif dari file SelectLayer.cpp baris 26-28
+                    if getGameModeHandler then
+                        local handlerInstance = getGameModeHandler()
+                        if handlerInstance then
+                            handlerInstance.selectLayer = self
+                            if handlerInstance.onInitHeros then
+                                handlerInstance:onInitHeros()
+                                log("Array Hero biner C++ berhasil diisi dari Lua!")
+                            end
+                        end
                     end
 
                     -- Buka layar loading biner C++ secara visual menggunakan sutradara Cocos
@@ -273,7 +279,7 @@ function SelectLayer:init()
                         nextScene:addChild(nativeLoadLayer)
                         hook.registerInitHandlerOnly(nativeLoadLayer)
                         director.replaceSceneWithFade(nextScene, 0.5)
-                        log("LoadLayer C++ berhasil dimuat dengan data hero utuh.")
+                        log("LoadLayer C++ berhasil dibuka dengan data hero utuh!")
                     end
                 end)
                 if not success then log("CRITICAL START TRANSITION FAILED: " .. tostring(err)) end
