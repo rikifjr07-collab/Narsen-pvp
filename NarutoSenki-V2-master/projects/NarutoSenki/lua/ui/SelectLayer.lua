@@ -213,31 +213,53 @@ function SelectLayer:init()
     self:addChild(menu3, 5)
 
     -- INJEKSI PENYELAMAT TOMBOL START: Panggil paksa LoadLayer C++ secara langsung
+        -- PERBAIKAN MUTLAK TOMBOL START: Sinkronisasi Data Karakter dan Bot ke Biner C++
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Memicu alur perpindahan scene ke LoadLayer biner...")
+            log("Tombol Start diketuk! Sinkronisasi data ke biner C++...")
 
-            if not self._playerSelect then
-                self._playerSelect = self.selectHero or "naruto"
-                if self.setSelectHero then self:setSelectHero(self._playerSelect) end
+            -- 1. Jaminan Mutlak Penguncian Karakter Pemain (Mencegah Layar Hitam / Stuck)
+            -- Jika pemain langsung menekan Start tanpa memilih (Random), otomatis kunci ke "naruto" atau hero yang sedang ditunjuk kotak 1P
+            local chosenHero = self.selectHero or "naruto"
+            self._playerSelect = chosenHero
+            
+            if self.setSelectHero then 
+                self:setSelectHero(chosenHero) 
             end
 
+            -- 2. Sinkronisasi Data Bot Komputer Secara Urut untuk Mode Tim (3v3 / 4v4)
             if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
                 local totalHeros = #self.selectNameList
                 math.randomseed(os.time())
-                if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] self:setCom1Select(self._com1Select) end
-                if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] self:setCom2Select(self._com2Select) end
-                if self.is4v4Mode and not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] self:setCom3Select(self._com3Select) end
+                
+                -- Acak nama hero jika slot bot masih kosong saat tombol start ditekan
+                if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] end
+                if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] end
+                
+                -- Kirimkan data bot secara tegas ke fungsi internal C++ agar sinkron
+                if self.setCom1Select then self:setCom1Select(self._com1Select) end
+                if self.setCom2Select then self:setCom2Select(self._com2Select) end
+                
+                if self.is4v4Mode then
+                    if not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] end
+                    if self.setCom3Select then self:setCom3Select(self._com3Select) end
+                end
             end
 
+            -- 3. Eksekusi Masuk Ke Layar Loading Biner C++ (LoadLayer)
             self:performWithDelay(function()
                 local success, err = pcall(function()
                     audio.stopMusic(true)
                     
-                    -- BYPASS UTAMA: Karena game menggunakan LoadLayer.cpp pada kelas dasar, 
-                    -- kita buat scene Cocos dan paksa instansiasi kelas LoadLayer ke memori visual Lua.
+                    -- Panggil fungsi penanganan dasar biner game Anda terlebih dahulu untuk mencatat pilihan
+                    if self.onGameStart then
+                        -- Jalankan fungsi tanpa loop buntu
+                        self.onGameStart(self)
+                    end
+
+                    -- Coba buka LoadLayer bawaan C++ melalui instansiasi adegan standar Cocos
                     local nextScene = CCScene:create()
                     local nativeLoadLayer = nil
                     
@@ -251,22 +273,20 @@ function SelectLayer:init()
                         nextScene:addChild(nativeLoadLayer)
                         hook.registerInitHandlerOnly(nativeLoadLayer)
                         director.replaceSceneWithFade(nextScene, 0.5)
-                        log("Berhasil memindahkan screen secara paksa ke LoadLayer C++")
+                        log("Berhasil meluncurkan LoadLayer C++ secara sinkron.")
                     else
-                        -- Jalur interupsi native cadangan jika objek dibungkus kelas instansiasi target
-                        local target = self:getTarget() or self
+                        -- Jalur interupsi native cadangan jika fungsi di atas tertutup
                         if self.onGameStart_Base then
                             self:onGameStart_Base()
-                        elseif target and target.onGameStart and target ~= self then
-                            target:onGameStart()
-                        elseif self.super and self.super.onGameStart then
-                            self.super.onGameStart(self)
+                        else
+                            local target = self:getTarget() or self
+                            if target and target.onGameStart and target ~= self then
+                                target:onGameStart()
+                            end
                         end
                     end
                 end)
-                if not success then 
-                    log("TRANSITION TO NATIVE LOAD FAILED: " .. tostring(err)) 
-                end
+                if not success then log("TRANSITION ERROR: " .. tostring(err)) end
             end, 0.08)
         end
     })
@@ -274,8 +294,8 @@ function SelectLayer:init()
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
-    self:addChild(menu, 5)
-
+    self:addChild(menu, 5)   
+                    
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
         listener = handler(self, self.onSkillMenuButtonClick)
