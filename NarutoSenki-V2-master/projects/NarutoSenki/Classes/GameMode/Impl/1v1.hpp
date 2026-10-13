@@ -23,7 +23,6 @@ private:
     bool isAddCallback;
     bool isConnected;
 
-    // FUNGSI UTAS LATAR BELAKANG: Mengurus jaringan terpisah agar game tidak diam/freeze
     void startNetworkThread() {
         std::thread([this]() {
             extern std::string global_ipAddress;
@@ -40,7 +39,6 @@ private:
                         listen(serverSocket, 1);
                         struct sockaddr_in clientAddr;
                         socklen_t clientLen = sizeof(clientAddr);
-                        // accept() berjalan di background, tidak akan mengunci layar start game!
                         int incomingSec = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientLen);
                         if (incomingSec >= 0) {
                             clientSocket = incomingSec;
@@ -57,14 +55,13 @@ private:
                     clientServerAddr.sin_port = htons(8888);
                     clientServerAddr.sin_addr.s_addr = inet_addr(global_ipAddress.c_str()); 
                     
-                    // Mencoba terhubung tanpa membuat game stuck
                     if (connect(clientSocket, (struct sockaddr*)&clientServerAddr, sizeof(clientServerAddr)) >= 0) {
                         fcntl(clientSocket, F_SETFL, O_NONBLOCK);
                         isConnected = true;
                     }
                 }
             }
-        }).detach(); // Melepas utas ke latar belakang secara mandiri
+        }).detach();
     }
 
 public:
@@ -80,8 +77,6 @@ public:
         extern bool global_isHost; 
         isHost = global_isHost;    
 
-        // LANGSUNG LEMPAR KE BACKGROUND THREAD! 
-        // Ini memastikan tombol start langsung memicu LoadLayer seketika!
         startNetworkThread();
     }
 
@@ -97,7 +92,7 @@ public:
         PlayerDataPacket packet = { x, y, anim };
         send(clientSocket, &packet, sizeof(packet), MSG_NOSIGNAL);
     }
-    void receiveFriendPosition(CharacterBase* friendChar) {
+        void receiveFriendPosition(CharacterBase* friendChar) {
         if (clientSocket < 0 || !isConnected || !friendChar) return;
         PlayerDataPacket receivedPacket;
         int bytesRead = recv(clientSocket, &receivedPacket, sizeof(receivedPacket), MSG_DONTWAIT);
