@@ -35,11 +35,14 @@ private:
                     serverAddr.sin_port = htons(8888); 
                     serverAddr.sin_addr.s_addr = INADDR_ANY; 
                     
-                    if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) >= 0) {
-                        listen(serverSocket, 1);
+                    // PERBAIKAN: Ditambahkan :: di depan bind agar tidak menabrak std::bind pustaka C++
+                    if (::bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) >= 0) {
+                        ::listen(serverSocket, 1);
                         struct sockaddr_in clientAddr;
                         socklen_t clientLen = sizeof(clientAddr);
-                        int incomingSec = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientLen);
+                        
+                        // PERBAIKAN: Ditambahkan :: di depan accept agar dieksekusi secara aman di latar belakang
+                        int incomingSec = ::accept(serverSocket, (struct sockaddr*)&clientAddr, &clientLen);
                         if (incomingSec >= 0) {
                             clientSocket = incomingSec;
                             fcntl(clientSocket, F_SETFL, O_NONBLOCK);
