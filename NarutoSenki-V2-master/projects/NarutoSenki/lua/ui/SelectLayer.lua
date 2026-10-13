@@ -221,73 +221,57 @@ function SelectLayer:init()
 
     -- KODE TOMBOL START JALUR AMAN NATIVE INTERRUPT (ANTI MENTOK & BISA LOAD MATCH)
         -- KODE TOMBOL START BYPASS LUA SEMPURNA (PENGUNCI TIM ACAK & ANTI FC)
+        -- KODE TOMBOL START ISOLASI TOTAL (ANTI FREEZE & ANTI FC BINER MULTIPLAYER)
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
-            -- Mainkan efek suara konfirmasi masuk pertarungan secara tegas
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start ditekan! Memproses penguncian data tim...")
+            log("Tombol Start ditekan! Memulai isolasi transisi mandiri...")
 
-            -- A. PENGUNCI DATA PLAYER: Jika player belum memilih hero, isi otomatis dengan Naruto
+            -- A. Kunci pilihan karakter agar mesin biner dasar tetap mengenalnya
             local chosenHero = self.selectHero or "naruto"
             if not self._playerSelect then
                 self._playerSelect = chosenHero
                 if self.setSelectHero then self:setSelectHero(chosenHero) end
-                log("Slot Player kosong, otomatis diisi: " .. chosenHero)
             end
 
-            -- B. PENGUNCI DATA BOT TIM: Mengisi seluruh slot kosong secara acak (Mencegah FC 3v3 & 4v4)
+            -- B. Pengunci data darurat slot tim acak
             local totalHeros = #self.selectNameList
             math.randomseed(os.time())
-            
             if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
                 if not self._com1Select then 
                     self._com1Select = self.selectNameList[math.random(1, totalHeros)] 
                     if self.setCom1Select then self:setCom1Select(self._com1Select) end
-                    log("Slot COM 1 kosong, otomatis diisi acak: " .. self._com1Select)
                 end
                 if not self._com2Select then 
                     self._com2Select = self.selectNameList[math.random(1, totalHeros)] 
                     if self.setCom2Select then self:setCom2Select(self._com2Select) end
-                    log("Slot COM 2 kosong, otomatis diisi acak: " .. self._com2Select)
                 end
                 if self.is4v4Mode and not self._com3Select then
                     self._com3Select = self.selectNameList[math.random(1, totalHeros)] 
                     if self.setCom3Select then self:setCom3Select(self._com3Select) end
-                    log("Slot COM 3 kosong, otomatis diisi acak: " .. self._com3Select)
                 end
             end
 
-            -- C. JALANKAN TRANSISI LAYAR LOADING SECARA MANDIRI VIA LUA WRAPPER
+            -- C. TRANSISI LANGSUNG TANPA MENYENTUH COCOS INTERMEDIATE HANDLER YANG CRASH
             self:performWithDelay(function()
                 if tools and tools.initSqliteDB then
                     tools.initSqliteDB()
                 end
 
-                -- Mendaftarkan data susunan jagoan ke level biner C++ sebelum transisi scene
-                if getGameModeHandler then
-                    local handlerInstance = getGameModeHandler()
-                    if handlerInstance then
-                        handlerInstance.selectLayer = self
-                        if handlerInstance.onInitHeros then
-                            handlerInstance:onInitHeros()
-                            log("HerosArray biner C++ sukses disegel!")
-                        end
-                    end
-                end
-
-                -- Eksekusi pembuatan layar Loading (LoadLayer) langsung via Skrip Lua
+                -- PROTEKSI TOTAL: Matikan pemanggilan handlerInstance:onInitHeros() yang memicu freeze biner
+                -- Kita langsung paksa engine mengganti scene ke LoadLayer secara mentah
                 local success, err = pcall(function()
-                    -- Mematikan musik latar menu agar tidak bertabrakan dengan loading match
                     if SimpleAudioEngine then
                         SimpleAudioEngine:stopBackgroundMusic(true)
                     end
                     audio.stopMusic(true)
 
+                    -- MEMBENTUK REAL TRANSITION SCENE SECARA DIRECT LEWAT ENGINE UTAMA LUA
                     local nextScene = CCScene:create()
                     local nativeLoadLayer = nil
 
-                    -- Deteksi instansiasi kelas LoadLayer secara aman
+                    -- Mencari penamaan kelas layar loading yang terdaftar resmi di APK Anda
                     if LoadLayer and LoadLayer.create then
                         nativeLoadLayer = LoadLayer:create()
                     elseif LoadingLayer and LoadingLayer.create then
@@ -296,17 +280,21 @@ function SelectLayer:init()
 
                     if nativeLoadLayer then
                         nextScene:addChild(nativeLoadLayer)
-                        hook.registerInitHandlerOnly(nativeLoadLayer)
+                        
+                        -- Menggunakan fungsi internal engine bawaan untuk mendaftarkan callback inisialisasi
+                        if hook and hook.registerInitHandlerOnly then
+                            hook.registerInitHandlerOnly(nativeLoadLayer)
+                        end
 
                         if nativeLoadLayer.preloadAudio then
                             pcall(function() nativeLoadLayer:preloadAudio() end)
                         end
 
-                        -- Melakukan transisi mulus ke layar loading match
-                        director.replaceSceneWithFade(nextScene, 0.5)
-                        log("Layar Loading Match sukses dibuka via Lua!")
+                        -- Paksa ganti scene! Jalur ini memotong kegagalan fungsi C++ yang memicu FC
+                        CCDirector:sharedDirector():replaceScene(CCTransitionFade:create(0.5, nextScene))
+                        log("Isolasi Berhasil: Layar loading match dipaksa berjalan via Lua Director!")
                     else
-                        -- Jalur darurat biner jika wrapper Lua tidak merespons
+                        -- Jika gagal memanggil objek Lua, panggil fungsi dasar non-multiplayer
                         if self.onGameStart_Base then
                             self:onGameStart_Base()
                         end
@@ -314,12 +302,13 @@ function SelectLayer:init()
                 end)
                 
                 if not success then 
-                    log("Transisi Lua gagal, mengalihkan ke fungsi dasar biner...")
+                    log("Bypass gagal, mencoba pemicu biner cadangan: " .. tostring(err))
                     if self.onGameStart_Base then self:onGameStart_Base() end
                 end
-            end, 0.1)
+            end, 0.05) -- Jeda waktu dipersingkat agar memori biner tidak sempat mengunci/freeze
         end
     })
+    
     
 
     local menu = ui.newMenu({start_btn})
