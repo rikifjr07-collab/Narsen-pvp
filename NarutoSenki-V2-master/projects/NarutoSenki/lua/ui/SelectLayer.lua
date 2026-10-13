@@ -218,117 +218,24 @@ function SelectLayer:init()
     local menu3 = ui.newMenu({ranking_btn})
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
-
-    -- KODE TOMBOL START JALUR AMAN NATIVE INTERRUPT (ANTI MENTOK & BISA LOAD MATCH)
-        -- KODE TOMBOL START BYPASS LUA SEMPURNA (PENGUNCI TIM ACAK & ANTI FC)
-        -- KODE TOMBOL START ISOLASI TOTAL (ANTI FREEZE & ANTI FC BINER MULTIPLAYER)
     
-    local start_btn = ui.newImageMenuItem({
-        image = '#start_btn.png',
-        listener = function()
-            -- Cek proteksi agar tidak bisa diklik dua kali saat transisi sedang berjalan
-            if self._startTransitionTriggered then 
-                log("Transisi sudah berjalan, mengabaikan klik tambahan untuk mencegah freeze!")
-                return 
-            end
-            self._startTransitionTriggered = true
+    local menu = ui.newMenu({start_btn})
+    menu:setAnchorPoint(0, 0)
+    menu:setPosition(width - 40, 36)
+    self:addChild(menu, 5)
 
-            -- Mainkan efek suara konfirmasi secara tegas
-            audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start diklik pertama kali! Memulai pemuatan wajib LoadLayer...")
-
-            -- A. Kunci jagoan utama pilihan pemain
-            local chosenHero = self.selectHero or "naruto"
-            self._playerSelect = chosenHero
-            if self.setSelectHero then self:setSelectHero(chosenHero) end
-
-            -- B. Kunci jagoan bot komputer secara acak jika slot masih kosong
-            local totalHeros = #self.selectNameList
-            math.randomseed(os.time())
-            if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
-                if not self._com1Select then 
-                    self._com1Select = self.selectNameList[math.random(1, totalHeros)] 
-                    if self.setCom1Select then self:setCom1Select(self._com1Select) end
-                end
-                if not self._com2Select then 
-                    self._com2Select = self.selectNameList[math.random(1, totalHeros)] 
-                    if self.setCom2Select then self:setCom2Select(self._com2Select) end
-                end
-                if self.is4v4Mode and not self._com3Select then
-                    self._com3Select = self.selectNameList[math.random(1, totalHeros)] 
-                    if self.setCom3Select then self:setCom3Select(self._com3Select) end
-                end
-            end
-
-            -- C. EKSEKUSI WAJIB SCENE LOADING MATCH SECARA INSTAN TANPA MENUNGGU BINER
-            self:performWithDelay(function()
-                if tools and tools.initSqliteDB then
-                    tools.initSqliteDB()
-                end
-
-                -- Amankan pengiriman array karakter ke C++ terlebih dahulu
-                if getGameModeHandler then
-                    local handlerInstance = getGameModeHandler()
-                    if handlerInstance then
-                        handlerInstance.selectLayer = self
-                        if handlerInstance.onInitHeros then
-                            handlerInstance:onInitHeros()
-                        end
-                    end
-                end
-
-                -- MEMAKSA SCENE LOADLAYER UNTUK MUNCUL DI LAYAR (WAJIB SCENE)
-                local success, err = pcall(function()
-                    if SimpleAudioEngine then
-                        SimpleAudioEngine:stopBackgroundMusic(true)
-                    end
-                    audio.stopMusic(true)
-
-                    local nextScene = CCScene:create()
-                    local nativeLoadLayer = nil
-
-                    -- Memanggil kelas dasar LoadLayer murni dari engine biner
-                    if LoadLayer and LoadLayer.create then
-                        nativeLoadLayer = LoadLayer:create()
-                    elseif LoadingLayer and LoadingLayer.create then
-                        nativeLoadLayer = LoadingLayer:create()
-                    end
-
-                    if nativeLoadLayer then
-                        nextScene:addChild(nativeLoadLayer)
-                        
-                        -- Daftarkan handler inisialisasi agar aset Unit/Ninja mulai dimuat di dalam loading
-                        if hook and hook.registerInitHandlerOnly then
-                            hook.registerInitHandlerOnly(nativeLoadLayer)
-                        end
-
-                        if nativeLoadLayer.preloadAudio then
-                            pcall(function() nativeLoadLayer:preloadAudio() end)
-                        end
-
-                        -- REFACTORING TRANSISI: Ganti scene secara mutlak tanpa animasi fade 
-                        -- Langkah ini memaksa Android langsung merender layar loading awan bergerak seketika!
-                        CCDirector:sharedDirector():replaceScene(nextScene)
-                        log("SUKSES: Mesin game dipaksa masuk ke wajib scene LoadLayer!")
-                    else
-                        -- Jalur alternatif jika objek instansiasi gagal dimuat
-                        if self.onGameStart_Base then
-                            self:onGameStart_Base()
-                        elseif self.onGameStart then
-                            self:onGameStart()
-                        end
-                    end
-                end)
-
-                if not success then
-                    log("Bypass Lua gagal, memicu transisi biner darurat: " .. tostring(err))
-                    if self.onGameStart_Base then self:onGameStart_Base() end
-                end
-            end, 0.01) -- Menggunakan jeda mikro (0.01s) agar tombol langsung mengeksekusi transisi tanpa delay visual
-        end
+    local skill_btn = ui.newImageMenuItem({
+        image = '#skill_btn.png',
+        listener = handler(self, self.onSkillMenuButtonClick)
     })
+    local menu2 = ui.newMenu({skill_btn})
+    menu2:setAnchorPoint(0, 0)
+    menu2:setPosition(width - 35, 96)
+    self:addChild(menu2, 5)
 
-
+    if save.isBGM() then audio.playMusic(ns.music.SELECT_MUSIC, true) end
+    end
+                 
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
@@ -560,8 +467,5 @@ function backToStartMenu()
 end
 
 function SelectLayer:onGameStart()
-    log("onGameStart pabrik dipicu, meneruskan instruksi transisi ke C++...")
-    if self.onGameStart_Base then
-        self:onGameStart_Base()
-    end
+    log("onGameStart pabrik dipicu, meneruskan instruksi transisi ke C++...")  
 end
