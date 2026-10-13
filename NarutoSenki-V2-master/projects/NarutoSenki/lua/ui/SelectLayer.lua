@@ -222,14 +222,7 @@ function SelectLayer:init()
     -- KODE TOMBOL START JALUR AMAN NATIVE INTERRUPT (ANTI MENTOK & BISA LOAD MATCH)
         -- KODE TOMBOL START BYPASS LUA SEMPURNA (PENGUNCI TIM ACAK & ANTI FC)
         -- KODE TOMBOL START ISOLASI TOTAL (ANTI FREEZE & ANTI FC BINER MULTIPLAYER)
-    local start_btn = ui.newImageMenuItem({
-        image = '#start_btn.png',
-        listener = function()
-            audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start ditekan! Memulai isolasi transisi mandiri...")
-
-            -- A. Kunci pilihan karakter agar mesin biner dasar tetap mengenalnya
-        -- KODE TOMBOL START BARU: SATU KALI KLIK LANGSUNG MASUK LOADING MATCH (ANTI FREEZE)
+    
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
