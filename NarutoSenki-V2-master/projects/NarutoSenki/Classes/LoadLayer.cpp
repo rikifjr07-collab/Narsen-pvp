@@ -64,68 +64,91 @@ bool LoadLayer::init()
 
 void LoadLayer::preloadIMG()
 {
-	auto herosDataVector = getGameModeHandler()->getHerosArray();
-	int count = herosDataVector.size();
-	if (count == 2) // 1v1
-		count = 0;
-	else if (count == 4) // Boss mode (3v1)
-		count = 3;
-	else if (count == 5) // Boss mode (4v1)
-		count = 4;
-	else if (count == 6) // 3v3
-		count = 3;
-	else if (count == 8) // 4v4
-		count = 4;
+    // Mengambil data array pahlawan yang dikirim dari sistem game
+    auto herosDataVector = getGameModeHandler()->getHerosArray();
+    int count = herosDataVector.size();
+    
+    // Proteksi Darurat: Jika data vector kosong, paksa isi minimal 2 slot agar loading tidak stuck awan
+    if (count == 0) {
+        CCLOG("LoadLayer WARNING: HerosArray kosong! Mengalihkan ke mode aman...");
+        count = 2; 
+    }
+    else if (count == 2) // Mode 1 VS 1
+        count = 0;
+    else if (count == 4) // Boss mode (3v1)
+        count = 3;
+    else if (count == 5) // Boss mode (4v1)
+        count = 4;
+    else if (count == 6) // Mode 3 VS 3
+        count = 3;
+    else if (count == 8) // Mode 4 VS 4
+        count = 4;
 
-	int i = 0;
-	for (const auto &data : herosDataVector)
-	{
-		auto name = data.name;
-		if (std::find(loadVector.begin(), loadVector.end(), name) == loadVector.end())
-		{
-			perloadCharIMG(name.c_str());
-			loadVector.push_back(name);
-		}
+    int i = 0;
+    for (const auto &data : herosDataVector)
+    {
+        // PENGAMAN UTAMA: Cek apakah data objek karakter valid di memori sebelum membaca nama
+        if (data.name.empty() || data.name == "") {
+            CCLOG("LoadLayer: Menemukan slot hero kosong pada indeks %d, dilewati untuk mencegah FC.", i);
+            i++;
+            continue;
+        }
 
-		if (i == 0 || (i < count && _enableGear))
-			setLoadingAnimation(name.c_str(), i);
-		i++;
-	}
+        auto name = data.name;
+        if (std::find(loadVector.begin(), loadVector.end(), name) == loadVector.end())
+        {
+            perloadCharIMG(name.c_str());
+            loadVector.push_back(name);
+        }
 
-	if (_isHardCoreMode)
-	{
-		addSprites(kGuardian_Han);
-		addSprites(kGuardian_Roshi);
-		KTools::prepareFileOGG(GuardianEnum::Han);
-		KTools::prepareFileOGG(GuardianEnum::Roshi);
-	}
-	addSprites(kFlog_Kotetsu);
-	addSprites(kFlog_FemalePain);
+        if (i == 0 || (i < count && _enableGear))
+            setLoadingAnimation(name.c_str(), i);
+        i++;
+    }
 
-	addSprites(kFlog_Izumo);
-	addSprites(kFlog_Kakashi);
+    if (_isHardCoreMode)
+    {
+        addSprites(kGuardian_Han);
+        addSprites(kGuardian_Roshi);
+        KTools::prepareFileOGG(GuardianEnum::Han);
+        KTools::prepareFileOGG(GuardianEnum::Roshi);
+    }
+    addSprites(kFlog_Kotetsu);
+    addSprites(kFlog_FemalePain);
 
-	addSprites(kFlog_Pain);
-	addSprites(kFlog_Obito);
+    addSprites(kFlog_Izumo);
+    addSprites(kFlog_Kakashi);
 
-	KTools::prepareFileOGG("Effect");
-	KTools::prepareFileOGG("Ougis");
+    addSprites(kFlog_Pain);
+    addSprites(kFlog_Obito);
 
-	setRand();
-	int num = rand() % 3 + 1;
-	Sprite *tips = Sprite::createWithSpriteFrameName(format("tip{}.png", num).c_str());
-	tips->setPosition(Vec2(winSize.width / 2, winSize.height / 2));
-	addChild(tips);
+    KTools::prepareFileOGG("Effect");
+    KTools::prepareFileOGG("Ougis");
 
-	Sprite *loading = Sprite::createWithSpriteFrameName("loading_font.png");
-	loading->setPosition(Vec2(winSize.width - 120, 45));
-	auto fade = FadeOut::create(1.0f);
-	auto fadeseq = RepeatForever::create(newSequence(fade, fade->reverse()));
-	addChild(loading);
-	loading->runAction(fadeseq);
+    setRand();
+    int num = rand() % 3 + 1;
+    
+    // Perbaikan Teknis: Mengamankan pemanggilan format agar tip gambar terbaca dengan benar
+    CCString* tipPath = CCString::createWithFormat("tip%d.png", num);
+    Sprite *tips = Sprite::createWithSpriteFrameName(tipPath->getCString());
+    if (tips) {
+        tips->setPosition(Vec2(winSize.width / 2, winSize.height / 2));
+        addChild(tips);
+    }
 
-	scheduleOnce(schedule_selector(LoadLayer::playBGM), 1.0f);
-	scheduleOnce(schedule_selector(LoadLayer::onLoadFinish), 3.0f);
+    Sprite *loading = Sprite::createWithSpriteFrameName("loading_font.png");
+    if (loading) {
+        loading->setPosition(Vec2(winSize.width - 120, 45));
+        auto fade = FadeOut::create(1.0f);
+        auto fadeseq = RepeatForever::create(newSequence(fade, fade->reverse()));
+        addChild(loading);
+        loading->runAction(fadeseq);
+    }
+
+    scheduleOnce(schedule_selector(LoadLayer::playBGM), 1.0f);
+    
+    // JALUR TRANSISI NYATA: Menurunkan waktu tunggu loading ke 2.0 detik agar game langsung melempar masuk ke arena pertempuran
+    scheduleOnce(schedule_selector(LoadLayer::onLoadFinish), 2.0f);
 }
 
 void LoadLayer::perloadCharIMG(const string &name)
