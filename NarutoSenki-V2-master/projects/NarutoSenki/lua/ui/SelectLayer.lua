@@ -219,23 +219,76 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
     
-    local menu = ui.newMenu({start_btn})
-    menu:setAnchorPoint(0, 0)
-    menu:setPosition(width - 40, 36)
-    self:addChild(menu, 5)
+        -- KODE TOMBOL START FINAL: AMAN UNTUK 1V1 MULTIPLAYER & SINKRON TIM LAIN (ANTI FC)
+    local start_btn = ui.newImageMenuItem({
+        image = '#start_btn.png',
+        listener = function()
+            if self._startTransitionTriggered then 
+                log("Transisi sudah berjalan, mengabaikan klik tambahan!")
+                return 
+            end
+            self._startTransitionTriggered = true
 
-    local skill_btn = ui.newImageMenuItem({
-        image = '#skill_btn.png',
-        listener = handler(self, self.onSkillMenuButtonClick)
+            audio.playSound('Audio/Menu/confirm.ogg') 
+            log("Tombol Start diklik! Memproses penguncian data tim...")
+
+            local chosenHero = self.selectHero or "naruto"
+            self._playerSelect = chosenHero
+            if self.setSelectHero then self:setSelectHero(chosenHero) end
+
+            local totalHeros = #self.selectNameList
+            math.randomseed(os.time())
+            if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
+                if not self._com1Select then 
+                    self._com1Select = self.selectNameList[math.random(1, totalHeros)] 
+                    if self.setCom1Select then self:setCom1Select(self._com1Select) end
+                end
+                if not self._com2Select then 
+                    self._com2Select = self.selectNameList[math.random(1, totalHeros)] 
+                    if self.setCom2Select then self:setCom2Select(self._com2Select) end
+                end
+                if self.is4v4Mode and not self._com3Select then
+                    self._com3Select = self.selectNameList[math.random(1, totalHeros)] 
+                    if self.setCom3Select then self:setCom3Select(self._com3Select) end
+                end
+            end
+
+            self:performWithDelay(function()
+                if tools and tools.initSqliteDB then
+                    tools.initSqliteDB()
+                end
+
+                if getGameModeHandler then
+                    local handlerInstance = getGameModeHandler()
+                    if handlerInstance then
+                        handlerInstance.selectLayer = self
+                        if handlerInstance.onInitHeros then
+                            handlerInstance:onInitHeros()
+                            log("HerosArray biner C++ terisi penuh!")
+                        end
+                    end
+                end
+
+                -- PICU JALUR NATIVE RESMI: Mengembalikan kendali penuh transisi ke C++ secara aman
+                local success, err = pcall(function()
+                    if SimpleAudioEngine then
+                        SimpleAudioEngine:stopBackgroundMusic(true)
+                    end
+                    audio.stopMusic(true)
+                    
+                    -- Panggil fungsi onGameStart bawaan pabrik C++ agar data vector LoadLayer dimuat utuh
+                    log("Memicu fungsi onGameStart asli biner C++...")
+                    self:onGameStart()
+                end)
+
+                if not success then
+                    log("Transisi gagal, memicu jalur alternatif: " .. tostring(err))
+                    if self.onGameStart_Base then self:onGameStart_Base() end
+                end
+            end, 0.01)
+        end
     })
-    local menu2 = ui.newMenu({skill_btn})
-    menu2:setAnchorPoint(0, 0)
-    menu2:setPosition(width - 35, 96)
-    self:addChild(menu2, 5)
 
-    if save.isBGM() then audio.playMusic(ns.music.SELECT_MUSIC, true) end
-    end
-                 
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
