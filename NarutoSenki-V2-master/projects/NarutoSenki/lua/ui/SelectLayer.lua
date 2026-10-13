@@ -1,4 +1,4 @@
--- SelectLayer (Versi Bersih & Stabil untuk GitHub Repo)
+-- SelectLayer (Versi Sinkronisasi Tim & Transisi Sempurna)
 --  
 function SelectLayer:init()
     log('Initial SelectLayer...')
@@ -11,38 +11,28 @@ function SelectLayer:init()
     local modeStr = tostring(self.mode)
     log('Deteksi Sistem Mode Game: ' .. modeStr)
 
-    -- STRUKTUR PEMBAGIAN MODE TIM SECARA ABSOLUT (Mengunci Slot Ready & Background)
+    -- STRUKTUR UTAMA DETEKSI MODE TIM (Mengunci Slot Ready & Background)
+    -- Perbaikan: Memperluas deteksi objek GameMode agar 3v3 tidak tertukar dengan 1v1
     if modeStr == "4" or modeStr == "FourVsFour" or modeStr == "HardCore_4Vs4" or (GameMode and self.mode == GameMode.FourVsFour) or (GameMode and self.mode == GameMode.HardCore_4Vs4) then
-        -- 1. Mode 4 VS 4 / HardCore 4v4: Memunculkan latar merah & 3 slot bot COM (Total 3 Ready)
         self.is3v3Mode = false
         self.is4v4Mode = true
         self.enableCustomSelect = true
-
-    elseif modeStr == "2" or modeStr == "3" or modeStr == "Classic" or modeStr == "RandomDeathmatch" or modeStr == "Clone" or modeStr == "Deathmatch" 
+    elseif modeStr == "2" or modeStr == "3" or modeStr == "1" or modeStr == "Classic" or modeStr == "RandomDeathmatch" or modeStr == "Clone" or modeStr == "Deathmatch" 
        or (GameMode and self.mode == GameMode.Classic) 
        or (GameMode and self.mode == GameMode.RandomDeathmatch) 
-       or (GameMode and self.mode == GameMode.Clone) then
-        -- 2. Mode 3 VS 3 / Classic / Clone / Random Deathmatch: Memunculkan latar merah & 2 slot bot COM (Total 2 Ready)
+       or (GameMode and self.mode == GameMode.Clone) or _G.enableCustomSelect then
+        -- Jika enableCustomSelect dari menu bernilai true, otomatis dianggap Mode Tim (3v3)
         self.is3v3Mode = true
         self.is4v4Mode = false
         self.enableCustomSelect = true
-
     else
-        -- 3. Fallback Khusus Mode 1 VS 1: Latar biru murni & Matikan seluruh kolom Ready tambahan
         self.is3v3Mode = false
         self.is4v4Mode = false
         self.enableCustomSelect = false
     end
 
-    -- PENGUNCI KHUSUS CLONE & RANDOM DEATHMATCH: Harus 2 kolom Ready & Latar Merah
-    if modeStr == "Clone" or modeStr == "RandomDeathmatch" or (GameMode and self.mode == GameMode.Clone) or (GameMode and self.mode == GameMode.RandomDeathmatch) then
-        self.is3v3Mode = true
-        self.is4v4Mode = false
-        self.enableCustomSelect = true
-    end
-
-    -- PENGUNCI KHUSUS 1V1: Jaminan visual latar biru bersih bawaan asli
-    if modeStr == "1" or modeStr == "OneVsOne" or (GameMode and self.mode == GameMode.OneVsOne) then
+    -- Kunci paksa visual untuk Mode 1 VS 1 murni
+    if modeStr == "OneVsOne" or (GameMode and self.mode == GameMode.OneVsOne) then
         self.is3v3Mode = false
         self.is4v4Mode = false
         self.enableCustomSelect = false
@@ -229,82 +219,67 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
 
-    -- KODE TOMBOL START BYPASS LUA MURNI BERSIH (ANTI FC & DATA BOT TERKUNCI AMAN)
+    -- KODE TOMBOL START JALUR AMAN NATIVE INTERRUPT (ANTI MENTOK & BISA LOAD MATCH)
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start ditekan! Memproses bypass transisi aman via Lua...")
+            log("Tombol Start ditekan! Memproses penguncian data tim...")
 
+            -- Mengunci pahlawan utama pilihan pemain
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
             if self.setSelectHero then self:setSelectHero(chosenHero) end
 
+            -- Mengisi otomatis slot bot yang masih kosong agar data biner C++ terisi lengkap
             if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
                 local totalHeros = #self.selectNameList
                 math.randomseed(os.time())
                 
-                if not self._com1Select then self._com1Select = self.selectNameList[math.random(1, totalHeros)] end
-                if not self._com2Select then self._com2Select = self.selectNameList[math.random(1, totalHeros)] end
-                
-                if self.setCom1Select then self:setCom1Select(self._com1Select) end
-                if self.setCom2Select then self:setCom2Select(self._com2Select) end
-                
-                if self.is4v4Mode then
-                    if not self._com3Select then self._com3Select = self.selectNameList[math.random(1, totalHeros)] end
+                if not self._com1Select then 
+                    self._com1Select = self.selectNameList[math.random(1, totalHeros)] 
+                    if self.setCom1Select then self:setCom1Select(self._com1Select) end
+                end
+                if not self._com2Select then 
+                    self._com2Select = self.selectNameList[math.random(1, totalHeros)] 
+                    if self.setCom2Select then self:setCom2Select(self._com2Select) end
+                end
+                if self.is4v4Mode and not self._com3Select then
+                    self._com3Select = self.selectNameList[math.random(1, totalHeros)] 
                     if self.setCom3Select then self:setCom3Select(self._com3Select) end
                 end
-            end
-            self:performWithDelay(function()
+             end
+                         self:performWithDelay(function()
+                if tools and tools.initSqliteDB then
+                    tools.initSqliteDB()
+                end
+
+                if getGameModeHandler then
+                    local handlerInstance = getGameModeHandler()
+                    if handlerInstance then
+                        handlerInstance.selectLayer = self
+                        if handlerInstance.onInitHeros then
+                            handlerInstance:onInitHeros()
+                            log("HerosArray biner C++ sukses terisi!")
+                        end
+                    end
+                end
+
                 local success, err = pcall(function()
-                    -- PERBAIKAN AUDIO: Menggunakan pemanggilan Lua resmi untuk mencegah Black Screen
-                    if SimpleAudioEngine then
-                        SimpleAudioEngine:stopBackgroundMusic(true)
-                    end
-                    audio.stopMusic(true)
-
-                    if tools and tools.initSqliteDB then
-                        tools.initSqliteDB()
-                        log("Database SQLite diaktifkan!")
-                    end
-
-                    if getGameModeHandler then
-                        local handlerInstance = getGameModeHandler()
-                        if handlerInstance then
-                            handlerInstance.selectLayer = self
-                            if handlerInstance.onInitHeros then
-                                handlerInstance:onInitHeros()
-                                log("HerosArray biner C++ sukses terisi!")
-                            end
-                        end
-                    end
-
-                    local nextScene = CCScene:create()
-                    local nativeLoadLayer = nil
-
-                    if LoadLayer and LoadLayer.create then
-                        nativeLoadLayer = LoadLayer:create()
-                    elseif LoadingLayer and LoadingLayer.create then
-                        nativeLoadLayer = LoadingLayer:create()
-                    end
-
-                    if nativeLoadLayer then
-                        nextScene:addChild(nativeLoadLayer)
-                        hook.registerInitHandlerOnly(nativeLoadLayer)
-
-                        if nativeLoadLayer.preloadAudio then
-                            pcall(function() nativeLoadLayer:preloadAudio() end)
-                        end
-
-                        director.replaceSceneWithFade(nextScene, 0.5)
-                        log("LoadLayer sukses dieksekusi via Skrip Lua!")
+                    if self.onGameStart_Base then
+                        self:onGameStart_Base()
                     else
-                        if self.onGameStart_Base then
-                            self:onGameStart_Base()
-                        end
+                        local menuScene = CCScene:create()
+                        local nativeLoad = LoadLayer:create()
+                        menuScene:addChild(nativeLoad)
+                        director.replaceScene(menuScene)
                     end
                 end)
-                if not success then log("START TRANSITION FAILED: " .. tostring(err)) end
+                
+                if not success then 
+                    log("Pengalihan scene gagal, melempar ke base default...")
+                    CCDirector:sharedDirector():getRunningScene():performWithDelay(function() end, 0.1)
+                end
             end, 0.1)
         end
     })
@@ -408,7 +383,6 @@ function SelectLayer:onPageButtonClick(index)
         end
     end
 end
-
 function SelectLayer:setSelected(btn)
     if self._selectImg then
         self._selectImg:setPosition(CCPoint(btn:getPositionX() - 2, btn:getPositionY() - 2))
@@ -426,51 +400,93 @@ function SelectLayer:setSelected(btn)
             self._playerSelect = self.selectHero
 
             if not self.enableCustomSelect then
-                self._selectImg:removeFromParent()
+                if self._selectImg then self._selectImg:removeFromParent() end
                 self._selectImg = nil
             else
+                if self._selectImg then self._selectImg:removeFromParent() end
+                self._selectImg = display.newSprite('#com_label.png')
+                self._selectImg:setScale(0.7)
+                self._selectImg:setAnchorPoint(0, 0)
+                self._selectImg:setPosition(btn:getPositionX(), btn:getPositionY())
+                self:addChild(self._selectImg, 500)
+                self._selectImg:runAction(CCRepeatForever:create(CCBlink:create(0.6, 1)))
+
                 if self._comLabel1 then self._comLabel1:runAction(seq) end
             end
         end
 
-        self._heroHalfImage:removeFromParent()
+        if self._heroHalfImage then self._heroHalfImage:removeFromParent() end
         local charName = '#' .. btn._charName
 
         self._heroHalfImage = display.newSprite(charName .. '_half.png', 10, 10)
         self._heroHalfImage:setAnchorPoint(CCPoint(0, 0))
         self:addChild(self._heroHalfImage, 1)
 
-        self._heroName:removeFromParent()
+        if self._heroName then self._heroName:removeFromParent() end
         self._heroName = display.newSprite(charName .. '_font.png', 100, 20)
         self._heroName:setAnchorPoint(CCPoint(0.5, 0))
         self:addChild(self._heroName, 5)
+        
     elseif not self._com1Select then
-        self._comSelector1:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png'))
+        if self._comSelector1 then
+            self._comSelector1:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png'))
+        end
         if btn._clickTime >= 2 then
             self._com1Select = self.selectHero
             self:setCom1Select(self._com1Select)
-            self._comLabel1:stopAllActions()
-            self._comLabel1:setOpacity(255)
-            self._comLabel1:setDisplayFrame(display.newSpriteFrame('com_label2.png'))
+            if self._comLabel1 then
+                self._comLabel1:stopAllActions()
+                self._comLabel1:setOpacity(255)
+                self._comLabel1:setDisplayFrame(display.newSpriteFrame('com_label2.png'))
+            end
+            
+            if self._selectImg then self._selectImg:removeFromParent() end
+            self._selectImg = display.newSprite('#com_label.png')
+            self._selectImg:setScale(0.7)
+            self._selectImg:setAnchorPoint(0, 0)
+            self._selectImg:setPosition(btn:getPositionX(), btn:getPositionY())
+            self:addChild(self._selectImg, 500)
+            self._selectImg:runAction(CCRepeatForever:create(CCBlink:create(0.6, 1)))
         end
     elseif not self._com2Select then
-        self._comSelector2:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png'))
+        if self._comSelector2 then
+            self._comSelector2:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png'))
+        end
         if btn._clickTime >= 2 then
             self._com2Select = self.selectHero
             self:setCom2Select(self._com2Select)
-            self._comLabel2:stopAllActions()
-            self._comLabel2:setOpacity(255)
-            self._comLabel2:setDisplayFrame(display.newSpriteFrame('com_label2.png'))
+            if self._comLabel2 then
+                self._comLabel2:stopAllActions()
+                self._comLabel2:setOpacity(255)
+                self._comLabel2:setDisplayFrame(display.newSpriteFrame('com_label2.png'))
+            end
+
+            if not self.is4v4Mode then
+                if self._selectImg then self._selectImg:removeFromParent() end
+                self._selectImg = nil
+            else
+                if self._selectImg then self._selectImg:removeFromParent() end
+                self._selectImg = display.newSprite('#com_label.png')
+                self._selectImg:setScale(0.7)
+                self._selectImg:setAnchorPoint(0, 0)
+                self._selectImg:setPosition(btn:getPositionX(), btn:getPositionY())
+                self:addChild(self._selectImg, 500)
+                self._selectImg:runAction(CCRepeatForever:create(CCBlink:create(0.6, 1)))
+            end
         end
-    elseif not self._com3Select then
-        self._comSelector3:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png'))
+    elseif not self._com3Select and self.is4v4Mode then
+        if self._comSelector3 then
+            self._comSelector3:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png'))
+        end
         if btn._clickTime >= 2 then
             self._com3Select = self.selectHero
             self:setCom3Select(self._com3Select)
-            self._comLabel3:stopAllActions()
-            self._comLabel3:setOpacity(255)
-            self._comLabel3:setDisplayFrame(display.newSpriteFrame('com_label2.png'))
-            self._selectImg:removeFromParent()
+            if self._comLabel3 then
+                self._comLabel3:stopAllActions()
+                self._comLabel3:setOpacity(255)
+                self._comLabel3:setDisplayFrame(display.newSpriteFrame('com_label2.png'))
+            end
+            if self._selectImg then self._selectImg:removeFromParent() end
             self._selectImg = nil
         end
     end
@@ -497,9 +513,9 @@ function backToStartMenu()
     director.replaceSceneWithFade(menuScene, 1)
 end
 
--- Memotong instruksi C++ bawaan pabrik agar tidak bertabrakan dengan tombol
 function SelectLayer:onGameStart()
-    log("onGameStart pabrik dialihkan dan diamankan oleh sistem Lua.")
+    log("onGameStart pabrik dipicu, meneruskan instruksi transisi ke C++...")
+    if self.onGameStart_Base then
+        self:onGameStart_Base()
+    end
 end
-
-                
