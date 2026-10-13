@@ -1,4 +1,3 @@
-udah ya--
 -- SelectLayer (Versi Bersih & Stabil untuk GitHub Repo)
 --  
 function SelectLayer:init()
@@ -35,8 +34,8 @@ function SelectLayer:init()
         self.enableCustomSelect = false
     end
 
-    -- PENGUNCI KHUSUS CLONE: Sesuai gambar menu, Clone berbasis 3 VS 3 (Harus 2 kolom Ready & Latar Merah)
-    if modeStr == "Clone" or (GameMode and self.mode == GameMode.Clone) then
+    -- PENGUNCI KHUSUS CLONE & RANDOM DEATHMATCH: Harus 2 kolom Ready & Latar Merah
+    if modeStr == "Clone" or modeStr == "RandomDeathmatch" or (GameMode and self.mode == GameMode.Clone) or (GameMode and self.mode == GameMode.RandomDeathmatch) then
         self.is3v3Mode = true
         self.is4v4Mode = false
         self.enableCustomSelect = true
@@ -52,9 +51,6 @@ function SelectLayer:init()
     self.enableHardCore = (modeStr == "HardCore_4Vs4" or (GameMode and self.mode == GameMode.HardCore_4Vs4))
     self.pageNum = 3
     
-    -- [ ... LANJUTKAN DENGAN KODE DEKLARASI VARIABEL NIL DAN SPRITE SEPERTI DI FILE ASLI ... ]
-    
-
     self._comLabel1 = nil
     self._comLabel2 = nil
     self._comLabel3 = nil
@@ -83,7 +79,6 @@ function SelectLayer:init()
     bgSprite:fullScreen()
     self:addChild(bgSprite, -5)
     
-    -- [ ... TETAPKAN KODE BAGIAN TENGAH HINGGA STRUKTUR PENYUSUNAN AVATAR SEPERTI SEBELUMNYA ... ]
     local gold_left = display.newSprite('#gold_left.png', 0, 20)
     gold_left:setAnchorPoint(0, 0)
     self:addChild(gold_left, 1)
@@ -234,20 +229,17 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
 
-        -- KODE TOMBOL START BYPASS LUA MURNI (ANTI FC & DIJAMIN TEMBUS MATCH)
+    -- KODE TOMBOL START BYPASS LUA MURNI BERSIH (ANTI FC & DATA BOT TERKUNCI AMAN)
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
-            -- Mainkan efek suara konfirmasi masuk pertarungan secara tegas
             audio.playSound('Audio/Menu/confirm.ogg') 
             log("Tombol Start ditekan! Memproses bypass transisi aman via Lua...")
 
-            -- A. Mengunci data jagoan pilihan pemain utama agar terdaftar di C++
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
             if self.setSelectHero then self:setSelectHero(chosenHero) end
 
-            -- B. Mengunci data bot komputer secara otomatis untuk mode tim agar array heros terisi lengkap
             if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
                 local totalHeros = #self.selectNameList
                 math.randomseed(os.time())
@@ -263,22 +255,19 @@ function SelectLayer:init()
                     if self.setCom3Select then self:setCom3Select(self._com3Select) end
                 end
             end
-
-            -- C. Jalankan transisi aman langsung ke LoadLayer Scene via Lua tanpa memicu fungsi C++ yang rusak
             self:performWithDelay(function()
                 local success, err = pcall(function()
-                    if SimpleAudioEngine and SimpleAudioEngine.sharedEngine then
-                        SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true)
+                    -- PERBAIKAN AUDIO: Menggunakan pemanggilan Lua resmi untuk mencegah Black Screen
+                    if SimpleAudioEngine then
+                        SimpleAudioEngine:stopBackgroundMusic(true)
                     end
                     audio.stopMusic(true)
-                    
-                    -- Hiduplah database SQL permainan tepat sebelum loading dimuat
+
                     if tools and tools.initSqliteDB then
                         tools.initSqliteDB()
                         log("Database SQLite diaktifkan!")
                     end
 
-                    -- Jembatan interupsi data biner untuk mengisi HerosArray di level C++ sebelum transisi scene
                     if getGameModeHandler then
                         local handlerInstance = getGameModeHandler()
                         if handlerInstance then
@@ -290,45 +279,41 @@ function SelectLayer:init()
                         end
                     end
 
-                    -- SEGERA BUKA SCENE LAYAR LOADING (LOADLAYER) SECARA MANDIRI VIA DIRECTORS LUA
                     local nextScene = CCScene:create()
                     local nativeLoadLayer = nil
-                    
-                    -- Melakukan instansiasi LoadLayer resmi milik engine melalui Lua wrapper
+
                     if LoadLayer and LoadLayer.create then
                         nativeLoadLayer = LoadLayer:create()
                     elseif LoadingLayer and LoadingLayer.create then
                         nativeLoadLayer = LoadingLayer:create()
                     end
-                    
+
                     if nativeLoadLayer then
                         nextScene:addChild(nativeLoadLayer)
                         hook.registerInitHandlerOnly(nativeLoadLayer)
-                        
-                        -- Jalankan preload audio biner LoadLayer secara aman
+
                         if nativeLoadLayer.preloadAudio then
                             pcall(function() nativeLoadLayer:preloadAudio() end)
                         end
-                        
+
                         director.replaceSceneWithFade(nextScene, 0.5)
-                        log("LoadLayer sukses dieksekusi secara visual via Skrip Lua!")
+                        log("LoadLayer sukses dieksekusi via Skrip Lua!")
                     else
-                        -- Jalur darurat jika binding tidak terbaca sama sekali
                         if self.onGameStart_Base then
                             self:onGameStart_Base()
                         end
                     end
                 end)
                 if not success then log("START TRANSITION FAILED: " .. tostring(err)) end
-            end, 0.1) -- Jeda waktu memberikan ruang bagi engine untuk mengunci ingatan karakter
+            end, 0.1)
         end
     })
-    
+
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
     self:addChild(menu, 5)
-    
+
     local skill_btn = ui.newImageMenuItem({
         image = '#skill_btn.png',
         listener = handler(self, self.onSkillMenuButtonClick)
@@ -341,9 +326,6 @@ function SelectLayer:init()
     if save.isBGM() then audio.playMusic(ns.music.SELECT_MUSIC, true) end
 end
 
-    
-    
-                                        
 function SelectLayer:initCustomSelectMode()
     log('Initial Custom Select Mode...')
     local width, height = display.width, display.height
@@ -397,18 +379,10 @@ end
 
 function SelectLayer:onSkillMenuButtonClick()
     log("Membuka UI Menu Skill...")
-    
-    -- Jaminan jika pemain belum mengetuk karakter apa pun saat menekan tombol skill
-    if not self.selectHero then 
-        self.selectHero = "naruto" 
-    end
-
+    if not self.selectHero then self.selectHero = "naruto" end
     local status, err = pcall(function()
         local scene = CCScene:create()
-        -- PERBAIKAN UTAMA: Masukkan variabel 'self' ke dalam kurung create
-        -- agar data karakter yang dipilih terkirim dengan sempurna ke SkillLayer
         local skillLayer = SkillLayer:create(self)
-        
         if skillLayer then
             scene:addChild(skillLayer)
             CCDirector:sharedDirector():pushScene(scene)
@@ -416,12 +390,8 @@ function SelectLayer:onSkillMenuButtonClick()
             log("Gagal membuat objek SkillLayer")
         end
     end)
-    
-    if not status then 
-        log("SKILL MENU ERROR: " .. tostring(err)) 
-    end
+    if not status then log("SKILL MENU ERROR: " .. tostring(err)) end
 end
-
 
 function SelectLayer:onPageButtonClick(index)
     audio.playSound(ns.menu.SELECT_SOUND)
@@ -526,15 +496,10 @@ function backToStartMenu()
     menuScene:addChild(menuLayer)
     director.replaceSceneWithFade(menuScene, 1)
 end
--- Biarkan nama fungsinya tetap ada di paling bawah, tetapi isinya dikosongkan 
--- agar tugas transisinya diambil alih sepenuhnya oleh tombol Start di atas
--- Jalur cadangan resmi: Jika C++ memicu fungsi ini secara otomatis, 
--- instruksi langsung dilempar ke base engine agar tidak memicu freeze.
+
+-- Memotong instruksi C++ bawaan pabrik agar tidak bertabrakan dengan tombol
 function SelectLayer:onGameStart()
-    log("onGameStart pabrik dipicu otomatis, mengalihkan ke base...")
+    log("onGameStart pabrik dialihkan dan diamankan oleh sistem Lua.")
 end
 
-
-
-
-
+                
