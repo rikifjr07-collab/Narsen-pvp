@@ -229,13 +229,27 @@ function SelectLayer:init()
             log("Tombol Start ditekan! Memulai isolasi transisi mandiri...")
 
             -- A. Kunci pilihan karakter agar mesin biner dasar tetap mengenalnya
-            local chosenHero = self.selectHero or "naruto"
-            if not self._playerSelect then
-                self._playerSelect = chosenHero
-                if self.setSelectHero then self:setSelectHero(chosenHero) end
+        -- KODE TOMBOL START BARU: SATU KALI KLIK LANGSUNG MASUK LOADING MATCH (ANTI FREEZE)
+    local start_btn = ui.newImageMenuItem({
+        image = '#start_btn.png',
+        listener = function()
+            -- Cek proteksi agar tidak bisa diklik dua kali saat transisi sedang berjalan
+            if self._startTransitionTriggered then 
+                log("Transisi sudah berjalan, mengabaikan klik tambahan untuk mencegah freeze!")
+                return 
             end
+            self._startTransitionTriggered = true
 
-            -- B. Pengunci data darurat slot tim acak
+            -- Mainkan efek suara konfirmasi secara tegas
+            audio.playSound('Audio/Menu/confirm.ogg') 
+            log("Tombol Start diklik pertama kali! Memulai pemuatan wajib LoadLayer...")
+
+            -- A. Kunci jagoan utama pilihan pemain
+            local chosenHero = self.selectHero or "naruto"
+            self._playerSelect = chosenHero
+            if self.setSelectHero then self:setSelectHero(chosenHero) end
+
+            -- B. Kunci jagoan bot komputer secara acak jika slot masih kosong
             local totalHeros = #self.selectNameList
             math.randomseed(os.time())
             if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
@@ -253,25 +267,34 @@ function SelectLayer:init()
                 end
             end
 
-            -- C. TRANSISI LANGSUNG TANPA MENYENTUH COCOS INTERMEDIATE HANDLER YANG CRASH
+            -- C. EKSEKUSI WAJIB SCENE LOADING MATCH SECARA INSTAN TANPA MENUNGGU BINER
             self:performWithDelay(function()
                 if tools and tools.initSqliteDB then
                     tools.initSqliteDB()
                 end
 
-                -- PROTEKSI TOTAL: Matikan pemanggilan handlerInstance:onInitHeros() yang memicu freeze biner
-                -- Kita langsung paksa engine mengganti scene ke LoadLayer secara mentah
+                -- Amankan pengiriman array karakter ke C++ terlebih dahulu
+                if getGameModeHandler then
+                    local handlerInstance = getGameModeHandler()
+                    if handlerInstance then
+                        handlerInstance.selectLayer = self
+                        if handlerInstance.onInitHeros then
+                            handlerInstance:onInitHeros()
+                        end
+                    end
+                end
+
+                -- MEMAKSA SCENE LOADLAYER UNTUK MUNCUL DI LAYAR (WAJIB SCENE)
                 local success, err = pcall(function()
                     if SimpleAudioEngine then
                         SimpleAudioEngine:stopBackgroundMusic(true)
                     end
                     audio.stopMusic(true)
 
-                    -- MEMBENTUK REAL TRANSITION SCENE SECARA DIRECT LEWAT ENGINE UTAMA LUA
                     local nextScene = CCScene:create()
                     local nativeLoadLayer = nil
 
-                    -- Mencari penamaan kelas layar loading yang terdaftar resmi di APK Anda
+                    -- Memanggil kelas dasar LoadLayer murni dari engine biner
                     if LoadLayer and LoadLayer.create then
                         nativeLoadLayer = LoadLayer:create()
                     elseif LoadingLayer and LoadingLayer.create then
@@ -281,7 +304,7 @@ function SelectLayer:init()
                     if nativeLoadLayer then
                         nextScene:addChild(nativeLoadLayer)
                         
-                        -- Menggunakan fungsi internal engine bawaan untuk mendaftarkan callback inisialisasi
+                        -- Daftarkan handler inisialisasi agar aset Unit/Ninja mulai dimuat di dalam loading
                         if hook and hook.registerInitHandlerOnly then
                             hook.registerInitHandlerOnly(nativeLoadLayer)
                         end
@@ -290,26 +313,28 @@ function SelectLayer:init()
                             pcall(function() nativeLoadLayer:preloadAudio() end)
                         end
 
-                        -- Paksa ganti scene! Jalur ini memotong kegagalan fungsi C++ yang memicu FC
-                        CCDirector:sharedDirector():replaceScene(CCTransitionFade:create(0.5, nextScene))
-                        log("Isolasi Berhasil: Layar loading match dipaksa berjalan via Lua Director!")
+                        -- REFACTORING TRANSISI: Ganti scene secara mutlak tanpa animasi fade 
+                        -- Langkah ini memaksa Android langsung merender layar loading awan bergerak seketika!
+                        CCDirector:sharedDirector():replaceScene(nextScene)
+                        log("SUKSES: Mesin game dipaksa masuk ke wajib scene LoadLayer!")
                     else
-                        -- Jika gagal memanggil objek Lua, panggil fungsi dasar non-multiplayer
+                        -- Jalur alternatif jika objek instansiasi gagal dimuat
                         if self.onGameStart_Base then
                             self:onGameStart_Base()
+                        elseif self.onGameStart then
+                            self:onGameStart()
                         end
                     end
                 end)
-                
-                if not success then 
-                    log("Bypass gagal, mencoba pemicu biner cadangan: " .. tostring(err))
+
+                if not success then
+                    log("Bypass Lua gagal, memicu transisi biner darurat: " .. tostring(err))
                     if self.onGameStart_Base then self:onGameStart_Base() end
                 end
-            end, 0.05) -- Jeda waktu dipersingkat agar memori biner tidak sempat mengunci/freeze
+            end, 0.01) -- Menggunakan jeda mikro (0.01s) agar tombol langsung mengeksekusi transisi tanpa delay visual
         end
     })
-    
-    
+
 
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
