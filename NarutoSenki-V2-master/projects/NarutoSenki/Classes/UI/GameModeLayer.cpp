@@ -267,27 +267,46 @@ void GameModeLayer::selectMode(GameMode mode)
 		pStack->executeFunction(2);
 
 		auto handler = getGameModeHandler();
-		handler->setOldCheats(Cheats);
+		if (handler) {
+			handler->setOldCheats(Cheats);
+		}
 
 		if (mode == GameMode::OneVsOne) 
 		{
 			auto hostBtn = CCMenuItemFont::create("Buat Room (Host)", this, menu_selector(GameModeLayer::onHostSelected));
 			auto clientBtn = CCMenuItemFont::create("Gabung Room (Client)", this, menu_selector(GameModeLayer::onClientSelected));
 
-			hostBtn->setFontSize(32);
-			clientBtn->setFontSize(32);
+			if (hostBtn && clientBtn) {
+				hostBtn->setFontSize(32);
+				clientBtn->setFontSize(32);
 
-			auto mpMenu = Menu::create(hostBtn, clientBtn, nullptr);
-			mpMenu->alignItemsVerticallyWithPadding(20.0f);
-			mpMenu->setPosition(Vec2(winSize.width / 2, winSize.height / 2));
-			this->addChild(mpMenu, 999); 
-			
+				auto mpMenu = Menu::create(hostBtn, clientBtn, nullptr);
+				if (mpMenu) {
+					mpMenu->alignItemsVerticallyWithPadding(20.0f);
+					mpMenu->setPosition(Vec2(winSize.width / 2, winSize.height / 2));
+					this->addChild(mpMenu, 999); 
+				}
+			}
 			return; 
 		}
 
-		handler->init();
+		// Pengaktif data match resmi untuk Mode 3v3, 4v4, Clone, dll. setelah sukses setSelect
+		if (handler) {
+			handler->init();
+			CCLOG("GameModeHandler diaktifkan untuk Mode Tim!");
+		}
+	}
+	else 
+	{
+		// JALUR PENYELAMAT FC: Aktifkan data handler pada klik pertama agar memori biner terisi penuh
+		auto handler = getGameModeHandler();
+		if (handler) {
+			handler->init();
+			CCLOG("Safe Mode: GameModeHandler sukses dipra-inisialisasi!");
+		}
 	}
 }
+
 
 bool GameModeLayer::setSelect(GameMode mode)
 {
