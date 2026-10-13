@@ -220,69 +220,107 @@ function SelectLayer:init()
     self:addChild(menu3, 5)
 
     -- KODE TOMBOL START JALUR AMAN NATIVE INTERRUPT (ANTI MENTOK & BISA LOAD MATCH)
+        -- KODE TOMBOL START BYPASS LUA SEMPURNA (PENGUNCI TIM ACAK & ANTI FC)
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
+            -- Mainkan efek suara konfirmasi masuk pertarungan secara tegas
             audio.playSound('Audio/Menu/confirm.ogg') 
             log("Tombol Start ditekan! Memproses penguncian data tim...")
 
-            -- Mengunci pahlawan utama pilihan pemain
+            -- A. PENGUNCI DATA PLAYER: Jika player belum memilih hero, isi otomatis dengan Naruto
             local chosenHero = self.selectHero or "naruto"
-            self._playerSelect = chosenHero
-            if self.setSelectHero then self:setSelectHero(chosenHero) end
+            if not self._playerSelect then
+                self._playerSelect = chosenHero
+                if self.setSelectHero then self:setSelectHero(chosenHero) end
+                log("Slot Player kosong, otomatis diisi: " .. chosenHero)
+            end
 
-            -- Mengisi otomatis slot bot yang masih kosong agar data biner C++ terisi lengkap
+            -- B. PENGUNCI DATA BOT TIM: Mengisi seluruh slot kosong secara acak (Mencegah FC 3v3 & 4v4)
+            local totalHeros = #self.selectNameList
+            math.randomseed(os.time())
+            
             if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
-                local totalHeros = #self.selectNameList
-                math.randomseed(os.time())
-                
                 if not self._com1Select then 
                     self._com1Select = self.selectNameList[math.random(1, totalHeros)] 
                     if self.setCom1Select then self:setCom1Select(self._com1Select) end
+                    log("Slot COM 1 kosong, otomatis diisi acak: " .. self._com1Select)
                 end
                 if not self._com2Select then 
                     self._com2Select = self.selectNameList[math.random(1, totalHeros)] 
                     if self.setCom2Select then self:setCom2Select(self._com2Select) end
+                    log("Slot COM 2 kosong, otomatis diisi acak: " .. self._com2Select)
                 end
                 if self.is4v4Mode and not self._com3Select then
                     self._com3Select = self.selectNameList[math.random(1, totalHeros)] 
                     if self.setCom3Select then self:setCom3Select(self._com3Select) end
+                    log("Slot COM 3 kosong, otomatis diisi acak: " .. self._com3Select)
                 end
-             end
-                         self:performWithDelay(function()
+            end
+
+            -- C. JALANKAN TRANSISI LAYAR LOADING SECARA MANDIRI VIA LUA WRAPPER
+            self:performWithDelay(function()
                 if tools and tools.initSqliteDB then
                     tools.initSqliteDB()
                 end
 
+                -- Mendaftarkan data susunan jagoan ke level biner C++ sebelum transisi scene
                 if getGameModeHandler then
                     local handlerInstance = getGameModeHandler()
                     if handlerInstance then
                         handlerInstance.selectLayer = self
                         if handlerInstance.onInitHeros then
                             handlerInstance:onInitHeros()
-                            log("HerosArray biner C++ sukses terisi!")
+                            log("HerosArray biner C++ sukses disegel!")
                         end
                     end
                 end
 
+                -- Eksekusi pembuatan layar Loading (LoadLayer) langsung via Skrip Lua
                 local success, err = pcall(function()
-                    if self.onGameStart_Base then
-                        self:onGameStart_Base()
+                    -- Mematikan musik latar menu agar tidak bertabrakan dengan loading match
+                    if SimpleAudioEngine then
+                        SimpleAudioEngine:stopBackgroundMusic(true)
+                    end
+                    audio.stopMusic(true)
+
+                    local nextScene = CCScene:create()
+                    local nativeLoadLayer = nil
+
+                    -- Deteksi instansiasi kelas LoadLayer secara aman
+                    if LoadLayer and LoadLayer.create then
+                        nativeLoadLayer = LoadLayer:create()
+                    elseif LoadingLayer and LoadingLayer.create then
+                        nativeLoadLayer = LoadingLayer:create()
+                    end
+
+                    if nativeLoadLayer then
+                        nextScene:addChild(nativeLoadLayer)
+                        hook.registerInitHandlerOnly(nativeLoadLayer)
+
+                        if nativeLoadLayer.preloadAudio then
+                            pcall(function() nativeLoadLayer:preloadAudio() end)
+                        end
+
+                        -- Melakukan transisi mulus ke layar loading match
+                        director.replaceSceneWithFade(nextScene, 0.5)
+                        log("Layar Loading Match sukses dibuka via Lua!")
                     else
-                        local menuScene = CCScene:create()
-                        local nativeLoad = LoadLayer:create()
-                        menuScene:addChild(nativeLoad)
-                        director.replaceScene(menuScene)
+                        -- Jalur darurat biner jika wrapper Lua tidak merespons
+                        if self.onGameStart_Base then
+                            self:onGameStart_Base()
+                        end
                     end
                 end)
                 
                 if not success then 
-                    log("Pengalihan scene gagal, melempar ke base default...")
-                    CCDirector:sharedDirector():getRunningScene():performWithDelay(function() end, 0.1)
+                    log("Transisi Lua gagal, mengalihkan ke fungsi dasar biner...")
+                    if self.onGameStart_Base then self:onGameStart_Base() end
                 end
             end, 0.1)
         end
     })
+    
 
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
@@ -300,6 +338,7 @@ function SelectLayer:init()
 
     if save.isBGM() then audio.playMusic(ns.music.SELECT_MUSIC, true) end
 end
+
 
 function SelectLayer:initCustomSelectMode()
     log('Initial Custom Select Mode...')
