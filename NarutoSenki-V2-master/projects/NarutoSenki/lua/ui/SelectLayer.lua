@@ -219,7 +219,7 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
     
-        -- KODE TOMBOL START FINAL: AMAN UNTUK 1V1 MULTIPLAYER & SINKRON TIM LAIN (ANTI FC)
+        -- KODE TOMBOL START ISOLASI SCENE MUTLAK (ANTI BALAPAN MEMORI & ANTI FC SEMUA MODE)
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
@@ -230,7 +230,7 @@ function SelectLayer:init()
             self._startTransitionTriggered = true
 
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start diklik! Memproses penguncian data tim...")
+            log("Tombol Start diklik! Mengunci data tim secara aman...")
 
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
@@ -258,31 +258,62 @@ function SelectLayer:init()
                     tools.initSqliteDB()
                 end
 
+                -- Amankan pendaftaran data ke handler sebelum biner sempat macet
                 if getGameModeHandler then
                     local handlerInstance = getGameModeHandler()
                     if handlerInstance then
                         handlerInstance.selectLayer = self
                         if handlerInstance.onInitHeros then
-                            handlerInstance:onInitHeros()
-                            log("HerosArray biner C++ terisi penuh!")
+                            pcall(function() handlerInstance:onInitHeros() end)
                         end
                     end
                 end
 
-                -- PICU JALUR NATIVE RESMI: Mengembalikan kendali penuh transisi ke C++ secara aman
+                -- PINDAH SCENE MANDIRI VIA LUA MANAJER (MEMOTONG BIANG KEROK FC C++)
                 local success, err = pcall(function()
                     if SimpleAudioEngine then
                         SimpleAudioEngine:stopBackgroundMusic(true)
                     end
                     audio.stopMusic(true)
-                    
-                    -- Panggil fungsi onGameStart bawaan pabrik C++ agar data vector LoadLayer dimuat utuh
-                    log("Memicu fungsi onGameStart asli biner C++...")
-                    self:onGameStart()
+
+                    local nextScene = CCScene:create()
+                    local nativeLoadLayer = nil
+
+                    -- Membuat objek LoadLayer (Scene Wajib) langsung via jembatan skrip
+                    if LoadLayer and LoadLayer.create then
+                        nativeLoadLayer = LoadLayer:create()
+                    elseif LoadingLayer and LoadingLayer.create then
+                        nativeLoadLayer = LoadingLayer:create()
+                    end
+
+                    if nativeLoadLayer then
+                        nextScene:addChild(nativeLoadLayer)
+                        
+                        -- Mengaktifkan hook inisialisasi agar gambar unit ninja mulai dimuat di background loading
+                        if hook and hook.registerInitHandlerOnly then
+                            hook.registerInitHandlerOnly(nativeLoadLayer)
+                        end
+
+                        -- Pra-muat audio loading agar hiasan suara tidak kosong
+                        if nativeLoadLayer.preloadAudio then
+                            pcall(function() nativeLoadLayer:preloadAudio() end)
+                        end
+
+                        -- MEMAKSA TRANSISI LAYAR: Menggunakan replaceScene resmi tanpa menyentuh self:onGameStart() C++
+                        director.replaceScene(nextScene)
+                        log("ISOLASI SUKSES: Berhasil masuk ke wajib scene LoadLayer via Lua Director!")
+                    else
+                        -- Jalur penyelamat terakhir jika objek instansiasi gagal dimuat
+                        if self.onGameStart_Base then
+                            self:onGameStart_Base()
+                        else
+                            self:onGameStart()
+                        end
+                    end
                 end)
 
                 if not success then
-                    log("Transisi gagal, memicu jalur alternatif: " .. tostring(err))
+                    log("Bypass Lua gagal, memicu transisi biner fallback: " .. tostring(err))
                     if self.onGameStart_Base then self:onGameStart_Base() end
                 end
             end, 0.01)
