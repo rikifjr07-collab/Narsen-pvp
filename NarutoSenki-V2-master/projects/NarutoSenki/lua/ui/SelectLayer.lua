@@ -1,27 +1,24 @@
 -- SelectLayer (Versi Sinkronisasi Tim & Transisi Sempurna)
 --  
+-- SelectLayer (Versi Sinkronisasi Tim & Mode Clone Mutakhir)
+--  
 function SelectLayer:init()
     log('Initial SelectLayer...')
 
-    -- Menangkap data mode murni dari Menu Utama game Anda
     self.mode = _G.mode
     self.enableCustomSelect = _G.enableCustomSelect
     
-    -- MENGUBAH DATA MENJADI STRING UNTUK MULTI-DETEKSI YANG AKURAT
     local modeStr = tostring(self.mode)
     log('Deteksi Sistem Mode Game: ' .. modeStr)
 
-    -- STRUKTUR UTAMA DETEKSI MODE TIM (Mengunci Slot Ready & Background)
-    -- Perbaikan: Memperluas deteksi objek GameMode agar 3v3 tidak tertukar dengan 1v1
+    -- STRUKTUR UTAMA DETEKSI MODE TIM
     if modeStr == "4" or modeStr == "FourVsFour" or modeStr == "HardCore_4Vs4" or (GameMode and self.mode == GameMode.FourVsFour) or (GameMode and self.mode == GameMode.HardCore_4Vs4) then
         self.is3v3Mode = false
         self.is4v4Mode = true
         self.enableCustomSelect = true
-    elseif modeStr == "2" or modeStr == "3" or modeStr == "1" or modeStr == "Classic" or modeStr == "RandomDeathmatch" or modeStr == "Clone" or modeStr == "Deathmatch" 
+    elseif modeStr == "2" or modeStr == "3" or modeStr == "Classic" or modeStr == "RandomDeathmatch" or modeStr == "Deathmatch" 
        or (GameMode and self.mode == GameMode.Classic) 
-       or (GameMode and self.mode == GameMode.RandomDeathmatch) 
-       or (GameMode and self.mode == GameMode.Clone) or _G.enableCustomSelect then
-        -- Jika enableCustomSelect dari menu bernilai true, otomatis dianggap Mode Tim (3v3)
+       or (GameMode and self.mode == GameMode.RandomDeathmatch) or _G.enableCustomSelect then
         self.is3v3Mode = true
         self.is4v4Mode = false
         self.enableCustomSelect = true
@@ -31,8 +28,14 @@ function SelectLayer:init()
         self.enableCustomSelect = false
     end
 
-    -- Kunci paksa visual untuk Mode 1 VS 1 murni
-    if modeStr == "OneVsOne" or (GameMode and self.mode == GameMode.OneVsOne) then
+    -- PENGUNCI KHUSUS MODE CLONE: Berbasis 3v3 pertandingan, TAPI sembunyikan slot pemilihan karakter (Custom Select = false)
+    if modeStr == "Clone" or (GameMode and self.mode == GameMode.Clone) then
+        self.is3v3Mode = true
+        self.is4v4Mode = false
+        self.enableCustomSelect = false -- <--- Menyembunyikan slot kotak COM/Ready di layar
+    end
+
+    if modeStr == "OneVsOne" or (GameMode and self.mode == GameMode.OneVsOne) or modeStr == "1" then
         self.is3v3Mode = false
         self.is4v4Mode = false
         self.enableCustomSelect = false
@@ -63,12 +66,14 @@ function SelectLayer:init()
 
     local width, height = display.width, display.height
 
-    local bg_src = self.enableCustomSelect and 'red_bg.png' or 'blue_bg.png'
+    -- Latar belakang otomatis: Mode Clone tetap merah karena bertarung dalam format tim
+    local isRedBg = self.enableCustomSelect or modeStr == "Clone" or (GameMode and self.mode == GameMode.Clone)
+    local bg_src = isRedBg and 'red_bg.png' or 'blue_bg.png'
     local bgSprite = display.newSprite(bg_src, 0, 0)
     bgSprite:setAnchorPoint(0, 0)
     bgSprite:fullScreen()
     self:addChild(bgSprite, -5)
-    
+  
     local gold_left = display.newSprite('#gold_left.png', 0, 20)
     gold_left:setAnchorPoint(0, 0)
     self:addChild(gold_left, 1)
@@ -218,8 +223,8 @@ function SelectLayer:init()
     local menu3 = ui.newMenu({ranking_btn})
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
-    
-        -- KODE TOMBOL START ISOLASI SCENE MUTLAK (ANTI BALAPAN MEMORI & ANTI FC SEMUA MODE)
+
+        -- KODE TOMBOL START FINAL: AMAN UNTUK SEMUA MODE & LOGIKA TIM CLONE OTOMATIS
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
@@ -230,15 +235,28 @@ function SelectLayer:init()
             self._startTransitionTriggered = true
 
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start diklik! Mengunci data tim secara aman...")
+            log("Tombol Start diklik! Memproses replikasi data karakter...")
 
+            -- Mengunci karakter utama pilihan player
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
             if self.setSelectHero then self:setSelectHero(chosenHero) end
 
-            local totalHeros = #self.selectNameList
-            math.randomseed(os.time())
-            if (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
+            local modeStr = tostring(self.mode)
+
+            -- LOGIKA KHUSUS MODE CLONE: Paksa seluruh bot menggunakan karakter yang sama dengan player
+            if modeStr == "Clone" or (GameMode and self.mode == GameMode.Clone) then
+                self._com1Select = chosenHero
+                self._com2Select = chosenHero
+                if self.setCom1Select then self:setCom1Select(chosenHero) end
+                if self.setCom2Select then self:setCom2Select(chosenHero) end
+                log("MODE CLONE: Slot COM 1 & COM 2 berhasil diduplikasi menjadi: " .. chosenHero)
+
+            -- LOGIKA MODE TIM REGULER (3v3 / 4v4): Mengisi slot kosong secara acak jika belum dipilih
+            elseif (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
+                local totalHeros = #self.selectNameList
+                math.randomseed(os.time())
+                
                 if not self._com1Select then 
                     self._com1Select = self.selectNameList[math.random(1, totalHeros)] 
                     if self.setCom1Select then self:setCom1Select(self._com1Select) end
@@ -258,62 +276,29 @@ function SelectLayer:init()
                     tools.initSqliteDB()
                 end
 
-                -- Amankan pendaftaran data ke handler sebelum biner sempat macet
                 if getGameModeHandler then
                     local handlerInstance = getGameModeHandler()
                     if handlerInstance then
                         handlerInstance.selectLayer = self
                         if handlerInstance.onInitHeros then
-                            pcall(function() handlerInstance:onInitHeros() end)
+                            handlerInstance:onInitHeros()
+                            log("HerosArray biner C++ sukses disegel!")
                         end
                     end
                 end
 
-                -- PINDAH SCENE MANDIRI VIA LUA MANAJER (MEMOTONG BIANG KEROK FC C++)
                 local success, err = pcall(function()
                     if SimpleAudioEngine then
                         SimpleAudioEngine:stopBackgroundMusic(true)
                     end
                     audio.stopMusic(true)
-
-                    local nextScene = CCScene:create()
-                    local nativeLoadLayer = nil
-
-                    -- Membuat objek LoadLayer (Scene Wajib) langsung via jembatan skrip
-                    if LoadLayer and LoadLayer.create then
-                        nativeLoadLayer = LoadLayer:create()
-                    elseif LoadingLayer and LoadingLayer.create then
-                        nativeLoadLayer = LoadingLayer:create()
-                    end
-
-                    if nativeLoadLayer then
-                        nextScene:addChild(nativeLoadLayer)
-                        
-                        -- Mengaktifkan hook inisialisasi agar gambar unit ninja mulai dimuat di background loading
-                        if hook and hook.registerInitHandlerOnly then
-                            hook.registerInitHandlerOnly(nativeLoadLayer)
-                        end
-
-                        -- Pra-muat audio loading agar hiasan suara tidak kosong
-                        if nativeLoadLayer.preloadAudio then
-                            pcall(function() nativeLoadLayer:preloadAudio() end)
-                        end
-
-                        -- MEMAKSA TRANSISI LAYAR: Menggunakan replaceScene resmi tanpa menyentuh self:onGameStart() C++
-                        director.replaceScene(nextScene)
-                        log("ISOLASI SUKSES: Berhasil masuk ke wajib scene LoadLayer via Lua Director!")
-                    else
-                        -- Jalur penyelamat terakhir jika objek instansiasi gagal dimuat
-                        if self.onGameStart_Base then
-                            self:onGameStart_Base()
-                        else
-                            self:onGameStart()
-                        end
-                    end
+                    
+                    log("Memicu fungsi onGameStart asli biner C++...")
+                    self:onGameStart()
                 end)
 
                 if not success then
-                    log("Bypass Lua gagal, memicu transisi biner fallback: " .. tostring(err))
+                    log("Transisi gagal, memicu jalur alternatif: " .. tostring(err))
                     if self.onGameStart_Base then self:onGameStart_Base() end
                 end
             end, 0.01)
