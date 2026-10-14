@@ -1,8 +1,6 @@
--- SelectLayer (Versi Sinkronisasi Tim & Transisi Sempurna)
---  
--- SelectLayer (Versi Sinkronisasi Tim & Mode Clone Mutakhir)
--- 
--- SelectLayer (Versi Sinkronisasi Angka Enum C++ & Mode Clone Mutakhir)
+
+
+    -- SelectLayer (Versi Sinkronisasi Angka Enum C++ & Mode Clone Mutakhir)
 --  
 function SelectLayer:init()
     log('Initial SelectLayer...')
@@ -15,27 +13,25 @@ function SelectLayer:init()
     local modeNum = tonumber(self.mode) or 0
     log('Deteksi Sukses! Nomor ID Enum GameMode: ' .. modeNum)
 
-    -- STRUKTUR PEMBAGIAN MODE BERDASARKAN INDEKS ENUM C++ RESMI
+    -- STRUKTUR PEMBAGIAN MODE TIM SEJAJAR (FIXED INDENTATION & CHAIN)
     if modeNum == 2 or modeNum == 3 then
         -- ID 2 = FourVsFour, ID 3 = HardCore_4Vs4 (Total 3 Slot Ready & Latar Merah)
         self.is3v3Mode = false
         self.is4v4Mode = true
         self.enableCustomSelect = true
 
-    convertTimClassic = (modeNum == 1) -- ID 1 = Classic / 3 VS 3 Reguler
-    if convertTimClassic or _G.enableCustomSelect then
-        -- Mode 3 VS 3 Reguler: Membuka 2 slot bot COM
+    elseif modeNum == 1 or _G.enableCustomSelect then
+        -- ID 1 = Classic / 3 VS 3 Reguler: Membuka 2 slot bot COM
         self.is3v3Mode = true
         self.is4v4Mode = false
         self.enableCustomSelect = true
 
-    -- PENGUNCI MUTLAK MODE CLONE (ID ENUM C++ = 5)
-    -- Berbasis pertempuran 3v3, tetapi sembunyikan slot COM agar duplikasi satu karakter aktif
     elseif modeNum == 5 then
+        -- ID 5 = Clone Mode: Berbasis pertempuran tim 3v3, TAPI sembunyikan slot COM agar otomatis terkloning
         self.is3v3Mode = true
         self.is4v4Mode = false
-        self.enableCustomSelect = false -- <--- Bersih! Slot COM/Ready tersembunyi total di layar
-        log("Logika Mode Clone Berhasil Dikunci Menggunakan ID 5")
+        self.enableCustomSelect = false
+        log("Logika Mode Clone Sukses Dikunci via ID 5 (Slot Sembunyi)")
 
     else
         -- Fallback untuk ID 0 (OneVsOne) atau mode mandiri lainnya
@@ -76,6 +72,7 @@ function SelectLayer:init()
     bgSprite:setAnchorPoint(0, 0)
     bgSprite:fullScreen()
     self:addChild(bgSprite, -5)
+
 
     local gold_left = display.newSprite('#gold_left.png', 0, 20)
     gold_left:setAnchorPoint(0, 0)
@@ -226,7 +223,7 @@ function SelectLayer:init()
     local menu3 = ui.newMenu({ranking_btn})
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
-           
+                    
         -- KODE TOMBOL START BARU: DISTRIBUSI KLONING JAGOAN BERDASARKAN ID ENUM 5
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
