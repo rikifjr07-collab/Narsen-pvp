@@ -1,47 +1,50 @@
 -- SelectLayer (Versi Sinkronisasi Tim & Transisi Sempurna)
 --  
 -- SelectLayer (Versi Sinkronisasi Tim & Mode Clone Mutakhir)
+-- 
+-- SelectLayer (Versi Sinkronisasi Angka Enum C++ & Mode Clone Mutakhir)
 --  
 function SelectLayer:init()
     log('Initial SelectLayer...')
 
+    -- Menangkap nomor ID Enum murni dari biner C++
     self.mode = _G.mode
     self.enableCustomSelect = _G.enableCustomSelect
     
-    local modeStr = tostring(self.mode)
-    log('Deteksi Sistem Mode Game: ' .. modeStr)
+    -- Mengubah ID menjadi tipe data angka (number) agar pencocokan C++ akurat
+    local modeNum = tonumber(self.mode) or 0
+    log('Deteksi Sukses! Nomor ID Enum GameMode: ' .. modeNum)
 
-    -- STRUKTUR UTAMA DETEKSI MODE TIM
-    if modeStr == "4" or modeStr == "FourVsFour" or modeStr == "HardCore_4Vs4" or (GameMode and self.mode == GameMode.FourVsFour) or (GameMode and self.mode == GameMode.HardCore_4Vs4) then
+    -- STRUKTUR PEMBAGIAN MODE BERDASARKAN INDEKS ENUM C++ RESMI
+    if modeNum == 2 or modeNum == 3 then
+        -- ID 2 = FourVsFour, ID 3 = HardCore_4Vs4 (Total 3 Slot Ready & Latar Merah)
         self.is3v3Mode = false
         self.is4v4Mode = true
         self.enableCustomSelect = true
-    elseif modeStr == "2" or modeStr == "3" or modeStr == "Classic" or modeStr == "RandomDeathmatch" or modeStr == "Deathmatch" 
-       or (GameMode and self.mode == GameMode.Classic) 
-       or (GameMode and self.mode == GameMode.RandomDeathmatch) or _G.enableCustomSelect then
+
+    convertTimClassic = (modeNum == 1) -- ID 1 = Classic / 3 VS 3 Reguler
+    if convertTimClassic or _G.enableCustomSelect then
+        -- Mode 3 VS 3 Reguler: Membuka 2 slot bot COM
         self.is3v3Mode = true
         self.is4v4Mode = false
         self.enableCustomSelect = true
-    else
-        self.is3v3Mode = false
-        self.is4v4Mode = false
-        self.enableCustomSelect = false
-    end
 
-    -- PENGUNCI KHUSUS MODE CLONE: Berbasis 3v3 pertandingan, TAPI sembunyikan slot pemilihan karakter (Custom Select = false)
-    if modeStr == "Clone" or (GameMode and self.mode == GameMode.Clone) then
+    -- PENGUNCI MUTLAK MODE CLONE (ID ENUM C++ = 5)
+    -- Berbasis pertempuran 3v3, tetapi sembunyikan slot COM agar duplikasi satu karakter aktif
+    elseif modeNum == 5 then
         self.is3v3Mode = true
         self.is4v4Mode = false
-        self.enableCustomSelect = false -- <--- Menyembunyikan slot kotak COM/Ready di layar
-    end
+        self.enableCustomSelect = false -- <--- Bersih! Slot COM/Ready tersembunyi total di layar
+        log("Logika Mode Clone Berhasil Dikunci Menggunakan ID 5")
 
-    if modeStr == "OneVsOne" or (GameMode and self.mode == GameMode.OneVsOne) or modeStr == "1" then
+    else
+        -- Fallback untuk ID 0 (OneVsOne) atau mode mandiri lainnya
         self.is3v3Mode = false
         self.is4v4Mode = false
         self.enableCustomSelect = false
     end
 
-    self.enableHardCore = (modeStr == "HardCore_4Vs4" or (GameMode and self.mode == GameMode.HardCore_4Vs4))
+    self.enableHardCore = (modeNum == 3)
     self.pageNum = 3
     
     self._comLabel1 = nil
@@ -66,14 +69,14 @@ function SelectLayer:init()
 
     local width, height = display.width, display.height
 
-    -- Latar belakang otomatis: Mode Clone tetap merah karena bertarung dalam format tim
-    local isRedBg = self.enableCustomSelect or modeStr == "Clone" or (GameMode and self.mode == GameMode.Clone)
-    local bg_src = isRedBg and 'red_bg.png' or 'blue_bg.png'
+    -- Latar belakang merah otomatis untuk seluruh mode format tim (3v3, 4v4, Clone)
+    local isTeamMatch = (self.enableCustomSelect or modeNum == 1 or modeNum == 5)
+    local bg_src = isTeamMatch and 'red_bg.png' or 'blue_bg.png'
     local bgSprite = display.newSprite(bg_src, 0, 0)
     bgSprite:setAnchorPoint(0, 0)
     bgSprite:fullScreen()
     self:addChild(bgSprite, -5)
-  
+
     local gold_left = display.newSprite('#gold_left.png', 0, 20)
     gold_left:setAnchorPoint(0, 0)
     self:addChild(gold_left, 1)
@@ -223,13 +226,13 @@ function SelectLayer:init()
     local menu3 = ui.newMenu({ranking_btn})
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
-
-        -- KODE TOMBOL START FINAL: AMAN UNTUK SEMUA MODE & LOGIKA TIM CLONE OTOMATIS
+           
+        -- KODE TOMBOL START BARU: DISTRIBUSI KLONING JAGOAN BERDASARKAN ID ENUM 5
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
             if self._startTransitionTriggered then 
-                log("Transisi sudah berjalan, mengabaikan klik tambahan!")
+                log("Transisi sedang berjalan, mengabaikan klik ganda!")
                 return 
             end
             self._startTransitionTriggered = true
@@ -237,20 +240,19 @@ function SelectLayer:init()
             audio.playSound('Audio/Menu/confirm.ogg') 
             log("Tombol Start diklik! Memproses replikasi data karakter...")
 
-            -- Mengunci karakter utama pilihan player
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
             if self.setSelectHero then self:setSelectHero(chosenHero) end
 
-            local modeStr = tostring(self.mode)
+            local modeNum = tonumber(self.mode) or 0
 
-            -- LOGIKA KHUSUS MODE CLONE: Paksa seluruh bot menggunakan karakter yang sama dengan player
-            if modeStr == "Clone" or (GameMode and self.mode == GameMode.Clone) then
+            -- PENGECER LOGIKA TIM CLONE SECARA RESMI (ID ENUM 5)
+            if modeNum == 5 then
                 self._com1Select = chosenHero
                 self._com2Select = chosenHero
                 if self.setCom1Select then self:setCom1Select(chosenHero) end
                 if self.setCom2Select then self:setCom2Select(chosenHero) end
-                log("MODE CLONE: Slot COM 1 & COM 2 berhasil diduplikasi menjadi: " .. chosenHero)
+                log("MODE CLONE SUKSES: Menyalin karakter player ke seluruh slot tim: " .. chosenHero)
 
             -- LOGIKA MODE TIM REGULER (3v3 / 4v4): Mengisi slot kosong secara acak jika belum dipilih
             elseif (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
