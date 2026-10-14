@@ -249,15 +249,12 @@ void GameLayer::initGard()
 
 	_hasSpawnedGuardian = true;
 }
-
+		
 void GameLayer::initHeros()
 {
 	_spawnSystem->initMatchUnits(this);
 	if (currentMap == nullptr)
 	{
-		// initTileMap() failed (e.g. no map asset bundled). The error has
-		// already been surfaced to the user via CCMessageBox; bail out here
-		// instead of dereferencing the null tilemap below.
 		return;
 	}
 
@@ -265,6 +262,7 @@ void GameLayer::initHeros()
 
 	auto handler = getGameModeHandler();
 	auto herosDataVector = handler->getHerosArray();
+	size_t currentVectorSize = herosDataVector.size(); // Mengunci ukuran data jagoan yang masuk
 
 	_isOugis2Game = true;
 
@@ -276,8 +274,8 @@ void GameLayer::initHeros()
 	}
 	CCArray *objectArray = group->getObjects();
 
-	// 4v4 spawn layout
-	if (is4V4Mode)
+	// PENGAMAN UTAMA: Mode 4v4 hanya boleh dieksekusi jika data jagoan yang terisi minimal berjumlah 5 ke atas!
+	if (is4V4Mode && currentVectorSize >= 5)
 	{
 		auto &hero1 = herosDataVector.at(0);
 		auto &hero5 = herosDataVector.at(4);
@@ -307,13 +305,25 @@ void GameLayer::initHeros()
 				mapPos -= MapPosCount;
 		}
 
-		Ref *mapObject = objectArray->objectAtIndex(mapPos);
-		auto mapdict = (CCDictionary *)mapObject;
-		int x = ((CCString *)mapdict->objectForKey("x"))->intValue();
-		int y = ((CCString *)mapdict->objectForKey("y"))->intValue();
+		// PENGAMAN KOORDINAT CADANGAN (ANTI STUCK / ANTI DIAM UNTUK MULTIPLAYER 1V1)
+		int x = 400; // Titik spawn default tengah layar jika peta biner belum siap
+		int y = 200;
+
+		if (objectArray && mapPos < objectArray->count()) 
+		{
+			Ref *mapObject = objectArray->objectAtIndex(mapPos);
+			if (mapObject) {
+				auto mapdict = (CCDictionary *)mapObject;
+				auto xObj = (CCString *)mapdict->objectForKey("x");
+				auto yObj = (CCString *)mapdict->objectForKey("y");
+				if (xObj) x = xObj->intValue();
+				if (yObj) y = yObj->intValue();
+			}
+		}
+		
 		data.setSpawnPoint(Vec2(x, y));
 
-		if (is4V4Mode)
+		if (is4V4Mode && currentVectorSize >= 5)
 		{
 			int id = i + 2;
 			if (id >= 5)
@@ -327,8 +337,6 @@ void GameLayer::initHeros()
 		i++;
 	}
 
-	// Tower HP bar color depends on currentPlayer group, so towers must be
-	// initialized after at least one hero/player is created.
 	initTower();
 
 	schedule(schedule_selector(GameLayer::updateViewPoint), 0.00f);
