@@ -313,15 +313,24 @@ function SelectLayer:init()
                 pcall(function() audio.stopMusic(true) end)
 
                 -- Jalankan fungsi inisialisasi arena C++ utama
-                local success, err = pcall(function()
-                    log("Memicu fungsi onGameStart...")
-                    self:onGameStart()
-                end)
-
-                if not success then
-                    log("Jalur alternatif dipicu karena eror: " .. tostring(err))
-                    if self.onGameStart_Base then self:onGameStart_Base() end
+                                -- PAKSA BYPASS JALUR PABRIKAN YANG MEMICU CRASH
+                -- Langsung tembak ke fungsi Base untuk memicu Scene Loading (Karakter lari & awan gerak)
+                log("Bypass onGameStart aktif! Menembak langsung ke onGameStart_Base...")
+                
+                if self.onGameStart_Base then 
+                    local success, err = pcall(function()
+                        self:onGameStart_Base()
+                    end)
+                    if not success then
+                        log("Gagal memicu Base, mencoba transisi paksa: " .. tostring(err))
+                        -- Pilihan terakhir jika Base absen di versi biner ini:
+                        if self.onGameStart then self:onGameStart() end
+                    end
+                else
+                    log("onGameStart_Base tidak ditemukan, menjalankan onGameStart standar")
+                    if self.onGameStart then self:onGameStart() end
                 end
+
             end, 0.05) -- Jeda waktu sedikit dinaikkan agar alokasi memori audio selesai diproses
         end
     })
