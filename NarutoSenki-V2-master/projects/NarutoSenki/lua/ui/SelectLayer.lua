@@ -224,7 +224,7 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
                     
-        -- KODE TOMBOL START YANG SUDAH DIPERBAIKI (FOKUS STABILISASI 3V3)
+        -- BAGIAN 1: TOMBOL START DAN SISTEM VALIDASI SELECTION LAYOUT
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
@@ -261,7 +261,6 @@ function SelectLayer:init()
 
             else
                 -- MODE TIM REGULER (3v3 / 4v4)
-                -- Paksa pengisian slot kosong dengan karakter cadangan yang valid agar biner C++ tidak kosong (nil)
                 if not self._com1Select then 
                     self._com1Select = fallbackHero 
                 end
@@ -269,13 +268,11 @@ function SelectLayer:init()
                     self._com2Select = fallbackHero 
                 end
                 
-                -- Kirim data ke fungsi biner C++ dengan proteksi pcall
                 pcall(function()
                     if self.setCom1Select then self:setCom1Select(self._com1Select) end
                     if self.setCom2Select then self:setCom2Select(self._com2Select) end
                 end)
 
-                -- Khusus Mode 4v4 jika diaktifkan
                 if self.is4v4Mode then
                     if not self._com3Select then self._com3Select = fallbackHero end
                     pcall(function()
@@ -304,7 +301,6 @@ function SelectLayer:init()
                     end)
                 end
 
-                -- Matikan Audio Secara Bersih Sebelum Pindah Scene
                 pcall(function()
                     if SimpleAudioEngine then
                         SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true)
@@ -312,26 +308,21 @@ function SelectLayer:init()
                 end)
                 pcall(function() audio.stopMusic(true) end)
 
-                -- Jalankan fungsi inisialisasi arena C++ utama
-                                -- PAKSA BYPASS JALUR PABRIKAN YANG MEMICU CRASH
-                -- Langsung tembak ke fungsi Base untuk memicu Scene Loading (Karakter lari & awan gerak)
-                log("Bypass onGameStart aktif! Menembak langsung ke onGameStart_Base...")
-                
+                log("Memulai transisi perpindahan scene...")
                 if self.onGameStart_Base then 
                     local success, err = pcall(function()
                         self:onGameStart_Base()
                     end)
                     if not success then
                         log("Gagal memicu Base, mencoba transisi paksa: " .. tostring(err))
-                        -- Pilihan terakhir jika Base absen di versi biner ini:
-                        if self.onGameStart then self:onGameStart() end
+                        self:onGameStart()
                     end
                 else
                     log("onGameStart_Base tidak ditemukan, menjalankan onGameStart standar")
-                    if self.onGameStart then self:onGameStart() end
+                    self:onGameStart()
                 end
 
-            end, 0.05) -- Jeda waktu sedikit dinaikkan agar alokasi memori audio selesai diproses
+            end, 0.05)
         end
     })
       
@@ -351,8 +342,7 @@ function SelectLayer:init()
 
     if save.isBGM() then audio.playMusic(ns.music.SELECT_MUSIC, true) end
 end
-
-
+-- BAGIAN 2: LOGIKA INTERFACE SLOT COM DAN FUNGSI STRUKTUR TRANSISI SCENE
 function SelectLayer:initCustomSelectMode()
     log('Initial Custom Select Mode...')
     local width, height = display.width, display.height
@@ -435,6 +425,7 @@ function SelectLayer:onPageButtonClick(index)
         end
     end
 end
+
 function SelectLayer:setSelected(btn)
     if self._selectImg then
         self._selectImg:setPosition(CCPoint(btn:getPositionX() - 2, btn:getPositionY() - 2))
@@ -566,5 +557,22 @@ function backToStartMenu()
 end
 
 function SelectLayer:onGameStart()
-    log("onGameStart pabrik dipicu, meneruskan instruksi transisi ke C++...")  
+    log("onGameStart aktif: Memicu transisi pudar ke arena GameLayer...")  
+    local gameScene = CCScene:create()
+    if gameScene then
+        local gameLayer = GameLayer:create()
+        if gameLayer then
+            gameScene:addChild(gameLayer)
+            CCDirector:sharedDirector():replaceScene(CCTransitionFade:create(1.0, gameScene))
+            log("Transisi ke GameLayer sukses diterapkan!")
+        else
+            log("ERROR C++: Gagal membuat modul GameLayer!")
+        end
+    else
+        log("ERROR COCOS: Gagal mengalokasikan scene baru!")
+    end
 end
+ 
+
+  
+    
