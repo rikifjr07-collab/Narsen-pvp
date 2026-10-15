@@ -224,7 +224,7 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
                     
-        -- KODE TOMBOL START BARU: DISTRIBUSI KLONING JAGOAN BERDASARKAN ID ENUM 5
+        -- KODE TOMBOL START YANG SUDAH DIPERBAIKI (FOKUS STABILISASI 3V3)
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
@@ -235,75 +235,97 @@ function SelectLayer:init()
             self._startTransitionTriggered = true
 
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start diklik! Memproses replikasi data karakter...")
+            log("Tombol Start diklik! Memproses validasi data karakter...")
 
+            -- 1. Validasi Karakter Utama Player
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
             if self.setSelectHero then self:setSelectHero(chosenHero) end
 
             local modeNum = tonumber(self.mode) or 0
 
-            -- PENGECER LOGIKA TIM CLONE SECARA RESMI (ID ENUM 5)
+            -- 2. Ambil Cadangan Karakter Aman Jika Belum Dipilih
+            local fallbackHero = "naruto"
+            if self.selectNameList and #self.selectNameList > 0 then
+                fallbackHero = self.selectNameList[1]
+            end
+
+            -- 3. Eksekusi Logika Pengisian Berdasarkan Mode Game
             if modeNum == 5 then
+                -- MODE CLONE (ID 5)
                 self._com1Select = chosenHero
                 self._com2Select = chosenHero
                 if self.setCom1Select then self:setCom1Select(chosenHero) end
                 if self.setCom2Select then self:setCom2Select(chosenHero) end
-                log("MODE CLONE SUKSES: Menyalin karakter player ke seluruh slot tim: " .. chosenHero)
+                log("MODE CLONE SUKSES: " .. chosenHero)
 
-            -- LOGIKA MODE TIM REGULER (3v3 / 4v4): Mengisi slot kosong secara acak jika belum dipilih
-            elseif (self.is3v3Mode or self.is4v4Mode) and self.enableCustomSelect then
-                local totalHeros = #self.selectNameList
-                math.randomseed(os.time())
-                
+            else
+                -- MODE TIM REGULER (3v3 / 4v4)
+                -- Paksa pengisian slot kosong dengan karakter cadangan yang valid agar biner C++ tidak kosong (nil)
                 if not self._com1Select then 
-                    self._com1Select = self.selectNameList[math.random(1, totalHeros)] 
-                    if self.setCom1Select then self:setCom1Select(self._com1Select) end
+                    self._com1Select = fallbackHero 
                 end
                 if not self._com2Select then 
-                    self._com2Select = self.selectNameList[math.random(1, totalHeros)] 
-                    if self.setCom2Select then self:setCom2Select(self._com2Select) end
+                    self._com2Select = fallbackHero 
                 end
-                if self.is4v4Mode and not self._com3Select then
-                    self._com3Select = self.selectNameList[math.random(1, totalHeros)] 
-                    if self.setCom3Select then self:setCom3Select(self._com3Select) end
+                
+                -- Kirim data ke fungsi biner C++ dengan proteksi pcall
+                pcall(function()
+                    if self.setCom1Select then self:setCom1Select(self._com1Select) end
+                    if self.setCom2Select then self:setCom2Select(self._com2Select) end
+                end)
+
+                -- Khusus Mode 4v4 jika diaktifkan
+                if self.is4v4Mode then
+                    if not self._com3Select then self._com3Select = fallbackHero end
+                    pcall(function()
+                        if self.setCom3Select then self:setCom3Select(self._com3Select) end
+                    end)
                 end
             end
 
+            -- 4. Pemicu Transisi Aman ke Arena Pertandingan
             self:performWithDelay(function()
-                if tools and tools.initSqliteDB then
-                    tools.initSqliteDB()
-                end
+                pcall(function()
+                    if tools and tools.initSqliteDB then
+                        tools.initSqliteDB()
+                    end
+                end)
 
                 if getGameModeHandler then
-                    local handlerInstance = getGameModeHandler()
-                    if handlerInstance then
-                        handlerInstance.selectLayer = self
-                        if handlerInstance.onInitHeros then
-                            handlerInstance:onInitHeros()
-                            log("HerosArray biner C++ sukses disegel!")
+                    pcall(function()
+                        local handlerInstance = getGameModeHandler()
+                        if handlerInstance then
+                            handlerInstance.selectLayer = self
+                            if handlerInstance.onInitHeros then
+                                handlerInstance:onInitHeros()
+                            end
                         end
-                    end
+                    end)
                 end
 
-                local success, err = pcall(function()
+                -- Matikan Audio Secara Bersih Sebelum Pindah Scene
+                pcall(function()
                     if SimpleAudioEngine then
-                        SimpleAudioEngine:stopBackgroundMusic(true)
+                        SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true)
                     end
-                    audio.stopMusic(true)
-                    
-                    log("Memicu fungsi onGameStart asli biner C++...")
+                end)
+                pcall(function() audio.stopMusic(true) end)
+
+                -- Jalankan fungsi inisialisasi arena C++ utama
+                local success, err = pcall(function()
+                    log("Memicu fungsi onGameStart...")
                     self:onGameStart()
                 end)
 
                 if not success then
-                    log("Transisi gagal, memicu jalur alternatif: " .. tostring(err))
+                    log("Jalur alternatif dipicu karena eror: " .. tostring(err))
                     if self.onGameStart_Base then self:onGameStart_Base() end
                 end
-            end, 0.01)
+            end, 0.05) -- Jeda waktu sedikit dinaikkan agar alokasi memori audio selesai diproses
         end
     })
-
+      
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
