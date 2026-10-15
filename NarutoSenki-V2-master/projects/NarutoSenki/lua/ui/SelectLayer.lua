@@ -224,7 +224,7 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
                     
-        -- BAGIAN 1: TOMBOL START DAN SISTEM VALIDASI SELECTION LAYOUT
+        -- BAGIAN 1 (KHUSUS STABILISASI MODE 3v3)
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
@@ -235,58 +235,38 @@ function SelectLayer:init()
             self._startTransitionTriggered = true
 
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start diklik! Memproses validasi data karakter...")
+            log("Tombol Start 3v3 diklik! Memulai inisialisasi data pertandingan...")
 
-            -- 1. Validasi Karakter Utama Player
+            -- 1. Ambil Karakter Player Utama (Gunakan fallback "naruto" jika kosong)
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
-            if self.setSelectHero then self:setSelectHero(chosenHero) end
+            
+            pcall(function()
+                if self.setSelectHero then self:setSelectHero(chosenHero) end
+            end)
 
-            local modeNum = tonumber(self.mode) or 0
-
-            -- 2. Ambil Cadangan Karakter Aman Jika Belum Dipilih
+            -- 2. Ambil Karakter Bot Pendukung (Gunakan nama dari daftar valid)
             local fallbackHero = "naruto"
             if self.selectNameList and #self.selectNameList > 0 then
                 fallbackHero = self.selectNameList[1]
             end
 
-            -- 3. Eksekusi Logika Pengisian Berdasarkan Mode Game
-            if modeNum == 5 then
-                -- MODE CLONE (ID 5)
-                self._com1Select = chosenHero
-                self._com2Select = chosenHero
-                if self.setCom1Select then self:setCom1Select(chosenHero) end
-                if self.setCom2Select then self:setCom2Select(chosenHero) end
-                log("MODE CLONE SUKSES: " .. chosenHero)
+            -- Jika slot bot kosong, otomatis isi dengan karakter default/cadangan yang aman
+            if not self._com1Select then self._com1Select = fallbackHero end
+            if not self._com2Select then self._com2Select = fallbackHero end
 
-            else
-                -- MODE TIM REGULER (3v3 / 4v4)
-                if not self._com1Select then 
-                    self._com1Select = fallbackHero 
-                end
-                if not self._com2Select then 
-                    self._com2Select = fallbackHero 
-                end
-                
-                pcall(function()
-                    if self.setCom1Select then self:setCom1Select(self._com1Select) end
-                    if self.setCom2Select then self:setCom2Select(self._com2Select) end
-                end)
+            -- 3. Proteksi Pengiriman Data ke Biner C++ (Bungkus pcall agar tidak memicu FC jika C++ menolak)
+            pcall(function()
+                if self.setCom1Select then self:setCom1Select(self._com1Select) end
+            end)
+            pcall(function()
+                if self.setCom2Select then self:setCom2Select(self._com2Select) end
+            end)
 
-                if self.is4v4Mode then
-                    if not self._com3Select then self._com3Select = fallbackHero end
-                    pcall(function()
-                        if self.setCom3Select then self:setCom3Select(self._com3Select) end
-                    end)
-                end
-            end
-
-            -- 4. Pemicu Transisi Aman ke Arena Pertandingan
+            -- 4. Pemicu Transisi Paksa ke Loading Match
             self:performWithDelay(function()
                 pcall(function()
-                    if tools and tools.initSqliteDB then
-                        tools.initSqliteDB()
-                    end
+                    if tools and tools.initSqliteDB then tools.initSqliteDB() end
                 end)
 
                 if getGameModeHandler then
@@ -301,6 +281,7 @@ function SelectLayer:init()
                     end)
                 end
 
+                -- Bersihkan Memori Audio Sebelum Pindah Layer
                 pcall(function()
                     if SimpleAudioEngine then
                         SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true)
@@ -308,19 +289,9 @@ function SelectLayer:init()
                 end)
                 pcall(function() audio.stopMusic(true) end)
 
-                log("Memulai transisi perpindahan scene...")
-                if self.onGameStart_Base then 
-                    local success, err = pcall(function()
-                        self:onGameStart_Base()
-                    end)
-                    if not success then
-                        log("Gagal memicu Base, mencoba transisi paksa: " .. tostring(err))
-                        self:onGameStart()
-                    end
-                else
-                    log("onGameStart_Base tidak ditemukan, menjalankan onGameStart standar")
-                    self:onGameStart()
-                end
+                -- EKSEKUSI UTAMA: Paksa Pindah Ke FungsionGameStart Buatan Kita
+                log("Melompati jalur bawaan, langsung memicu fungsi onGameStart utama...")
+                self:onGameStart()
 
             end, 0.05)
         end
@@ -342,6 +313,7 @@ function SelectLayer:init()
 
     if save.isBGM() then audio.playMusic(ns.music.SELECT_MUSIC, true) end
 end
+
 -- BAGIAN 2: LOGIKA INTERFACE SLOT COM DAN FUNGSI STRUKTUR TRANSISI SCENE
 function SelectLayer:initCustomSelectMode()
     log('Initial Custom Select Mode...')
