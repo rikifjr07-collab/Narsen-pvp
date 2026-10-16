@@ -64,24 +64,10 @@ bool LoadLayer::init()
 
 void LoadLayer::preloadIMG()
 {
-    // Mengambil data array pahlawan dari handler game
     auto herosDataVector = getGameModeHandler()->getHerosArray();
     int count = herosDataVector.size();
     
-    // ========================================================
-    // PENGAMAN MUTLAK: Jika player tidak equip karakter, 
-    // paksa biner C++ mengisi array dengan jagoan default "naruto"
-    // agar game TIDAK STUCK BLACK SCREEN atau POPUP MAP ERROR!
-    // ========================================================
-    if (count == 0) {
-        CCLOG("LoadLayer: HerosArray kosong! Menyuntikkan jagoan default...");
-        // Daftarkan ulang heros secara internal offline (3v3 standar)
-        getGameModeHandler()->initHeros(3, 3);
-        herosDataVector = getGameModeHandler()->getHerosArray();
-        count = herosDataVector.size();
-    }
-
-    // Set batas index berdasarkan jumlah mode tim
+    // Set batas index berdasarkan jumlah mode pertandingan secara aman
     if (count == 2)       // 1v1
         count = 0;
     else if (count == 4)  // Boss 3v1
@@ -93,29 +79,38 @@ void LoadLayer::preloadIMG()
     else if (count == 8)  // 4v4
         count = 4;
 
-    int i = 0;
-    for (const auto &data : herosDataVector)
+    // JALUR PENYELAMAT: Jika data vector kosong karena player unequip karakter, 
+    // kita paksa loop berjalan minimal 1 kali menggunakan jagoan bawaan aman "naruto"
+    if (herosDataVector.size() == 0)
     {
-        // Ambil nama karakter, gunakan naruto jika string memori rusak/kosong
-        std::string name = data.name;
-        if (name.empty() || name == "") {
-            name = "naruto";
-        }
-
-        if (std::find(loadVector.begin(), loadVector.end(), name) == loadVector.end())
+        CCLOG("LoadLayer: HerosArray kosong! Memuat jagoan pengaman offline...");
+        perloadCharIMG("naruto");
+        setLoadingAnimation("naruto", 0);
+    }
+    else
+    {
+        int i = 0;
+        for (const auto &data : herosDataVector)
         {
-            perloadCharIMG(name.c_str());
-            loadVector.push_back(name);
-        }
+            std::string name = data.name;
+            if (name.empty() || name == "") {
+                name = "naruto";
+            }
 
-        if (i == 0 || (i < count && _enableGear)) {
-            // Panggil fungsi loading animasi Walk yang sudah kita proteksi sebelumnya
-            setLoadingAnimation(name.c_str(), i);
+            if (std::find(loadVector.begin(), loadVector.end(), name) == loadVector.end())
+            {
+                perloadCharIMG(name.c_str());
+                loadVector.push_back(name);
+            }
+
+            if (i == 0 || (i < count && _enableGear)) {
+                setLoadingAnimation(name.c_str(), i);
+            }
+            i++;
         }
-        i++;
     }
 
-    // Memuat aset pelindung dan efek global game
+    // Memuat berkas audio, efek pelindung, dan data ougis global game
     if (_isHardCoreMode)
     {
         addSprites(kGuardian_Han);
@@ -153,10 +148,9 @@ void LoadLayer::preloadIMG()
     }
 
     scheduleOnce(schedule_selector(LoadLayer::playBGM), 1.0f);
-    
-    // Eksekusi load finish untuk masuk ke match secara resmi
     scheduleOnce(schedule_selector(LoadLayer::onLoadFinish), 2.0f);
 }
+
 
 void LoadLayer::perloadCharIMG(const string &name)
 {
