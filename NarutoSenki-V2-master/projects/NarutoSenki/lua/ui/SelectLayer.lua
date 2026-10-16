@@ -224,7 +224,7 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
            
-        -- PERBAIKAN STABILISASI TIM 3v3 DENGAN LOGIKA PENATAAN WARNA DAN STRITE RUNNER
+        -- BAGIAN 1: SISTEM SELECTION TIM FLEKSIBEL & OTOMATIS (ANTI FORCED CLOSE)
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
@@ -235,39 +235,57 @@ function SelectLayer:init()
             self._startTransitionTriggered = true
 
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start 3v3 ditekan. Menyetel indeks tim aman...")
+            log("Tombol Start ditekan. Memproses validasi tim fleksibel...")
 
-            -- 1. Kunci Karakter Utama Player (Gunakan naruto sebagai pengaman global)
+            -- 1. Tentukan Karakter Utama Player (Jika kosong, otomatis naruto)
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
-            
-            pcall(function()
-                if self.setSelectHero then self:setSelectHero(chosenHero) end
-            end)
+            pcall(function() if self.setSelectHero then self:setSelectHero(chosenHero) end end)
 
-            -- 2. Alokasikan 3 Karakter Valid ke Array C++ untuk Memicu 3 Karakter Lari di Loading
-            local fallbackHero = chosenHero
+            -- 2. Mekanisme Pengisian Acak untuk Slot Bot yang Kosong
+            -- Kumpulkan daftar nama jagoan yang terdaftar di berkas game Anda
+            local pool = {"naruto", "sasuke", "sakura", "kakashi", "gaara"}
             if self.selectNameList and #self.selectNameList > 0 then
-                fallbackHero = self.selectNameList
+                pool = self.selectNameList
             end
 
-            self._com1Select = fallbackHero
-            self._com2Select = fallbackHero
+            -- Fungsi lokal untuk mengambil nama acak dari pool jika slot kosong
+            local function getRandomHero()
+                local idx = math.random(1, #pool)
+                return pool[idx]
+            end
 
-            -- Tembak fungsi jembatan biner C++ dengan pcall agar tidak memicu FC instan
+            -- Isi slot COM1 jika tidak di-equip manual oleh player
+            if not self._com1Select then 
+                self._com1Select = getRandomHero()
+                log("Slot Bot 1 kosong, diisi otomatis: " .. self._com1Select)
+            end
+
+            -- Isi slot COM2 jika tidak di-equip manual oleh player
+            if not self._com2Select then 
+                self._com2Select = getRandomHero()
+                log("Slot Bot 2 kosong, diisi otomatis: " .. self._com2Select)
+            end
+
+            -- 3. Kirim data yang sudah divalidasi ke biner C++ secara aman
             pcall(function() if self.setCom1Select then self:setCom1Select(self._com1Select) end end)
             pcall(function() if self.setCom2Select then self:setCom2Select(self._com2Select) end end)
 
-            -- 3. Paksa Penyetelan Variabel Mode Game agar Warna Merah Loading Terbaca
-            if not self.mode then self.mode = 3 end -- Pastikan mode terisi nilai integer 3v3
+            -- Khusus penanganan mode tim besar (4v4)
+            if self.is4v4Mode or self._com3Select then
+                if not self._com3Select then self._com3Select = getRandomHero() end
+                pcall(function() if self.setCom3Select then self:setCom3Select(self._com3Select) end end)
+            end
 
-            -- 4. Jeda Waktu Transisi Ditingkatkan agar Cache Animasi Jagoan Selesai Dimuat di RAM
+            -- Pastikan kode mode game terisi penanda integer valid
+            if not self.mode then self.mode = 3 end
+
+            -- 4. Eksekusi Transisi Menuju LoadLayer dengan Jeda Aman
             self:performWithDelay(function()
                 pcall(function()
                     if tools and tools.initSqliteDB then tools.initSqliteDB() end
                 end)
 
-                -- Pemicu Inisialisasi Karakter C++ GameModeHandler
                 if getGameModeHandler then
                     pcall(function()
                         local handlerInstance = getGameModeHandler()
@@ -280,7 +298,6 @@ function SelectLayer:init()
                     end)
                 end
 
-                -- Hentikan audio musik latar belakang secara aman
                 pcall(function()
                     if SimpleAudioEngine then 
                         SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true) 
@@ -288,19 +305,18 @@ function SelectLayer:init()
                 end)
                 pcall(function() audio.stopMusic(true) end)
 
-                -- LEMPARAN UTAMA: Jalankan fungsi transisi menuju LoadLayer C++ resmi
-                log("Memulai proses alokasi LoadLayer...")
+                log("Memicu fungsi transisi LoadLayer C++...")
                 if self.onGameStart_Base then
                     local success, err = pcall(function() self:onGameStart_Base() end)
                     if not success then
-                        log("Base gagal, jalankan fungsi fallback: " .. tostring(err))
+                        log("Jalur Base gagal, tembak manual: " .. tostring(err))
                         self:onGameStart()
                     end
                 else
                     self:onGameStart()
                 end
 
-            end, 0.25) -- Jeda dinaikkan menjadi 0.25 detik demi menstabilkan spawn runner di LoadLayer
+            end, 0.2)
         end
     })
 
