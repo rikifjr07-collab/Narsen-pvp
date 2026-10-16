@@ -19,12 +19,12 @@
   </data>
  </layer>
  <objectgroup id="4" name="object">
-  <object id="1" name="SpawnPoint01" x="352" y="160" width="32" height="32"/>
-  <object id="2" name="SpawnPoint02" x="352" y="256" width="32" height="32"/>
-  <object id="3" name="SpawnPoint03" x="304" y="208" width="32" height="32"/>
-  <object id="4" name="SpawnPoint04" x="2688" y="160" width="32" height="32"/>
-  <object id="5" name="SpawnPoint05" x="2736" y="208" width="32" height="32"/>
-  <object id="6" name="SpawnPoint06" x="2688" y="256" width="32" height="32"/>
+  <object id="1" name="player_spawn_1" x="352" y="160" width="32" height="32"/>
+  <object id="2" name="hero_spawn_1" x="352" y="256" width="32" height="32"/>
+  <object id="3" name="hero_spawn_2" x="304" y="208" width="32" height="32"/>
+  <object id="4" name="enemy_spawn_1" x="2688" y="160" width="32" height="32"/>
+  <object id="5" name="enemy_spawn_2" x="2736" y="208" width="32" height="32"/>
+  <object id="6" name="enemy_spawn_3" x="2688" y="256" width="32" height="32"/>
  </objectgroup>
  <objectgroup id="5" name="meta">
   <object id="7" name="KonohaTower2" x="1056" y="160" width="96" height="128">
