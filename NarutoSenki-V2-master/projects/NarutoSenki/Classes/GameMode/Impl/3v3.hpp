@@ -12,14 +12,11 @@ public:
 		gd.use4v4SpawnLayout = false;
 	}
 
-	void onInitHeros()
+		void onInitHeros()
 	{
-		// JALUR PALING AMAN: Menggunakan fungsi pembersih bawaan dari IGameModeHandler 
-		// tanpa menyentuh nama variabel internal vector agar terhindar dari error typo compiler
-		this->clearHeros();
-
 		initHeros(3, 3);
 	}
+
 
 	void onGameStart()
 	{
