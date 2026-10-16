@@ -538,51 +538,45 @@ function backToStartMenu()
     menuScene:addChild(menuLayer)
     director.replaceSceneWithFade(menuScene, 1)
 end
-
--- BYPASS INTI: Memaksa transisi masuk LoadLayer langsung dari skrip LUA
 function SelectLayer:onGameStart()
-    log("MEMULAI BYPASS TRANSISE OFFLINE: Menghindari onGameStart_Base yang rusak...")
+    log("onGameStart: Memulai pembersihan memori total dan penguncian map...")  
     
-    -- 1. Bersihkan sisa tekstur lama agar tidak terjadi kebocoran memori RAM
+    -- 1. PAKSA PEMBERSIHAN MEMORI CACHE SEBELUM PINDAH SCENE
     pcall(function()
         if CCTextureCache then
             CCTextureCache:sharedTextureCache():removeUnusedTextures()
         end
+        if CCSpriteFrameCache then
+            CCSpriteFrameCache:sharedSpriteFrameCache():removeUnusedSpriteFrames()
+        end
     end)
 
-    -- 2. Alokasikan CCScene baru sebagai wadah transisi
+    -- 2. KUNCI ID MAP (Paksa ke Map 1 agar tidak acak membaca map yang rusak/tanpa layer object)
+    _G.mapId = 1
+    if self.setMapId then 
+        pcall(function() self:setMapId(1) end) 
+    end
+
+    -- 3. EKSEKUSI TRANSISE AMAN KE LOADLAYER
     local loadScene = CCScene:create()
     if loadScene then
-        -- 3. Panggil objek biner LoadLayer secara langsung tanpa melalui GameModeHandler
         local loadLayer = LoadLayer:create()
         if loadLayer then
-            -- Pasang LoadLayer ke dalam Scene baru
             loadScene:addChild(loadLayer)
-            
-            -- Pra-muat audio transisi jika fungsinya terekspos di biner
             pcall(function() loadLayer:preloadAudio() end)
             
-            -- 4. EKSEKUSI UTAMA: Paksa CCDirector mengganti Scene dengan efek Fade 1.0 detik
-            CCDirector:sharedDirector():replaceScene(CCTransitionFade:create(1.0, loadScene))
-            log("SUKSES: Perintah replaceScene LoadLayer berhasil ditembak langsung dari LUA!")
+            -- Lakukan transisi dengan efek pudar bersih
+            CCDirector:sharedDirector():replaceScene(CCTransitionFade:create(0.8, loadScene))
+            log("LoadLayer berhasil dipicu dengan memori RAM yang bersih!")
         else
-            log("ERROR BINER: Kelas objek LoadLayer gagal dibuat di memori C++!")
-            -- Langkah Penyelamatan Terakhir: Jika LoadLayer gagal, tembak langsung ke GameLayer
+            log("Fallback: Mengalihkan langsung ke GameLayer...")
             local gameScene = CCScene:create()
             local gameLayer = GameLayer:create()
             if gameScene and gameLayer then
                 gameScene:addChild(gameLayer)
-                CCDirector:sharedDirector():replaceScene(CCTransitionFade:create(1.0, gameScene))
-                log("FALLBACK SUKSES: Langsung masuk ke GameLayer arena pertandingan!")
+                CCDirector:sharedDirector():replaceScene(CCTransitionFade:create(0.8, gameScene))
             end
         end
-    else
-        log("ERROR COCOS: Alokasi objek CCScene baru gagal!")
     end
 end
 
-
- 
-
-  
-    
