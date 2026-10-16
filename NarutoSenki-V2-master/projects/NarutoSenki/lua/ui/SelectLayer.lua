@@ -223,8 +223,8 @@ function SelectLayer:init()
     local menu3 = ui.newMenu({ranking_btn})
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
-                    
-        -- BAGIAN 1 (KHUSUS STABILISASI MODE 3v3)
+           
+        -- BAGIAN 1: PROTEKSI TRANSISE EKSTRA AMAN UNTUK 3v3
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
@@ -235,35 +235,33 @@ function SelectLayer:init()
             self._startTransitionTriggered = true
 
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start 3v3 diklik! Memulai inisialisasi data pertandingan...")
+            log("Tombol Start diklik! Memproses pengkondisian karakter aman...")
 
-            -- 1. Ambil Karakter Player Utama (Gunakan fallback "naruto" jika kosong)
-            local chosenHero = self.selectHero or "naruto"
-            self._playerSelect = chosenHero
-            
-            pcall(function()
-                if self.setSelectHero then self:setSelectHero(chosenHero) end
-            end)
-
-            -- 2. Ambil Karakter Bot Pendukung (Gunakan nama dari daftar valid)
-            local fallbackHero = "naruto"
-            if self.selectNameList and #self.selectNameList > 0 then
-                fallbackHero = self.selectNameList[1]
+            -- 1. Deteksi Karakter Utama (Gunakan fallback nama jagoan pertama di list jika kosong)
+            local chosenHero = self.selectHero
+            if not chosenHero and self.selectNameList and #self.selectNameList > 0 then
+                chosenHero = self.selectNameList[1]
             end
+            if not chosenHero then chosenHero = "naruto" end
+            
+            self._playerSelect = chosenHero
+            pcall(function() if self.setSelectHero then self:setSelectHero(chosenHero) end end)
 
-            -- Jika slot bot kosong, otomatis isi dengan karakter default/cadangan yang aman
+            -- 2. Paksa Pengisian Slot COM 1 dan COM 2 Agar Biner C++ Tidak Kosong
+            local fallbackHero = chosenHero
             if not self._com1Select then self._com1Select = fallbackHero end
             if not self._com2Select then self._com2Select = fallbackHero end
 
-            -- 3. Proteksi Pengiriman Data ke Biner C++ (Bungkus pcall agar tidak memicu FC jika C++ menolak)
-            pcall(function()
-                if self.setCom1Select then self:setCom1Select(self._com1Select) end
-            end)
-            pcall(function()
-                if self.setCom2Select then self:setCom2Select(self._com2Select) end
-            end)
+            pcall(function() if self.setCom1Select then self:setCom1Select(self._com1Select) end end)
+            pcall(function() if self.setCom2Select then self:setCom2Select(self._com2Select) end end)
 
-            -- 4. Pemicu Transisi Paksa ke Loading Match
+            -- Khusus penanganan 4v4 jika terbawa ke mode 3v3
+            if self.is4v4Mode or self._com3Select then
+                if not self._com3Select then self._com3Select = fallbackHero end
+                pcall(function() if self.setCom3Select then self:setCom3Select(self._com3Select) end end)
+            end
+
+            -- 3. Jeda Transisi Sedikit Diperlama Untuk Stabilitas Alokasi Memori Engine
             self:performWithDelay(function()
                 pcall(function()
                     if tools and tools.initSqliteDB then tools.initSqliteDB() end
@@ -274,26 +272,25 @@ function SelectLayer:init()
                         local handlerInstance = getGameModeHandler()
                         if handlerInstance then
                             handlerInstance.selectLayer = self
-                            if handlerInstance.onInitHeros then
-                                handlerInstance:onInitHeros()
-                            end
+                            if handlerInstance.onInitHeros then handlerInstance:onInitHeros() end
                         end
                     end)
                 end
 
-                -- Bersihkan Memori Audio Sebelum Pindah Layer
                 pcall(function()
-                    if SimpleAudioEngine then
-                        SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true)
-                    end
+                    if SimpleAudioEngine then SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true) end
                 end)
                 pcall(function() audio.stopMusic(true) end)
 
-                -- EKSEKUSI UTAMA: Paksa Pindah Ke FungsionGameStart Buatan Kita
-                log("Melompati jalur bawaan, langsung memicu fungsi onGameStart utama...")
-                self:onGameStart()
+                -- Langsung tembak ke fungsi biner C++ untuk memicu loading screen resmi
+                log("Memicu onGameStart menuju LoadLayer C++...")
+                if self.onGameStart_Base then
+                    pcall(function() self:onGameStart_Base() end)
+                else
+                    self:onGameStart()
+                end
 
-            end, 0.05)
+            end, 0.15) -- Jeda waktu dinaikkan ke 0.15 detik agar engine Cocos2d-x selesai memuat aset suara
         end
     })
       
