@@ -224,7 +224,7 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
            
-        -- BAGIAN 1: SISTEM SELECTION TIM FLEKSIBEL & OTOMATIS (ANTI FORCED CLOSE)
+        -- BAGIAN 1: SINKRONISASI STABILISASI TRANSISE OFFLINE MURNI 3v3
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
@@ -235,77 +235,65 @@ function SelectLayer:init()
             self._startTransitionTriggered = true
 
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start ditekan. Memproses validasi tim fleksibel...")
+            log("Tombol Start Offline diklik! Memproses persiapan data pertandingan...")
 
-            -- 1. Tentukan Karakter Utama Player (Jika kosong, otomatis naruto)
+            -- 1. Ambil Karakter Utama Player (Default: naruto)
             local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
-            pcall(function() if self.setSelectHero then self:setSelectHero(chosenHero) end end)
+            
+            pcall(function()
+                if self.setSelectHero then self:setSelectHero(chosenHero) end
+            end)
 
-            -- 2. Mekanisme Pengisian Acak untuk Slot Bot yang Kosong
-            -- Kumpulkan daftar nama jagoan yang terdaftar di berkas game Anda
-            local pool = {"naruto", "sasuke", "sakura", "kakashi", "gaara"}
+            -- 2. Ambil Daftar Karakter Valid Untuk Mengisi Slot Bot
+            local fallbackHero = "naruto"
             if self.selectNameList and #self.selectNameList > 0 then
-                pool = self.selectNameList
+                fallbackHero = self.selectNameList
             end
 
-            -- Fungsi lokal untuk mengambil nama acak dari pool jika slot kosong
-            local function getRandomHero()
-                local idx = math.random(1, #pool)
-                return pool[idx]
-            end
+            -- Proteksi Fleksibel: Jika slot COM kosong, otomatis isi agar biner C++ tidak Null Pointer
+            if not self._com1Select then self._com1Select = fallbackHero end
+            if not self._com2Select then self._com2Select = fallbackHero end
 
-            -- Isi slot COM1 jika tidak di-equip manual oleh player
-            if not self._com1Select then 
-                self._com1Select = getRandomHero()
-                log("Slot Bot 1 kosong, diisi otomatis: " .. self._com1Select)
-            end
+            -- Kirim data karakter ke C++ secara sah
+            pcall(function()
+                if self.setCom1Select then self:setCom1Select(self._com1Select) end
+                if self.setCom2Select then self:setCom2Select(self._com2Select) end
+            end)
 
-            -- Isi slot COM2 jika tidak di-equip manual oleh player
-            if not self._com2Select then 
-                self._com2Select = getRandomHero()
-                log("Slot Bot 2 kosong, diisi otomatis: " .. self._com2Select)
-            end
+            -- Paksa penyetelan mode permainan ke mode tim offline (Classic 3v3)
+            self.mode = 1 -- Sesuai dengan penanda index GameMode::Classic di biner C++ Anda
+            _G.mode = 1
 
-            -- 3. Kirim data yang sudah divalidasi ke biner C++ secara aman
-            pcall(function() if self.setCom1Select then self:setCom1Select(self._com1Select) end end)
-            pcall(function() if self.setCom2Select then self:setCom2Select(self._com2Select) end end)
-
-            -- Khusus penanganan mode tim besar (4v4)
-            if self.is4v4Mode or self._com3Select then
-                if not self._com3Select then self._com3Select = getRandomHero() end
-                pcall(function() if self.setCom3Select then self:setCom3Select(self._com3Select) end end)
-            end
-
-            -- Pastikan kode mode game terisi penanda integer valid
-            if not self.mode then self.mode = 3 end
-
-            -- 4. Eksekusi Transisi Menuju LoadLayer dengan Jeda Aman
+            -- 3. Jeda Transisi Aman Demi Memberi Waktu Engine Mengalokasikan Memori Aset
             self:performWithDelay(function()
                 pcall(function()
                     if tools and tools.initSqliteDB then tools.initSqliteDB() end
                 end)
 
+                -- Pemicu fungsi inisialisasi tim di C++ GameModeHandler
                 if getGameModeHandler then
                     pcall(function()
                         local handlerInstance = getGameModeHandler()
                         if handlerInstance then
                             handlerInstance.selectLayer = self
-                            if handlerInstance.onInitHeros then 
-                                handlerInstance:onInitHeros() 
+                            if handlerInstance.onInitHeros then
+                                handlerInstance:onInitHeros()
                             end
                         end
                     end)
                 end
 
+                -- Hentikan audio menu secara bersih
                 pcall(function()
-                    if SimpleAudioEngine then 
-                        SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true) 
+                    if SimpleAudioEngine then
+                        SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true)
                     end
                 end)
                 pcall(function() audio.stopMusic(true) end)
 
-                log("Memicu fungsi transisi LoadLayer C++...")
+                -- EKSEKUSI TRANSISI UTAMA: Tembak langsung ke fungsi LoadLayer C++ resmi
+                log("Memicu fungsi transisi onGameStart menuju biner...")
                 if self.onGameStart_Base then
                     local success, err = pcall(function() self:onGameStart_Base() end)
                     if not success then
@@ -316,10 +304,10 @@ function SelectLayer:init()
                     self:onGameStart()
                 end
 
-            end, 0.2)
+            end, 0.15)
         end
     })
-
+      
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
