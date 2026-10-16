@@ -539,33 +539,48 @@ function backToStartMenu()
     director.replaceSceneWithFade(menuScene, 1)
 end
 
--- PERBAIKAN TOTAL: Menghubungkan Transisi Pemilihan Karakter ke Biner C++ LoadLayer
+-- BYPASS INTI: Memaksa transisi masuk LoadLayer langsung dari skrip LUA
 function SelectLayer:onGameStart()
-    log("Memicu fungsi jembatan onGameStart menuju biner C++...")
+    log("MEMULAI BYPASS TRANSISE OFFLINE: Menghindari onGameStart_Base yang rusak...")
     
-    -- Menggunakan pcall agar jika fungsi biner terpanggil, tidak terjadi konflik alur di Lua
-    local success, err = pcall(function()
-        -- Memanggil fungsi asli target di SelectLayer C++ untuk memicu LoadLayer
-        if self.onGameStart_Base then
-            self:onGameStart_Base()
-            log("onGameStart_Base biner berhasil dipicu.")
-        else
-            -- Jalankan fallback fungsi jika diekspos langsung sebagai penanda instans
-            local peer = tolua.getpeer(self)
-            if peer and peer.onGameStart then
-                peer.onGameStart(self)
-            else
-                -- Jika tidak ditemukan, tembak langsung metode bawaan objek
-                self:onGameStart()
-            end
-            log("Fungsi onGameStart standar biner dipicu.")
+    -- 1. Bersihkan sisa tekstur lama agar tidak terjadi kebocoran memori RAM
+    pcall(function()
+        if CCTextureCache then
+            CCTextureCache:sharedTextureCache():removeUnusedTextures()
         end
     end)
-    
-    if not success then
-        log("Peringatan transisi biner: " .. tostring(err))
+
+    -- 2. Alokasikan CCScene baru sebagai wadah transisi
+    local loadScene = CCScene:create()
+    if loadScene then
+        -- 3. Panggil objek biner LoadLayer secara langsung tanpa melalui GameModeHandler
+        local loadLayer = LoadLayer:create()
+        if loadLayer then
+            -- Pasang LoadLayer ke dalam Scene baru
+            loadScene:addChild(loadLayer)
+            
+            -- Pra-muat audio transisi jika fungsinya terekspos di biner
+            pcall(function() loadLayer:preloadAudio() end)
+            
+            -- 4. EKSEKUSI UTAMA: Paksa CCDirector mengganti Scene dengan efek Fade 1.0 detik
+            CCDirector:sharedDirector():replaceScene(CCTransitionFade:create(1.0, loadScene))
+            log("SUKSES: Perintah replaceScene LoadLayer berhasil ditembak langsung dari LUA!")
+        else
+            log("ERROR BINER: Kelas objek LoadLayer gagal dibuat di memori C++!")
+            -- Langkah Penyelamatan Terakhir: Jika LoadLayer gagal, tembak langsung ke GameLayer
+            local gameScene = CCScene:create()
+            local gameLayer = GameLayer:create()
+            if gameScene and gameLayer then
+                gameScene:addChild(gameLayer)
+                CCDirector:sharedDirector():replaceScene(CCTransitionFade:create(1.0, gameScene))
+                log("FALLBACK SUKSES: Langsung masuk ke GameLayer arena pertandingan!")
+            end
+        end
+    else
+        log("ERROR COCOS: Alokasi objek CCScene baru gagal!")
     end
 end
+
 
  
 
