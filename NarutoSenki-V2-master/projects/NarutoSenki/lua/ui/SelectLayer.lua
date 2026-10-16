@@ -539,44 +539,11 @@ function backToStartMenu()
     director.replaceSceneWithFade(menuScene, 1)
 end
 function SelectLayer:onGameStart()
-    log("onGameStart: Memulai pembersihan memori total dan penguncian map...")  
-    
-    -- 1. PAKSA PEMBERSIHAN MEMORI CACHE SEBELUM PINDAH SCENE
-    pcall(function()
-        if CCTextureCache then
-            CCTextureCache:sharedTextureCache():removeUnusedTextures()
-        end
-        if CCSpriteFrameCache then
-            CCSpriteFrameCache:sharedSpriteFrameCache():removeUnusedSpriteFrames()
-        end
-    end)
-
-    -- 2. KUNCI ID MAP (Paksa ke Map 1 agar tidak acak membaca map yang rusak/tanpa layer object)
-    _G.mapId = 1
-    if self.setMapId then 
-        pcall(function() self:setMapId(1) end) 
-    end
-
-    -- 3. EKSEKUSI TRANSISE AMAN KE LOADLAYER
-    local loadScene = CCScene:create()
-    if loadScene then
-        local loadLayer = LoadLayer:create()
-        if loadLayer then
-            loadScene:addChild(loadLayer)
-            pcall(function() loadLayer:preloadAudio() end)
-            
-            -- Lakukan transisi dengan efek pudar bersih
-            CCDirector:sharedDirector():replaceScene(CCTransitionFade:create(0.8, loadScene))
-            log("LoadLayer berhasil dipicu dengan memori RAM yang bersih!")
-        else
-            log("Fallback: Mengalihkan langsung ke GameLayer...")
-            local gameScene = CCScene:create()
-            local gameLayer = GameLayer:create()
-            if gameScene and gameLayer then
-                gameScene:addChild(gameLayer)
-                CCDirector:sharedDirector():replaceScene(CCTransitionFade:create(0.8, gameScene))
-            end
-        end
+    log("Memicu fungsi resmi onGameStart biner C++...")
+    if self.onGameStart_Base then
+        pcall(function() self:onGameStart_Base() end)
+    else
+        self:onGameStart()
     end
 end
 
