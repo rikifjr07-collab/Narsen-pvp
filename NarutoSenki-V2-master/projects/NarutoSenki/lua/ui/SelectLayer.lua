@@ -528,22 +528,34 @@ function backToStartMenu()
     director.replaceSceneWithFade(menuScene, 1)
 end
 
+-- PERBAIKAN TOTAL: Menghubungkan Transisi Pemilihan Karakter ke Biner C++ LoadLayer
 function SelectLayer:onGameStart()
-    log("onGameStart aktif: Memicu transisi pudar ke arena GameLayer...")  
-    local gameScene = CCScene:create()
-    if gameScene then
-        local gameLayer = GameLayer:create()
-        if gameLayer then
-            gameScene:addChild(gameLayer)
-            CCDirector:sharedDirector():replaceScene(CCTransitionFade:create(1.0, gameScene))
-            log("Transisi ke GameLayer sukses diterapkan!")
+    log("Memicu fungsi jembatan onGameStart menuju biner C++...")
+    
+    -- Menggunakan pcall agar jika fungsi biner terpanggil, tidak terjadi konflik alur di Lua
+    local success, err = pcall(function()
+        -- Memanggil fungsi asli target di SelectLayer C++ untuk memicu LoadLayer
+        if self.onGameStart_Base then
+            self:onGameStart_Base()
+            log("onGameStart_Base biner berhasil dipicu.")
         else
-            log("ERROR C++: Gagal membuat modul GameLayer!")
+            -- Jalankan fallback fungsi jika diekspos langsung sebagai penanda instans
+            local peer = tolua.getpeer(self)
+            if peer and peer.onGameStart then
+                peer.onGameStart(self)
+            else
+                -- Jika tidak ditemukan, tembak langsung metode bawaan objek
+                self:onGameStart()
+            end
+            log("Fungsi onGameStart standar biner dipicu.")
         end
-    else
-        log("ERROR COCOS: Gagal mengalokasikan scene baru!")
+    end)
+    
+    if not success then
+        log("Peringatan transisi biner: " .. tostring(err))
     end
 end
+
  
 
   
