@@ -319,27 +319,57 @@ void LoadLayer::unloadAllCharsIMG(const vector<Hero *> &players)
 
 void LoadLayer::setLoadingAnimation(const char *player, int index)
 {
+	// 1. Ambil bingkai dasar pertama menggunakan format Walk dua digit standar (_Walk_01)
 	auto loadingAvator = Sprite::createWithSpriteFrameName(format("{}_Walk_01", player).c_str());
+	if (loadingAvator == nullptr) {
+		// Fallback jika tanpa angka nol di depan (misal _Walk_1)
+		loadingAvator = Sprite::createWithSpriteFrameName(format("{}_Walk_1", player).c_str());
+	}
+	if (loadingAvator == nullptr) {
+		// Fallback terakhir ke animasi diam jika seluruh aset Walk absen di file plist
+		loadingAvator = Sprite::createWithSpriteFrameName(format("{}_Stand_01", player).c_str());
+	}
+	
+	// PROTEKSI INSTAN: Jika semua pencarian gagal, hentikan fungsi agar aman dari FC keras
+	if (loadingAvator == nullptr) {
+		CCLOG("LoadLayer WARNING: Aset gerakan untuk %s absen dari berkas .plist! Pemuatan dilewati.", player);
+		return;
+	}
+	
 	loadingAvator->setFlipX(true);
 	loadingAvator->setPosition(Vec2(winSize.width - 100 + index * 16, 30));
 	loadingAvator->setAnchorPoint(Vec2(0, 0));
 
-	// FIXME: Use the other way get animation frame count
-	ssize_t frameCount = is_same(player, HeroEnum::Konan) ? 1 : 7;
-	Vector<SpriteFrame *> animeFrames(frameCount);
+	// 2. Kumpulkan frame gerakan secara berlapis dengan penyaringan objek kosong (null)
+	ssize_t frameCount = 7; 
+	Vector<SpriteFrame *> animeFrames;
+	
 	for (int i = 1; i < frameCount; i++)
 	{
+		// Coba format dua digit (_Walk_01)
 		auto frame = getSpriteFrame("{}_Walk_{:02d}", player, i);
-		animeFrames.pushBack(frame);
+		if (frame == nullptr) {
+			// Coba format satu digit (_Walk_1)
+			frame = getSpriteFrame("{}_Walk_{}", player, i);
+		}
+		
+		// SUNTIKAN PENGAMAN: Hanya masukkan ke array jika frame terbukti valid dan ada di memori RAM
+		if (frame != nullptr) {
+			animeFrames.pushBack(frame);
+		}
 	}
 
-	auto tempAnimation = Animation::createWithSpriteFrames(animeFrames, 1.0f / 10.0f);
-	auto tempAction = Animate::create(tempAnimation);
-	auto animAction = RepeatForever::create(tempAction);
+	// Buat dan putar animasi jalan di loading screen secara aman
+	if (animeFrames.size() > 0) {
+		auto tempAnimation = Animation::createWithSpriteFrames(animeFrames, 1.0f / 10.0f);
+		auto tempAction = Animate::create(tempAnimation);
+		auto animAction = RepeatForever::create(tempAction);
+		loadingAvator->runAction(animAction);
+	}
 
 	addChild(loadingAvator);
-	loadingAvator->runAction(animAction);
 }
+
 
 void LoadLayer::playBGM(float dt)
 {
