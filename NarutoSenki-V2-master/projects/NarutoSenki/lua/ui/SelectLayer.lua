@@ -224,7 +224,7 @@ function SelectLayer:init()
     menu3:setPosition(width - 15, height - 34)
     self:addChild(menu3, 5)
            
-        -- BAGIAN 1: PROTEKSI TRANSISE EKSTRA AMAN UNTUK 3v3
+        -- PERBAIKAN STABILISASI TIM 3v3 DENGAN LOGIKA PENATAAN WARNA DAN STRITE RUNNER
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         listener = function()
@@ -235,65 +235,75 @@ function SelectLayer:init()
             self._startTransitionTriggered = true
 
             audio.playSound('Audio/Menu/confirm.ogg') 
-            log("Tombol Start diklik! Memproses pengkondisian karakter aman...")
+            log("Tombol Start 3v3 ditekan. Menyetel indeks tim aman...")
 
-            -- 1. Deteksi Karakter Utama (Gunakan fallback nama jagoan pertama di list jika kosong)
-            local chosenHero = self.selectHero
-            if not chosenHero and self.selectNameList and #self.selectNameList > 0 then
-                chosenHero = self.selectNameList[1]
-            end
-            if not chosenHero then chosenHero = "naruto" end
-            
+            -- 1. Kunci Karakter Utama Player (Gunakan naruto sebagai pengaman global)
+            local chosenHero = self.selectHero or "naruto"
             self._playerSelect = chosenHero
-            pcall(function() if self.setSelectHero then self:setSelectHero(chosenHero) end end)
+            
+            pcall(function()
+                if self.setSelectHero then self:setSelectHero(chosenHero) end
+            end)
 
-            -- 2. Paksa Pengisian Slot COM 1 dan COM 2 Agar Biner C++ Tidak Kosong
+            -- 2. Alokasikan 3 Karakter Valid ke Array C++ untuk Memicu 3 Karakter Lari di Loading
             local fallbackHero = chosenHero
-            if not self._com1Select then self._com1Select = fallbackHero end
-            if not self._com2Select then self._com2Select = fallbackHero end
+            if self.selectNameList and #self.selectNameList > 0 then
+                fallbackHero = self.selectNameList
+            end
 
+            self._com1Select = fallbackHero
+            self._com2Select = fallbackHero
+
+            -- Tembak fungsi jembatan biner C++ dengan pcall agar tidak memicu FC instan
             pcall(function() if self.setCom1Select then self:setCom1Select(self._com1Select) end end)
             pcall(function() if self.setCom2Select then self:setCom2Select(self._com2Select) end end)
 
-            -- Khusus penanganan 4v4 jika terbawa ke mode 3v3
-            if self.is4v4Mode or self._com3Select then
-                if not self._com3Select then self._com3Select = fallbackHero end
-                pcall(function() if self.setCom3Select then self:setCom3Select(self._com3Select) end end)
-            end
+            -- 3. Paksa Penyetelan Variabel Mode Game agar Warna Merah Loading Terbaca
+            if not self.mode then self.mode = 3 end -- Pastikan mode terisi nilai integer 3v3
 
-            -- 3. Jeda Transisi Sedikit Diperlama Untuk Stabilitas Alokasi Memori Engine
+            -- 4. Jeda Waktu Transisi Ditingkatkan agar Cache Animasi Jagoan Selesai Dimuat di RAM
             self:performWithDelay(function()
                 pcall(function()
                     if tools and tools.initSqliteDB then tools.initSqliteDB() end
                 end)
 
+                -- Pemicu Inisialisasi Karakter C++ GameModeHandler
                 if getGameModeHandler then
                     pcall(function()
                         local handlerInstance = getGameModeHandler()
                         if handlerInstance then
                             handlerInstance.selectLayer = self
-                            if handlerInstance.onInitHeros then handlerInstance:onInitHeros() end
+                            if handlerInstance.onInitHeros then 
+                                handlerInstance:onInitHeros() 
+                            end
                         end
                     end)
                 end
 
+                -- Hentikan audio musik latar belakang secara aman
                 pcall(function()
-                    if SimpleAudioEngine then SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true) end
+                    if SimpleAudioEngine then 
+                        SimpleAudioEngine:sharedEngine():stopBackgroundMusic(true) 
+                    end
                 end)
                 pcall(function() audio.stopMusic(true) end)
 
-                -- Langsung tembak ke fungsi biner C++ untuk memicu loading screen resmi
-                log("Memicu onGameStart menuju LoadLayer C++...")
+                -- LEMPARAN UTAMA: Jalankan fungsi transisi menuju LoadLayer C++ resmi
+                log("Memulai proses alokasi LoadLayer...")
                 if self.onGameStart_Base then
-                    pcall(function() self:onGameStart_Base() end)
+                    local success, err = pcall(function() self:onGameStart_Base() end)
+                    if not success then
+                        log("Base gagal, jalankan fungsi fallback: " .. tostring(err))
+                        self:onGameStart()
+                    end
                 else
                     self:onGameStart()
                 end
 
-            end, 0.15) -- Jeda waktu dinaikkan ke 0.15 detik agar engine Cocos2d-x selesai memuat aset suara
+            end, 0.25) -- Jeda dinaikkan menjadi 0.25 detik demi menstabilkan spawn runner di LoadLayer
         end
     })
-      
+
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
     menu:setPosition(width - 40, 36)
