@@ -12,14 +12,12 @@ public:
 		gd.use4v4SpawnLayout = false;
 	}
 
-	void onInitHeros()
+		void onInitHeros()
 	{
-		// MENGGUNAKAN METODE AMAN: Mengosongkan data hero bawaan biner lewat pemanggilan method clear()
-		// Ini mendeteksi otomatis container vector yang terikat pada IGameModeHandler
-		this->getHerosArray().clear();
-
+		this->heros.clear(); // Menggunakan nama standard variable internal 'heros'
 		initHeros(3, 3);
 	}
+
 
 	void onGameStart()
 	{
