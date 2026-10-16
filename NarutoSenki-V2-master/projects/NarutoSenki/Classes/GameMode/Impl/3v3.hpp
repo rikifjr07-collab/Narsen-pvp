@@ -7,18 +7,17 @@ public:
 	void init()
 	{
 		CCLOG("Enter 3 VS 3 mode.");
-		// Mengatur konfigurasi dasar mode tim 3v3
-		gd.isHardCore = false; 
+
+		gd.isHardCore = false;
 		gd.use4v4SpawnLayout = false;
 	}
 
 	void onInitHeros()
 	{
-		// PENGAMAN UTAMA: Bersihkan total array jagoan lawas di memori
-		// agar tidak ada sisa pointer kosong (null pointer) yang memicu FC
-		this->herosArray.clear();
+		// MENGGUNAKAN METODE AMAN: Mengosongkan data hero bawaan biner lewat pemanggilan method clear()
+		// Ini mendeteksi otomatis container vector yang terikat pada IGameModeHandler
+		this->getHerosArray().clear();
 
-		// Panggil fungsi inisialisasi basis C++ untuk mendaftarkan ulang 3 player & 3 com
 		initHeros(3, 3);
 	}
 
