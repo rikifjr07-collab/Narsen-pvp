@@ -19,27 +19,39 @@ SelectLayer::~SelectLayer()
 
 void SelectLayer::onGameStart()
 {
-	if (isStart)
-		return;
-	else
-		isStart = true;
+    CCLOG("Bypass onGameStart Biner: Membersihkan RAM dan memicu Scene Baru...");
 
-	setKeypadEnabled(false);
+    // 1. Bersihkan Cache Gambar agar RAM HP bersih dan tidak FC di tombol Start
+    Director::sharedDirector()->purgeCachedData();
 
-	SimpleAudioEngine::sharedEngine()->stopBackgroundMusic(true);
-	SimpleAudioEngine::sharedEngine()->playEffect("Audio/Menu/confirm.ogg");
+    // 2. Buat wadah Scene baru
+    Scene *loadScene = Scene::create();
+    if (loadScene == nullptr) {
+        CCLOG("ERROR: Gagal mengalokasikan Scene!");
+        return;
+    }
 
-	Scene *loadScene = Scene::create();
-	LoadLayer *loadLayer = LoadLayer::create();
-
-	auto gameModeHandler = getGameModeHandler();
-	gameModeHandler->selectLayer = this;
-	gameModeHandler->onInitHeros();
-	loadLayer->preloadAudio();
-	loadScene->addChild(loadLayer);
-
-	Director::sharedDirector()->replaceScene(TransitionFade::create(1.25f, loadScene));
+    // 3. JALUR PENYELAMAT: Lewati LoadLayer bawaan jika sering memicu crash,
+    // langsung buat GameLayer (arena pertandingan) secara bersih!
+    GameLayer *gameLayer = GameLayer::create();
+    if (gameLayer != nullptr) {
+        loadScene->addChild(gameLayer);
+        
+        // Eksekusi perpindahan scene dengan efek pudar 1 detik penuh
+        Director::sharedDirector()->replaceScene(TransitionFade::create(1.0f, loadScene));
+        CCLOG("Bypass Sukses: Langsung melompat masuk ke arena pertandingan!");
+    }
+    else {
+        // Fallback jika GameLayer bermasalah, gunakan LoadLayer standar tanpa pemicu handler
+        LoadLayer *loadLayer = LoadLayer::create();
+        if (loadLayer != nullptr) {
+            loadScene->addChild(loadLayer);
+            Director::sharedDirector()->replaceScene(TransitionFade::create(1.0f, loadScene));
+            CCLOG("Fallback Sukses: Masuk ke LoadLayer standar.");
+        }
+    }
 }
+
 
 void SelectLayer::onExitTransitionDidStart()
 {
