@@ -190,9 +190,9 @@ protected:
 		initHeros(playerCount, enemyCount, nullptr, kDefaultGroup);
 	}
 
-	void initHeros(uint8_t playerCount, uint8_t enemyCount,
-			const char *playerSelect, Group playerGroup,
-			const char *com1Select = nullptr, const char *com2Select = nullptr, const char *com3Select = nullptr)
+		void initHeros(uint8_t playerCount, uint8_t enemyCount,
+				   const char *playerSelect, Group playerGroup,
+				   const char *com1Select = nullptr, const char *com2Select = nullptr, const char *com3Select = nullptr)
 	{
 		clearHeroArray();
 
@@ -207,7 +207,7 @@ protected:
 		uint8_t comCount = totalCount > 0 ? totalCount - 1 : 0;
 		uint8_t comOfPlayerGroupCount = playerCount > 0 ? playerCount - 1 : 0;
 
-		-- PENGAMAN UTAMA: Daftarkan nilai aman jika objek pointer selectLayer kosong (Null)
+		// Menggunakan simbol C++ yang sah untuk mendaftarkan nilai jika objek pointer valid
 		if (selectLayer != nullptr) {
 			if (playerSelect) selectLayer->_playerSelect = playerSelect;
 			if (com1Select) selectLayer->_com1Select = com1Select;
@@ -215,9 +215,8 @@ protected:
 			if (com3Select) selectLayer->_com3Select = com3Select;
 		}
 
-		string tmpChar = "naruto"; -- Mengunci naruto sebagai basis data cadangan mutlak
+		string tmpChar = "naruto";
 
-		-- Periksa kelayakan objek selectLayer sebelum melakukan penarikan nama karakter
 		if (selectLayer != nullptr && selectLayer->_playerSelect)
 		{
 			tmpChar = selectLayer->_playerSelect;
@@ -239,14 +238,13 @@ protected:
 		}
 		else 
 		{
-			CCLOG("IGameModeHandler WARNING: selectLayer murni Null! Mengaktifkan jagoan pengaman.");
+			CCLOG("IGameModeHandler WARNING: selectLayer Null!");
 			gd.isRandomChar = true;
 		}
 
 		heroDataVector.push_back({tmpChar, Role::Player, playerGroup});
 		heroVector.push_back(tmpChar);
 
-		-- Pengisian sisa slot bot secara acak dan mandiri dari list internal biner
 		vector<string> realHeroVector;
 		for (size_t i = 0; i < kHeroNum; i++)
 		{
@@ -295,6 +293,7 @@ protected:
 			}
 		}
 	}
+
 
 	inline void setPlayerTeamByGroup(Group group)
 	{
