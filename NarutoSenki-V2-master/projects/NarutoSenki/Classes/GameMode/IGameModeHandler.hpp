@@ -191,8 +191,8 @@ protected:
 	}
 
 	void initHeros(uint8_t playerCount, uint8_t enemyCount,
-				   const char *playerSelect, Group playerGroup,
-				   const char *com1Select = nullptr, const char *com2Select = nullptr, const char *com3Select = nullptr)
+			const char *playerSelect, Group playerGroup,
+			const char *com1Select = nullptr, const char *com2Select = nullptr, const char *com3Select = nullptr)
 	{
 		clearHeroArray();
 
@@ -200,8 +200,6 @@ protected:
 		enemyCount = enemyCount > kMaxCharCount ? kMaxCharCount : enemyCount;
 		setRand();
 		int team = random(2);
-		// TODO: Support custom player group
-		// playerGroup = playerGroup == nullptr ? (team > 0 ? Group::Konoha : Group::Akatsuki) : playerGroup;
 		playerGroup = team > 0 ? Group::Akatsuki : Group::Konoha;
 		this->gd.playerGroup = playerGroup;
 		this->playerGroup = playerGroup;
@@ -209,56 +207,50 @@ protected:
 		uint8_t comCount = totalCount > 0 ? totalCount - 1 : 0;
 		uint8_t comOfPlayerGroupCount = playerCount > 0 ? playerCount - 1 : 0;
 
-		if (playerSelect)
-			selectLayer->_playerSelect = playerSelect;
-		if (com1Select)
-			selectLayer->_com1Select = com1Select;
-		if (com2Select)
-			selectLayer->_com2Select = com2Select;
-		if (com3Select)
-			selectLayer->_com3Select = com3Select;
+		-- PENGAMAN UTAMA: Daftarkan nilai aman jika objek pointer selectLayer kosong (Null)
+		if (selectLayer != nullptr) {
+			if (playerSelect) selectLayer->_playerSelect = playerSelect;
+			if (com1Select) selectLayer->_com1Select = com1Select;
+			if (com2Select) selectLayer->_com2Select = com2Select;
+			if (com3Select) selectLayer->_com3Select = com3Select;
+		}
 
-		// init player hero
-		string tmpChar;
-		if (selectLayer->_playerSelect)
+		string tmpChar = "naruto"; -- Mengunci naruto sebagai basis data cadangan mutlak
+
+		-- Periksa kelayakan objek selectLayer sebelum melakukan penarikan nama karakter
+		if (selectLayer != nullptr && selectLayer->_playerSelect)
 		{
 			tmpChar = selectLayer->_playerSelect;
 		}
-		else
+		else if (selectLayer != nullptr && selectLayer->_selectList)
 		{
 			auto selcetList = selectLayer->_selectList;
 			int count = selcetList->count();
-			setRand();
-			int index = random(count);
-			tmpChar = ((CCString *)selcetList->objectAtIndex(index))->m_sString;
-			do
-			{
+			if (count > 0) {
 				setRand();
-				index = random(count);
+				int index = random(count);
 				tmpChar = ((CCString *)selcetList->objectAtIndex(index))->m_sString;
-			} while (tmpChar == "None");
-
-			selectLayer->_playerSelect = tmpChar.c_str();
+				if (tmpChar == "None" || tmpChar.empty()) {
+					tmpChar = "naruto";
+				}
+				selectLayer->_playerSelect = tmpChar.c_str();
+			}
+			gd.isRandomChar = true;
+		}
+		else 
+		{
+			CCLOG("IGameModeHandler WARNING: selectLayer murni Null! Mengaktifkan jagoan pengaman.");
 			gd.isRandomChar = true;
 		}
 
-		// push player
 		heroDataVector.push_back({tmpChar, Role::Player, playerGroup});
 		heroVector.push_back(tmpChar);
 
-		// init com heros
+		-- Pengisian sisa slot bot secara acak dan mandiri dari list internal biner
 		vector<string> realHeroVector;
 		for (size_t i = 0; i < kHeroNum; i++)
 		{
-			if (is_same(selectLayer->_playerSelect, kHeroList[i]))
-				continue;
-			if (selectLayer->_com1Select && is_same(selectLayer->_com1Select, kHeroList[i]))
-				continue;
-			if (selectLayer->_com2Select && is_same(selectLayer->_com2Select, kHeroList[i]))
-				continue;
-			if (selectLayer->_com3Select && is_same(selectLayer->_com3Select, kHeroList[i]))
-				continue;
-
+			if (is_same(tmpChar.c_str(), kHeroList[i])) continue;
 			realHeroVector.push_back(kHeroList[i]);
 		}
 
@@ -267,45 +259,39 @@ protected:
 		{
 			if (i < comOfPlayerGroupCount)
 			{
-				if (i == 0 && selectLayer->_com1Select)
-				{
-					hero = selectLayer->_com1Select;
-				}
-				else if (i == 1 && selectLayer->_com2Select)
-				{
-					hero = selectLayer->_com2Select;
-				}
-				else if (i == 2 && selectLayer->_com3Select)
-				{
-					hero = selectLayer->_com3Select;
-				}
+				if (i == 0 && selectLayer != nullptr && selectLayer->_com1Select) hero = selectLayer->_com1Select;
+				else if (i == 1 && selectLayer != nullptr && selectLayer->_com2Select) hero = selectLayer->_com2Select;
+				else if (i == 2 && selectLayer != nullptr && selectLayer->_com3Select) hero = selectLayer->_com3Select;
 				else
 				{
 					int count = realHeroVector.size();
-					setRand();
-					int index = random(count);
-					if (index == count)
-						index = realHeroVector.size() - 1;
-
-					hero = realHeroVector.at(index);
-					realHeroVector.erase(std::find(realHeroVector.begin(), realHeroVector.end(), hero));
+					if (count > 0) {
+						setRand();
+						int index = random(count);
+						hero = realHeroVector.at(index);
+						realHeroVector.erase(std::find(realHeroVector.begin(), realHeroVector.end(), hero));
+					} else {
+						hero = "sasuke";
+					}
 				}
-
 				heroDataVector.push_back({hero, Role::Com, team > 0 ? Group::Akatsuki : Group::Konoha});
 				heroVector.push_back(hero);
 			}
 			else
 			{
 				int count = realHeroVector.size();
-				setRand();
-				int index = random(count);
-				if (index == count)
-					index = realHeroVector.size() - 1;
-
-				hero = realHeroVector.at(index);
-				heroDataVector.push_back({hero, Role::Com, team > 0 ? Group::Konoha : Group::Akatsuki});
-				heroVector.push_back(hero);
-				realHeroVector.erase(std::find(realHeroVector.begin(), realHeroVector.end(), hero));
+				if (count > 0) {
+					setRand();
+					int index = random(count);
+					hero = realHeroVector.at(index);
+					heroDataVector.push_back({hero, Role::Com, team > 0 ? Group::Konoha : Group::Akatsuki});
+					heroVector.push_back(hero);
+					realHeroVector.erase(std::find(realHeroVector.begin(), realHeroVector.end(), hero));
+				} else {
+					hero = "sakura";
+					heroDataVector.push_back({hero, Role::Com, team > 0 ? Group::Konoha : Group::Akatsuki});
+					heroVector.push_back(hero);
+				}
 			}
 		}
 	}
